@@ -5,6 +5,9 @@
  * structures and function prototypes.
  */
 
+
+#define EXTSTORE 1
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -20,10 +23,19 @@
 #include <assert.h>
 #include <grp.h>
 #include <signal.h>
+#include <stdbool.h>
+
 /* need this to get IOV_MAX on some platforms. */
 #ifndef __need_IOV_MAX
 #define __need_IOV_MAX
 #endif
+
+//pyuhala
+#if defined __need_IOV_MAX && !defined IOV_MAX
+# define IOV_MAX 1024
+#endif
+
+
 #include <limits.h>
 /* FreeBSD 4.x doesn't have IOV_MAX exposed. */
 #ifndef IOV_MAX

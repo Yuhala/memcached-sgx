@@ -27,6 +27,9 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+
+
+
 /* some POSIX systems need the following definition
  * to get mlockall flags out of sys/mman.h.  */
 #ifndef _P1003_1B_VISIBLE
@@ -4517,7 +4520,12 @@ static int _mc_meta_load_cb(const char *tag, void *ctx, void *data) {
     return reuse_mmap;
 }
 
+
+
 int main (int argc, char **argv) {
+
+    printf(" =============== pyuhala: hello memcached main ==================\n");
+    printf(" Do: telnet 127.0.0.1 11211 in terminal\n");
     int c;
     bool lock_memory = false;
     bool do_daemonize = false;

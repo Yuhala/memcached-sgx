@@ -11,7 +11,10 @@
  * effect of this is that after running this code, the process will not able
  * to fork(), exec(), etc.  See pledge(2) for more information.
  */
-void drop_privileges() {
+
+//pyuhala: causes compilation issues and probably not needed for a minimal program
+
+/* void drop_privileges() {
     extern char *__progname;
 
     if (settings.socketpath != NULL) {
@@ -30,3 +33,4 @@ void drop_privileges() {
 void setup_privilege_violations_handler(void) {
    // not needed
 }
+ */

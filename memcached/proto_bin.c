@@ -12,6 +12,7 @@
 #endif
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 /** binprot handlers **/
 static void process_bin_flush(conn *c, char *extbuf);

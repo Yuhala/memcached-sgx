@@ -1,5 +1,6 @@
 #include <stdlib.h>
-#include <priv.h>
+//pyuhala
+// #include <priv.h>
 #include <stdio.h>
 #include "memcached.h"
 
@@ -9,7 +10,10 @@
  * effect of this is that after running this code, the process will not able
  * to fork(), exec(), etc.  See privileges(5) for more information.
  */
-void drop_privileges(void) {
+
+//pyuhala: causes compilation issues and probably not needed for a minimal program
+
+/* void drop_privileges(void) {
    priv_set_t *privs = priv_str_to_set("basic", ",", NULL);
 
    if (privs == NULL) {
@@ -46,3 +50,4 @@ void drop_privileges(void) {
 void setup_privilege_violations_handler(void) {
    // not needed
 }
+ */

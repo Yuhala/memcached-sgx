@@ -12,9 +12,10 @@ static char *kill_msg;
 // Make sure to preserve the ??? position in the string, or correct the offsets
 // in the syssig handler.
 #define KILL_MSG_STR "Seccomp policy failure. Caught syscall ???. This is " \
-    "either an exploit attempt, or your system is not supported yet.\n"
+                     "either an exploit attempt, or your system is not supported yet.\n"
 
-static void handle_syssig(int signum, siginfo_t *si, void *thread_context) {
+static void handle_syssig(int signum, siginfo_t *si, void *thread_context)
+{
 #if defined(si_syscall)
     int syscall_no = si->si_syscall;
 #else
@@ -30,7 +31,8 @@ static void handle_syssig(int signum, siginfo_t *si, void *thread_context) {
     kill_msg[39] = (syscall_no / 100) % 10 + '0';
     kill_msg[40] = (syscall_no / 10) % 10 + '0';
     kill_msg[41] = syscall_no % 10 + '0';
-    if (write(2, kill_msg, strlen(kill_msg)) == -1) {
+    if (write(2, kill_msg, strlen(kill_msg)) == -1)
+    {
         // An error occurred, but we can't do anything about it here. This check
         // is mostly to avoid the "ignoring return value of 'write'" error on
         // distributions with broken gcc (no "ignore via cast to void" support).
@@ -47,17 +49,23 @@ static const struct sigaction act = {
     .sa_flags = SA_SIGINFO,
 };
 
-void setup_privilege_violations_handler(void) {
-    kill_msg = malloc(strlen(KILL_MSG_STR)+1);
+//pyuhala: redefinitions of the following routines causing compilation issues
+
+
+
+/* void setup_privilege_violations_handler()
+{
+    kill_msg = malloc(strlen(KILL_MSG_STR) + 1);
     strcpy(kill_msg, KILL_MSG_STR);
 
     sigaction(SIGSYS, &act, NULL);
 }
-
+ 
 // If anything crosses the policy, kill the process.
 #define DENY_ACTION SCMP_ACT_TRAP
 
-void drop_privileges(void) {
+
+ void drop_privileges() {
     scmp_filter_ctx ctx = seccomp_init(DENY_ACTION);
     if (ctx == NULL) {
         return;
@@ -127,7 +135,7 @@ fail:
     exit(EXIT_FAILURE);
 }
 
-void drop_worker_privileges(void) {
+void drop_worker_privileges() {
     scmp_filter_ctx ctx = seccomp_init(DENY_ACTION);
     if (ctx == NULL) {
         return;
@@ -212,4 +220,4 @@ fail:
     seccomp_release(ctx);
     fprintf(stderr, "Failed to set a seccomp profile on a worker thread\n");
     exit(EXIT_FAILURE);
-}
+} */
