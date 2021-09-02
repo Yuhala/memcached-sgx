@@ -1,0 +1,101 @@
+/*
+ * Created on Fri Jul 17 2020
+ *
+ * Copyright (c) 2020 Peterson Yuhala, IIUN
+ */
+
+
+/* Enclave.edl - Top EDL file. */
+
+enclave {
+
+    include "user_types.h" /* buffer_t */
+    include "sgx_spinlock.h"
+
+    /* Import all libc ocalls */
+    from "graalsgx/io/io.edl" import *;
+    from "graalsgx/net/net.edl" import *;
+    from "graalsgx/sys/sys.edl" import *;
+    from "graalsgx/thread/thread.edl" import *;
+    
+    //from "graalsgx/edl/graalsgx_ecalls.edl" import *;
+    //from "graalsgx/edl/graalsgx_ocalls.edl" import *;
+
+    enum buffer_status
+    {
+	BUFFER_UNUSED,
+	BUFFER_RESERVED,
+        BUFFER_WAITING,
+        BUFFER_PROCESSED,
+	BUFFER_PAUSED,
+        BUFFER_EXIT
+    };
+
+    struct buffer
+    {
+        void* ocall_handler_switchless; /* void (*ocall_handler_switchless) (struct buffer* b) */
+	void* ocall_handler; /* type (*ocall_handler) (types, ...) */
+	sgx_spinlock_t spinlock;
+        int status;
+	pid_t caller_tid;
+	size_t args_size;
+        void* args;
+	size_t ret_size;
+        void* ret;
+    };
+    
+    enum fn_token
+    {
+	FN_TOKEN_EMPTY,
+	FN_TOKEN_SLEEP,
+        FN_TOKEN_FSYNC,
+        FN_TOKEN_DUP2,
+        //FN_TOKEN_OPEN,
+        FN_TOKEN_CLOSE,
+        FN_TOKEN_FWRITE,
+	FN_TOKEN_PUTS,
+	FN_TOKEN_UNLINK,
+	FN_TOKEN_RMDIR,
+	FN_TOKEN_REMOVE,
+        FN_TOKEN_READ,
+        FN_TOKEN_WRITE,
+	FN_TOKEN_LSEEK64,
+	FN_TOKEN_TOTAL_SIZE /* /!\ dose not represent a function */
+    };
+    
+
+
+   trusted {
+       public void ecall_graal_main_args(int id, int arg1, [user_check] struct buffer* switchless_buffers, [user_check] struct buffer* switchless_buffer, [user_check] void** sl_fn, [user_check] void** fn, [user_check] int* sl_count, [user_check] int* f_count, [user_check] int* number_of_workers);
+       public void ecall_graal_main(int id, [user_check] struct buffer* switchless_buffers, [user_check] struct buffer* switchless_buffer, [user_check] void** sl_fn, [user_check] void** fn, [user_check] int* sl_count, [user_check] int* f_count, [user_check] int* number_of_workers);
+       public void ecall_create_enclave_isolate(); 
+       public void ecall_run_main(int id);
+
+       public void ecall_reader(int n,int id, [user_check] struct buffer* switchless_buffers, [user_check] struct buffer* switchless_buffer, [user_check] void** sl_fn, [user_check] void** fn, [user_check] int* sl_count, [user_check] int* f_count, [user_check] int* number_of_workers);
+       public void ecall_writer(int n,int id,[user_check] struct buffer* switchless_buffers, [user_check] struct buffer* switchless_buffer, [user_check] void** sl_fn, [user_check] void** fn, [user_check] int* sl_count, [user_check] int* f_count, [user_check] int* number_of_workers);
+       //public void ecall_destroy_enclave_isolate();
+
+       public void ecall_bench_thread([user_check] struct buffer* bs, [user_check] struct buffer* b, [user_check] void** sl_fn, [user_check] void** fn, [user_check] int* sl_count, [user_check] int* f_count, [user_check] int* number_of_workers);
+       public void ecall_readN(int n);
+       public void ecall_writeN(int n);
+       public void ecall_kissdb_test();
+       public void ecall_readKissdb(int n, int storeId);
+       public void ecall_writeKissdb(int n, int storeId);
+
+   };
+
+    /* 
+     * ocall_print_string - invokes OCALL to display string buffer inside the enclave.
+     *  [in]: copy the string buffer to App outside.
+     *  [string]: specifies 'str' is a NULL terminated buffer.
+     */
+    untrusted {
+    	void* ocall_malloc(size_t size);
+    	void* ocall_realloc([user_check] void* ptr, size_t size);
+        void ocall_print_string([in, string] const char *str);
+	long ocall_gettid(void);
+	
+	void ocall_bench(void);
+    };
+
+};
