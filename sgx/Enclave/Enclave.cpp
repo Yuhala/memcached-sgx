@@ -44,6 +44,8 @@
 #include "switchless_buffer.h"
 #include "graal_sgx_shim_switchless.h"
 
+#include "memcached/test.h"
+
 /* Global variables */
 sgx_enclave_id_t global_eid;
 bool enclave_initiated;
@@ -90,66 +92,6 @@ void ocall_switchless(struct buffer *switchless_buffer)
     while (switchless_buffer->status != BUFFER_PROCESSED)
     {
     }
-}
-
-/**
- * Generates isolates.
- * This can be used to generate execution contexts for transition routines.
- */
-
-graal_isolatethread_t *isolate_generator()
-{
-    graal_isolatethread_t *temp_iso = NULL;
-    int ret;
-    if ((ret = graal_create_isolate(NULL, NULL, &temp_iso)) != 0)
-    {
-        printf("Error on app isolate creation or attach. Error code: %d\n", ret);
-
-        return NULL;
-    }
-    return temp_iso;
-}
-
-/**
- * Destroys the corresponding isolates.
- */
-
-void destroy_isolate(graal_isolatethread_t *iso)
-{
-
-    if (graal_tear_down_isolate(iso) != 0)
-    {
-        printf("Isolate shutdown error\n");
-    }
-}
-
-/**
- * Create global enclave isolate to service ecalls.
- */
-void ecall_create_enclave_isolate()
-{
-    printf("Example of function ptr in the enclave: %p\n", &ecall_create_enclave_isolate);
-
-    int ret;
-    printf(">>>>>>>>>>>>>>>>>>> Creating global enclave isolate ...\n");
-    global_enc_iso = isolate_generator();
-    //destroy_isolate(enc_iso);
-    //enc_iso2 = isolate_generator();
-    //destroy_isolate(enc_iso2);
-    //graal_isolatethread_t *temp = isolate_generator();
-    //destroy_isolate(temp);
-    printf(">>>>>>>>>>>>>>>>>>> Global enclave isolate creation successfull!\n");
-    //printf(">>>>>>>>>>>>>>>>>>> isolate destruction...\n");
-    //destroy_isolate(enc_iso);
-    //printf(">>>>>>>>>>>>>>>>>>> OK!\n");
-}
-
-/**
- * Destroy global enclave isolate
- */
-void ecall_destroy_enclave_isolate()
-{
-    destroy_isolate(global_enc_iso);
 }
 
 /* 
@@ -304,7 +246,7 @@ void *graal_job(void *arg)
     //printf("Enclave Graal add 1+2 = %d\n", sum);
 
     printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx Native Image Code Start xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
-    run_main(1, NULL);
+    //run_main(1, NULL);
 
     printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  Native Image Code End  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
 }
@@ -314,7 +256,7 @@ void ecall_run_main(int id)
     global_eid = id;
     enclave_initiated = true;
     printf("In ecall run main. Global eid: %d \n", id);
-    run_main(1, NULL);
+    //run_main(1, NULL);
 }
 
 void test_routine(int n)
@@ -370,15 +312,12 @@ void ecall_writer(int n, int id, struct buffer *bs, struct buffer *b, void **sl_
 void ecall_readN(int n)
 {
 
-    graal_isolatethread_t *read_iso = isolate_generator();
-
     printf("In ecall readN\n");
     //readN(read_iso, n);
 }
 
 void ecall_writeN(int n)
 {
-    graal_isolatethread_t *write_iso = isolate_generator();
 
     printf("In ecall writeN\n");
     //writeN(write_iso, n);
@@ -436,6 +375,9 @@ void writeKissdb(int n, int storeId)
     KISSDB writes_db;
     //char got_all_values[10000];
     int q;
+
+    memcached_add();
+    return;
 
     const char storeFile[16];
     snprintf(storeFile, 16, "kissdb%d.db", storeId);

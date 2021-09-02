@@ -68,7 +68,7 @@ enclave {
    trusted {
        public void ecall_graal_main_args(int id, int arg1, [user_check] struct buffer* switchless_buffers, [user_check] struct buffer* switchless_buffer, [user_check] void** sl_fn, [user_check] void** fn, [user_check] int* sl_count, [user_check] int* f_count, [user_check] int* number_of_workers);
        public void ecall_graal_main(int id, [user_check] struct buffer* switchless_buffers, [user_check] struct buffer* switchless_buffer, [user_check] void** sl_fn, [user_check] void** fn, [user_check] int* sl_count, [user_check] int* f_count, [user_check] int* number_of_workers);
-       public void ecall_create_enclave_isolate(); 
+       //public void ecall_create_enclave_isolate(); 
        public void ecall_run_main(int id);
 
        public void ecall_reader(int n,int id, [user_check] struct buffer* switchless_buffers, [user_check] struct buffer* switchless_buffer, [user_check] void** sl_fn, [user_check] void** fn, [user_check] int* sl_count, [user_check] int* f_count, [user_check] int* number_of_workers);

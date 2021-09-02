@@ -102,6 +102,35 @@ GraalSGX_Cpp_FIles_Out := $(wildcard App/graalsgx/*/*.cpp)
 # In-enclave graalsgx include paths
 Graal_Include_Path := -IEnclave/graalsgx -IEnclave/graalsgx/include
 
+
+
+########## Memcached Settings ########
+
+# Memcached source
+Memcached_Src_In := ./Enclave/memcached
+Memcached_Src_Out := ./App/memcached
+
+# Memcached c files
+Memcached_C_Files_In := $(wildcard $(Memcached_Src_In)/*.c)
+Memcached_C_Files_Out := $(wildcard $(Memcached_Src_Out)/*.c)
+
+# Memcached headers
+Memcached_Headers_In := $(wildcard $(Memcached_Src_In)/*.h)
+Memcached_Headers_Out := $(wildcard $(Memcached_Src_Out)/*.h)
+
+# Memcached objects
+Memcached_Objs_In := $(Memcached_C_Files_In:.c=.o)
+Memcached_Objs_Out := $(Memcached_C_Files_Out:.c=.o)
+
+# Memcached libs
+Memcached_Libs := -lpthread -lm -lssl -lcrypto -levent
+
+# Memcached include paths
+Memcached_Inc_Paths := -I$(Memcached_Src_In) -IEnclave -IEnclave/graalsgx -IEnclave/graalsgx/include
+
+
+
+
 ######## App Settings ########
 
 ifneq ($(SGX_MODE), HW)
@@ -130,7 +159,7 @@ endif
 App_Cpp_Flags := $(App_C_Flags)
 
 # Graal needs: -lpthread -ldl -lz -lrt 
-App_Link_Flags := -L$(SGX_LIBRARY_PATH) -L$(Graal_Libs_Path) -Wl,--start-group $(Graal_Libs) -Wl,--end-group -l$(Urts_Library_Name) -lpthread -ldl -lz -lrt
+App_Link_Flags := -L$(SGX_LIBRARY_PATH) -L$(Graal_Libs_Path) -Wl,--start-group $(Graal_Libs) $(Memcached_Libs) -Wl,--end-group -l$(Urts_Library_Name) -lpthread -ldl -lz -lrt
 
 
 App_Cpp_Objects := $(App_Cpp_Files:.cpp=.o)
@@ -249,6 +278,18 @@ endif
 	@rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.*
 	@touch .config_$(Build_Mode)_$(SGX_ARCH)
 
+
+
+####### Build Memcached Objects ######
+
+$(Memcached_Src_In)/%.o: $(Memcached_Src_In)/%.c $(Memcached_Headers_In)
+		$(CC) $(Memcached_Inc_Paths) -c $< -o $@
+		@echo "CC <= $<"
+
+$(Memcached_Src_Out)/%.o: $(Memcached_Src_Out)/%.c $(Memcached_Headers_Out)
+		$(CC) -I$(Memcached_Src_Out) -c $< -o $@
+		@echo "CC <= $<"
+
 ######## App Objects ########
 
 App/Enclave_u.h: $(SGX_EDGER8R) Enclave/Enclave.edl
@@ -265,11 +306,11 @@ App/%.o: App/%.cpp  App/Enclave_u.h
 	@$(CXX) $(SGX_COMMON_CXXFLAGS) $(App_Cpp_Flags) -c $< -o $@
 	@echo "CXX  <=  $<"
 
-$(App_Name): App/Enclave_u.o $(App_Cpp_Objects) $(Graal_Objects_Out)
+$(App_Name): App/Enclave_u.o $(App_Cpp_Objects) $(Graal_Objects_Out) $(Memcached_Objs_Out)
 	@$(CXX) $^ -o $@ $(App_Link_Flags)
 	@echo "LINK =>  $@"
 
-######## Enclave Objects ########
+######## Enclave Objects #######
 
 Enclave/Enclave_t.h: $(SGX_EDGER8R) Enclave/Enclave.edl
 	@cd Enclave && $(SGX_EDGER8R) --trusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)/include
@@ -290,7 +331,7 @@ Enclave/%.o: Enclave/%.cpp Enclave/Enclave_t.h
 
 prot: $(Signed_Enclave_Name)
 
-$(Enclave_Name): Enclave/Enclave_t.o  $(Enclave_Cpp_Objects) $(Graal_Objects_In)
+$(Enclave_Name): Enclave/Enclave_t.o  $(Enclave_Cpp_Objects) $(Graal_Objects_In) $(Memcached_Objs_In)
 	@$(CXX) $^ -o $@ $(Enclave_Link_Flags)
 	@echo "LINK =>  $@"
 

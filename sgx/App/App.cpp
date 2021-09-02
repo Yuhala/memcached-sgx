@@ -173,36 +173,7 @@ void gen_sighandler(int sig, siginfo_t *si, void *arg)
     printf("Caught signal: %d\n", sig);
 }
 
-/**
- * Generates isolates.
- * This can be used to generate execution contexts for transition routines.
- */
 
-graal_isolatethread_t *isolate_generator()
-{
-    graal_isolatethread_t *temp_iso = NULL;
-    int ret;
-    if ((ret = graal_create_isolate(NULL, NULL, &temp_iso)) != 0)
-    {
-        printf("Error on app isolate creation or attach. Error code: %d\n", ret);
-
-        return NULL;
-    }
-    return temp_iso;
-}
-
-/**
- * Destroys the corresponding isolates.
- */
-
-void destroy_isolate(graal_isolatethread_t *iso)
-{
-
-    if (graal_tear_down_isolate(iso) != 0)
-    {
-        printf("Isolate shutdown error\n");
-    }
-}
 
 void fill_array()
 {
@@ -581,7 +552,7 @@ void ocall_bench(void)
 
 int normal_run(int arg)
 {
-    global_app_iso = isolate_generator();
+    
 
     setMainAttribs();
 
@@ -731,11 +702,12 @@ int SGX_CDECL main(int argc, char *argv[])
      */
 
     int numKeys = 10000;
-    int numWriters = 4;
-    int numReaders = 4;
+    int numWriters = 1;
+    int numReaders = 1;
     write_keys(numKeys, numWriters);
     bool test = (numReaders == numWriters) || ((numReaders != numWriters) && (numWriters == 1));
 
+    return 0;
     /**
      * pyuhala: this prevents read errors in kissdb (eg readers reading from a non-existent file).
      *  Still to fix the issue
@@ -779,11 +751,6 @@ int SGX_CDECL main(int argc, char *argv[])
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);
 
-    /*  if (graal_tear_down_isolate(iso_thread) != 0)
-    {
-        printf("isolate shutdown error\n");
-    }
- */
     /*  printf("Time inside: %lf\n", in);
     printf("Time outside: %lf\n", out); */
 
