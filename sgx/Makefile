@@ -140,7 +140,7 @@ else
 endif
 
 App_Cpp_Files := App/App.cpp  $(GraalSGX_Cpp_FIles_Out) $(wildcard App/*/*.cpp)
-App_Include_Paths := -IInclude -IInclude/out -IApp -I$(SGX_SDK)/include -IEnclave/graalsgx/include
+App_Include_Paths := -IInclude -IApp -I$(SGX_SDK)/include -IEnclave/graalsgx/include 
 
 App_C_Flags := -fPIC -Wno-attributes $(App_Include_Paths)
 

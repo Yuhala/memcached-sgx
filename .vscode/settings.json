@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "memcached.h": "c",
+        "ctype.h": "c",
+        "test-out.h": "c"
+    }
+}

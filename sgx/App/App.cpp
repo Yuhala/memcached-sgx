@@ -79,6 +79,9 @@
 //paldb benchmarking
 #include "paldb/Paldb.h"
 
+#include "memcached/test-out.h"
+
+
 /* Benchmarking */
 //#include "benchtools.h"
 #include <time.h>
@@ -694,6 +697,8 @@ int SGX_CDECL main(int argc, char *argv[])
     printf("Enclave initialized\n");
 
     int id = global_eid;
+
+   
 
     //ecall_create_enclave_isolate(global_eid);
     /**
