@@ -24,6 +24,7 @@
 #include <grp.h>
 #include <signal.h>
 #include <stdbool.h>
+#include "my_logger.h"
 
 /* need this to get IOV_MAX on some platforms. */
 #ifndef __need_IOV_MAX

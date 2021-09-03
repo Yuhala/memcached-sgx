@@ -2,6 +2,7 @@
     "files.associations": {
         "memcached.h": "c",
         "ctype.h": "c",
-        "test-out.h": "c"
+        "test-out.h": "c",
+        "my_logger.h": "c"
     }
 }

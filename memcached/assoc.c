@@ -25,6 +25,8 @@
 #include <assert.h>
 #include <pthread.h>
 
+#include "my_logger.h"
+
 static pthread_cond_t maintenance_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t maintenance_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -56,6 +58,7 @@ static bool expanding = false;
 static unsigned int expand_bucket = 0;
 
 void assoc_init(const int hashtable_init) {
+    log_routine(__func__);
     if (hashtable_init) {
         hashpower = hashtable_init;
     }
@@ -71,6 +74,7 @@ void assoc_init(const int hashtable_init) {
 }
 
 item *assoc_find(const char *key, const size_t nkey, const uint32_t hv) {
+    log_routine(__func__);
     item *it;
     unsigned int oldbucket;
 
@@ -100,6 +104,7 @@ item *assoc_find(const char *key, const size_t nkey, const uint32_t hv) {
    the item wasn't found */
 
 static item** _hashitem_before (const char *key, const size_t nkey, const uint32_t hv) {
+    log_routine(__func__);
     item **pos;
     unsigned int oldbucket;
 
@@ -119,6 +124,7 @@ static item** _hashitem_before (const char *key, const size_t nkey, const uint32
 
 /* grows the hashtable to the next power of 2. */
 static void assoc_expand(void) {
+    log_routine(__func__);
     old_hashtable = primary_hashtable;
 
     primary_hashtable = calloc(hashsize(hashpower + 1), sizeof(void *));
@@ -140,6 +146,7 @@ static void assoc_expand(void) {
 }
 
 void assoc_start_expand(uint64_t curr_items) {
+    //log_routine(__func__);
     if (pthread_mutex_trylock(&maintenance_lock) == 0) {
         if (curr_items > (hashsize(hashpower) * 3) / 2 && hashpower < HASHPOWER_MAX) {
             pthread_cond_signal(&maintenance_cond);
@@ -150,6 +157,7 @@ void assoc_start_expand(uint64_t curr_items) {
 
 /* Note: this isn't an assoc_update.  The key must not already exist to call this */
 int assoc_insert(item *it, const uint32_t hv) {
+    log_routine(__func__);
     unsigned int oldbucket;
 
 //    assert(assoc_find(ITEM_key(it), it->nkey) == 0);  /* shouldn't have duplicately named things defined */
@@ -169,6 +177,7 @@ int assoc_insert(item *it, const uint32_t hv) {
 }
 
 void assoc_delete(const char *key, const size_t nkey, const uint32_t hv) {
+    log_routine(__func__);
     item **before = _hashitem_before(key, nkey, hv);
 
     if (*before) {
@@ -195,6 +204,7 @@ int hash_bulk_move = DEFAULT_HASH_BULK_MOVE;
 
 static void *assoc_maintenance_thread(void *arg) {
 
+    log_routine(__func__);
     mutex_lock(&maintenance_lock);
     while (do_run_maintenance_thread) {
         int ii = 0;
@@ -265,6 +275,7 @@ static void *assoc_maintenance_thread(void *arg) {
 static pthread_t maintenance_tid;
 
 int start_assoc_maintenance_thread() {
+    log_routine(__func__);
     int ret;
     char *env = getenv("MEMCACHED_HASH_BULK_MOVE");
     if (env != NULL) {
@@ -283,6 +294,7 @@ int start_assoc_maintenance_thread() {
 }
 
 void stop_assoc_maintenance_thread() {
+    log_routine(__func__);
     mutex_lock(&maintenance_lock);
     do_run_maintenance_thread = 0;
     pthread_cond_signal(&maintenance_cond);
@@ -300,6 +312,7 @@ struct assoc_iterator {
 };
 
 void *assoc_get_iterator(void) {
+    log_routine(__func__);
     struct assoc_iterator *iter = calloc(1, sizeof(struct assoc_iterator));
     if (iter == NULL) {
         return NULL;
@@ -310,6 +323,7 @@ void *assoc_get_iterator(void) {
 }
 
 bool assoc_iterate(void *iterp, item **it) {
+    log_routine(__func__);
     struct assoc_iterator *iter = (struct assoc_iterator *) iterp;
     *it = NULL;
     // - if locked bucket and next, update next and return
@@ -354,6 +368,7 @@ bool assoc_iterate(void *iterp, item **it) {
 }
 
 void assoc_iterate_final(void *iterp) {
+    log_routine(__func__);
     struct assoc_iterator *iter = (struct assoc_iterator *) iterp;
     if (iter->bucket_locked) {
         item_unlock(iter->bucket);
