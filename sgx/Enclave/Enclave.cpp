@@ -69,6 +69,19 @@ static sgx_spinlock_t writer_lock = SGX_SPINLOCK_INITIALIZER;
 void readKissdb(int n, int storeId);
 void writeKissdb(int n, int storeId);
 
+/**
+ * pyuhala: generic ecall for testing enclave routines.
+ * E.g after writing a new function you can call it in here
+ * to test its functionality.
+ */
+
+void ecall_test()
+{
+    printf("ecall test >>>>>>>>> \n");    
+    start_server();
+   
+}
+
 pid_t gettid(void)
 {
     long tid;
@@ -375,9 +388,6 @@ void writeKissdb(int n, int storeId)
     KISSDB writes_db;
     //char got_all_values[10000];
     int q;
-
-    memcached_add();
-    return;
 
     const char storeFile[16];
     snprintf(storeFile, 16, "kissdb%d.db", storeId);

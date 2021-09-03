@@ -66,6 +66,7 @@ enclave {
        void ocall_fgets([out,size=n]char *str, int n, SGX_FILE stream);
        SGX_FILE ocall_stderr();
        int ocall_puts([in, string]const char *str);
+       int ocall_getchar();
 
         int ocall_mkdir([in,string]const char *pathname, mode_t mode); 
         int ocall_truncate([in,string]const char *path, off_t length); 

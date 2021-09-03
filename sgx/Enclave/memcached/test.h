@@ -6,7 +6,7 @@ extern "C"
 {
 #endif
 
-void memcached_add();
+void start_server();
 
 #if defined(__cplusplus)
 }

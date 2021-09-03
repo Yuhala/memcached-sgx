@@ -778,3 +778,10 @@ mode_t umask(mode_t mask)
     ocall_umask(&ret, mask);
     return ret;
 }
+int getchar()
+{
+    GRAAL_SGX_INFO();
+    int ret;
+    ocall_getchar(&ret);
+    return ret;
+}

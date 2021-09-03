@@ -478,3 +478,9 @@ mode_t ocall_umask(mode_t mask)
     log_ocall(__func__);
     return umask(mask);
 }
+
+int ocall_getchar()
+{
+    log_ocall(__func__);
+    return getchar();
+}

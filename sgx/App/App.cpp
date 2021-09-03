@@ -81,7 +81,6 @@
 
 #include "memcached/test-out.h"
 
-
 /* Benchmarking */
 //#include "benchtools.h"
 #include <time.h>
@@ -175,8 +174,6 @@ void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
     printf("Caught signal: %d\n", sig);
 }
-
-
 
 void fill_array()
 {
@@ -555,7 +552,6 @@ void ocall_bench(void)
 
 int normal_run(int arg)
 {
-    
 
     setMainAttribs();
 
@@ -655,6 +651,33 @@ void destroy_switchless(void)
     }
 }
 
+/**
+ * Create threads to SET and GET keys in kissdb from within enclave.
+ */
+void run_kissdb()
+{
+    //ecall_create_enclave_isolate(global_eid);
+    /**
+     * Read/Write n kv pairs in paldb with m threads
+     * PYuhala
+     */
+
+    int numKeys = 10000;
+    int numWriters = 1;
+    int numReaders = 1;
+    write_keys(numKeys, numWriters);
+    bool test = (numReaders == numWriters) || ((numReaders != numWriters) && (numWriters == 1));
+
+    return;
+    /**
+     * pyuhala: this prevents read errors in kissdb (eg readers reading from a non-existent file).
+     *  Still to fix the issue
+     */
+    assertm(test, "num of reader threads should be = num of writer threads or have only 1 writer thread ");
+    read_keys(numKeys, numReaders);
+
+    //ecall_kissdb_test(global_eid);
+}
 /* Application entry */
 int SGX_CDECL main(int argc, char *argv[])
 {
@@ -695,35 +718,14 @@ int SGX_CDECL main(int argc, char *argv[])
         return -1;
     }
     printf("Enclave initialized\n");
-
     int id = global_eid;
 
-   
+    ecall_test(global_eid);
 
-    //ecall_create_enclave_isolate(global_eid);
-    /**
-     * Read/Write n kv pairs in paldb with m threads
-     * PYuhala
-     */
-
-    int numKeys = 10000;
-    int numWriters = 1;
-    int numReaders = 1;
-    write_keys(numKeys, numWriters);
-    bool test = (numReaders == numWriters) || ((numReaders != numWriters) && (numWriters == 1));
-
-    return 0;
-    /**
-     * pyuhala: this prevents read errors in kissdb (eg readers reading from a non-existent file).
-     *  Still to fix the issue
-     */
-    assertm(test, "num of reader threads should be = num of writer threads or have only 1 writer thread ");
-    read_keys(numKeys, numReaders);
-
-    //ecall_kissdb_test(global_eid);
-
+    //run_kissdb();
     showOcallLog(10);
 
+    
     return 0;
 
     /*  if (argc > 1)

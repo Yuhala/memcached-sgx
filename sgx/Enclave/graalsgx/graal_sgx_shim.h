@@ -191,8 +191,6 @@ extern "C"
     int fseeko(SGX_FILE file, off_t offset, int whence);
     off_t ftello(SGX_FILE file);
 
-
-
     ssize_t read(int fd, void *buf, size_t count);
     ssize_t write(int fd, const void *buf, size_t count);
     int sprintf(char *str, const char *format, ...);
@@ -200,10 +198,18 @@ extern "C"
     char *strcpy(char *dest, const char *src);
     char *strcat(char *dest, const char *src);
 
+    int getchar(void);
+    
+
     //net
     int socket(int domain, int type, int protocol);
     int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
     int inet_pton(int af, const char *src, void *dst);
+
+    uint32_t htonl(uint32_t hostlong);
+    uint16_t htons(uint16_t hostshort);
+    uint32_t ntohl(uint32_t netlong);
+    uint16_t ntohs(uint16_t netshort);
 
     //thread
     int pthread_create(pthread_t *thread, GRAAL_SGX_PTHREAD_ATTR attr, void *(*start_routine)(void *), void *arg);

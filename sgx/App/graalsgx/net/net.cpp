@@ -17,6 +17,7 @@
 #include <signal.h>
 #include <time.h>
 #include "ocall_logger.h"
+#include <netinet/in.h>
 
 #include "Enclave_u.h"
 
@@ -224,4 +225,25 @@ ssize_t ocall_send(int sockfd, const void *buf, size_t len, int flags)
 {
     log_ocall(__func__);
     return send(sockfd, buf, len, flags);
+}
+
+uint32_t ocall_htonl(uint32_t hostlong)
+{
+    log_ocall(__func__);
+    return htonl(hostlong);
+}
+uint16_t ocall_htons(uint16_t hostshort)
+{
+    log_ocall(__func__);
+    return htons(hostshort);
+}
+uint32_t ocall_ntohl(uint32_t netlong)
+{
+    log_ocall(__func__);
+    return ntohl(netlong);
+}
+uint16_t ocall_ntohs(uint16_t netshort)
+{
+    log_ocall(__func__);
+    return ntohs(netshort);
 }

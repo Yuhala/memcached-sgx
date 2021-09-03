@@ -233,3 +233,33 @@ ssize_t send(int sockfd, const void *buf, size_t len, int flags)
     ocall_send(&ret, sockfd, buf, len, flags);
     return ret;
 }
+
+uint32_t htonl(uint32_t hostlong)
+{
+    GRAAL_SGX_INFO();
+    uint32_t ret;
+    ocall_htonl(&ret, hostlong);
+    return ret;
+}
+uint16_t htons(uint16_t hostshort)
+{
+    GRAAL_SGX_INFO();
+    uint16_t ret;
+    ocall_htons(&ret, hostshort);
+    return ret;
+}
+uint32_t ntohl(uint32_t netlong)
+{
+    GRAAL_SGX_INFO();
+    uint32_t ret;
+    ocall_ntohl(&ret, netlong);
+    return ret;
+}
+
+uint16_t ntohs(uint16_t netshort)
+{
+    GRAAL_SGX_INFO();
+    uint16_t ret;
+    ocall_ntohs(&ret, netshort);
+    return ret;
+}
