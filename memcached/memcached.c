@@ -900,7 +900,7 @@ conn *conn_new(const int sfd, enum conn_states init_state,
 
 void conn_release_items(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c != NULL);
 
     if (c->item)
@@ -944,7 +944,7 @@ void conn_release_items(conn *c)
 
 static void conn_cleanup(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c != NULL);
 
     conn_release_items(c);
@@ -967,7 +967,7 @@ static void conn_cleanup(conn *c)
  */
 void conn_free(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     if (c)
     {
         assert(c != NULL);
@@ -988,7 +988,7 @@ void conn_free(conn *c)
 
 static void conn_close(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c != NULL);
 
     /* delete the event, the socket and the conn */
@@ -1032,7 +1032,7 @@ static void conn_close(conn *c)
 // Must be called with all worker threads hung or in the process of closing.
 void conn_close_all(void)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     int i;
     for (i = 0; i < max_fds; i++)
     {
@@ -1048,7 +1048,7 @@ void conn_close_all(void)
  */
 static const char *state_text(enum conn_states state)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     const char *const statenames[] = {"conn_listening",
                                       "conn_new_cmd",
                                       "conn_waiting",
@@ -1072,7 +1072,7 @@ static const char *state_text(enum conn_states state)
  */
 void conn_set_state(conn *c, enum conn_states state)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c != NULL);
     assert(state >= conn_listening && state < conn_max_state);
 
@@ -1098,7 +1098,7 @@ void conn_set_state(conn *c, enum conn_states state)
  */
 void resp_reset(mc_resp *resp)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     if (resp->item)
     {
         item_remove(resp->item);
@@ -1119,7 +1119,7 @@ void resp_reset(mc_resp *resp)
 
 void resp_add_iov(mc_resp *resp, const void *buf, int len)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(resp->iovcnt < MC_RESP_IOVCOUNT);
     int x = resp->iovcnt;
     resp->iov[x].iov_base = (void *)buf;
@@ -1133,7 +1133,7 @@ void resp_add_iov(mc_resp *resp, const void *buf, int len)
 // API should be.
 void resp_add_chunked_iov(mc_resp *resp, const void *buf, int len)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     resp->chunked_data_iov = resp->iovcnt;
     resp->chunked_total = len;
     resp_add_iov(resp, buf, len);
@@ -1146,7 +1146,7 @@ void resp_add_chunked_iov(mc_resp *resp, const void *buf, int len)
 // Fancy bit twiddling tricks are avoided to help keep this straightforward.
 static mc_resp *resp_allocate(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     LIBEVENT_THREAD *th = c->thread;
     mc_resp *resp = NULL;
     mc_resp_bundle *b = th->open_bundle;
@@ -1217,7 +1217,7 @@ static mc_resp *resp_allocate(conn *c)
 
 static void resp_free(conn *c, mc_resp *resp)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     LIBEVENT_THREAD *th = c->thread;
     mc_resp_bundle *b = resp->bundle;
 
@@ -1277,7 +1277,7 @@ static void resp_free(conn *c, mc_resp *resp)
 
 bool resp_start(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     mc_resp *resp = resp_allocate(c);
     if (!resp)
     {
@@ -1326,7 +1326,7 @@ bool resp_start(conn *c)
 // returns next response in chain.
 mc_resp *resp_finish(conn *c, mc_resp *resp)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     mc_resp *next = resp->next;
     if (resp->item)
     {
@@ -1364,13 +1364,13 @@ mc_resp *resp_finish(conn *c, mc_resp *resp)
 // tells if connection has a depth of response objects to process.
 bool resp_has_stack(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     return c->resp_head->next != NULL ? true : false;
 }
 
 void out_string(conn *c, const char *str)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     size_t len;
     assert(c != NULL);
     mc_resp *resp = c->resp;
@@ -1418,7 +1418,7 @@ void out_string(conn *c, const char *str)
 // protocol level errors.
 void out_errstring(conn *c, const char *str)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     c->noreply = false;
     out_string(c, str);
 }
@@ -1429,7 +1429,7 @@ void out_errstring(conn *c, const char *str)
  */
 void out_of_memory(conn *c, char *ascii_error)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     const static char error_prefix[] = "SERVER_ERROR ";
     const static int error_prefix_len = sizeof(error_prefix) - 1;
 
@@ -1452,7 +1452,7 @@ static void append_bin_stats(const char *key, const uint16_t klen,
                              const char *val, const uint32_t vlen,
                              conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     char *buf = c->stats.buffer + c->stats.offset;
     uint32_t bodylen = klen + vlen;
     protocol_binary_response_header header = {
@@ -1484,7 +1484,7 @@ static void append_ascii_stats(const char *key, const uint16_t klen,
                                const char *val, const uint32_t vlen,
                                conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     char *pos = c->stats.buffer + c->stats.offset;
     uint32_t nbytes = 0;
     int remaining = c->stats.size - c->stats.offset;
@@ -1508,7 +1508,7 @@ static void append_ascii_stats(const char *key, const uint16_t klen,
 
 static bool grow_stats_buf(conn *c, size_t needed)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     size_t nsize = c->stats.size;
     size_t available = nsize - c->stats.offset;
     bool rv = true;
@@ -1551,7 +1551,7 @@ void append_stats(const char *key, const uint16_t klen,
                   const char *val, const uint32_t vlen,
                   const void *cookie)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     /* value without a key is invalid */
     if (klen == 0 && vlen > 0)
     {
@@ -1584,7 +1584,7 @@ void append_stats(const char *key, const uint16_t klen,
 
 static void reset_cmd_handler(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     c->cmd = -1;
     c->substate = bin_no_state;
     if (c->item != NULL)
@@ -1618,7 +1618,7 @@ static void reset_cmd_handler(conn *c)
 
 static void complete_nread(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c != NULL);
     assert(c->protocol == ascii_prot || c->protocol == binary_prot);
 
@@ -1636,7 +1636,7 @@ static void complete_nread(conn *c)
 /* This should be part of item.c */
 static int _store_item_copy_chunks(item *d_it, item *s_it, const int len)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     item_chunk *dch = (item_chunk *)ITEM_schunk(d_it);
     /* Advance dch until we find free space */
     while (dch->size == dch->used)
@@ -1728,7 +1728,7 @@ static int _store_item_copy_chunks(item *d_it, item *s_it, const int len)
 
 static int _store_item_copy_data(int comm, item *old_it, item *new_it, item *add_it)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     if (comm == NREAD_APPEND)
     {
         if (new_it->it_flags & ITEM_CHUNKED)
@@ -1773,7 +1773,7 @@ static int _store_item_copy_data(int comm, item *old_it, item *new_it, item *add
  */
 enum store_item_type do_store_item(item *it, int comm, conn *c, const uint32_t hv)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     char *key = ITEM_key(it);
     item *old_it = do_item_get(key, it->nkey, hv, c, DONT_UPDATE);
     enum store_item_type stored = NOT_STORED;
@@ -1972,7 +1972,7 @@ enum store_item_type do_store_item(item *it, int comm, conn *c, const uint32_t h
 /* set up a connection to write a buffer then free it, used for stats */
 void write_and_free(conn *c, char *buf, int bytes)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     if (buf)
     {
         mc_resp *resp = c->resp;
@@ -1989,7 +1989,7 @@ void write_and_free(conn *c, char *buf, int bytes)
 void append_stat(const char *name, ADD_STAT add_stats, conn *c,
                  const char *fmt, ...)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     char val_str[STAT_VAL_LEN];
     int vlen;
     va_list ap;
@@ -2009,7 +2009,7 @@ void append_stat(const char *name, ADD_STAT add_stats, conn *c,
 /* return server specific stats only */
 void server_stats(ADD_STAT add_stats, conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     pid_t pid = getpid();
     rel_time_t now = current_time;
 
@@ -2246,7 +2246,7 @@ static int nz_strcmp(int nzlength, const char *nz, const char *z)
 
 bool get_stats(const char *stat_type, int nkey, ADD_STAT add_stats, void *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     bool ret = true;
 
     if (add_stats != NULL)
@@ -2298,7 +2298,7 @@ bool get_stats(const char *stat_type, int nkey, ADD_STAT add_stats, void *c)
 static inline void get_conn_text(const conn *c, const int af,
                                  char *addr, struct sockaddr *sock_addr)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     char addr_text[MAXPATHLEN];
     addr_text[0] = '\0';
     const char *protoname = "?";
@@ -2382,7 +2382,7 @@ static inline void get_conn_text(const conn *c, const int af,
 
 static void conn_to_str(const conn *c, char *addr, char *svr_addr)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     if (!c)
     {
         strcpy(addr, "<null>");
@@ -2425,7 +2425,7 @@ static void conn_to_str(const conn *c, char *addr, char *svr_addr)
 
 void process_stats_conns(ADD_STAT add_stats, void *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     int i;
     char key_str[STAT_KEY_LEN];
     char val_str[STAT_VAL_LEN];
@@ -2471,7 +2471,7 @@ void process_stats_conns(ADD_STAT add_stats, void *c)
 #define IT_REFCOUNT_LIMIT 60000
 item *limited_get(char *key, size_t nkey, conn *c, uint32_t exptime, bool should_touch, bool do_update, bool *overflow)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     item *it;
     if (should_touch)
     {
@@ -2500,7 +2500,7 @@ item *limited_get(char *key, size_t nkey, conn *c, uint32_t exptime, bool should
 // items.c.
 item *limited_get_locked(char *key, size_t nkey, conn *c, bool do_update, uint32_t *hv, bool *overflow)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     item *it;
     it = item_get_locked(key, nkey, c, do_update, hv);
     if (it && it->refcount > IT_REFCOUNT_LIMIT)
@@ -2534,7 +2534,7 @@ enum delta_result_type do_add_delta(conn *c, const char *key, const size_t nkey,
                                     const uint32_t hv,
                                     item **it_ret)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     char *ptr;
     uint64_t value;
     int res;
@@ -2670,7 +2670,7 @@ enum delta_result_type do_add_delta(conn *c, const char *key, const size_t nkey,
 
 static int try_read_command_negotiate(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c->protocol == negotiating_prot);
     assert(c != NULL);
     assert(c->rcurr <= (c->rbuf + c->rsize));
@@ -2699,7 +2699,7 @@ static int try_read_command_negotiate(conn *c)
 
 static int try_read_command_udp(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c != NULL);
     assert(c->rcurr <= (c->rbuf + c->rsize));
     assert(c->rbytes > 0);
@@ -2721,7 +2721,7 @@ static int try_read_command_udp(conn *c)
  */
 static enum try_read_result try_read_udp(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     int res;
 
     assert(c != NULL);
@@ -2771,7 +2771,7 @@ static enum try_read_result try_read_udp(conn *c)
  */
 static enum try_read_result try_read_network(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     enum try_read_result gotdata = READ_NO_DATA_RECEIVED;
     int res;
     int num_allocs = 0;
@@ -2850,7 +2850,7 @@ static enum try_read_result try_read_network(conn *c)
 
 static bool update_event(conn *c, const int new_flags)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c != NULL);
 
     struct event_base *base = c->event.ev_base;
@@ -2871,7 +2871,7 @@ static bool update_event(conn *c, const int new_flags)
  */
 void do_accept_new_conns(const bool do_accept)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     conn *next;
 
     for (next = listen_conn; next; next = next->next)
@@ -2922,7 +2922,7 @@ void do_accept_new_conns(const bool do_accept)
 #define TRANSMIT_ALL_RESP false
 static int _transmit_pre(conn *c, struct iovec *iovs, int iovused, bool one_resp)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     mc_resp *resp = c->resp_head;
     while (resp && iovused + resp->iovcnt < IOV_MAX - 1)
     {
@@ -3007,7 +3007,7 @@ static int _transmit_pre(conn *c, struct iovec *iovs, int iovused, bool one_resp
  */
 static void _transmit_post(conn *c, ssize_t res)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     // We've written some of the data. Remove the completed
     // responses from the list of pending writes.
     mc_resp *resp = c->resp_head;
@@ -3079,7 +3079,7 @@ static void _transmit_post(conn *c, ssize_t res)
  */
 static enum transmit_result transmit(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c != NULL);
     struct iovec iovs[IOV_MAX];
     struct msghdr msg;
@@ -3143,7 +3143,7 @@ static enum transmit_result transmit(conn *c)
 
 static void build_udp_header(unsigned char *hdr, mc_resp *resp)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     // We need to communicate the total number of packets
     // If this isn't set, it's the first time this response is building a udp
     // header, so "tosend" must be static.
@@ -3189,7 +3189,7 @@ static void build_udp_header(unsigned char *hdr, mc_resp *resp)
  */
 static enum transmit_result transmit_udp(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     assert(c != NULL);
     struct iovec iovs[IOV_MAX];
     struct msghdr msg;
@@ -3304,7 +3304,7 @@ static enum transmit_result transmit_udp(conn *c)
  */
 static int read_into_chunked_item(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     int total = 0;
     int res;
     assert(c->rcurr != c->ritem);
@@ -3402,7 +3402,7 @@ static int read_into_chunked_item(conn *c)
 
 static void drive_machine(conn *c)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     bool stop = false;
     int sfd;
     socklen_t addrlen;
@@ -3911,7 +3911,7 @@ static void drive_machine(conn *c)
 
 void event_handler(const evutil_socket_t fd, const short which, void *arg)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     conn *c;
 
     c = (conn *)arg;
@@ -3936,7 +3936,7 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
 
 static int new_socket(struct addrinfo *ai)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     int sfd;
     int flags;
 
@@ -3960,7 +3960,7 @@ static int new_socket(struct addrinfo *ai)
  */
 static void maximize_sndbuf(const int sfd)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     socklen_t intsize = sizeof(int);
     int last_good = 0;
     int min, max, avg;
@@ -4015,7 +4015,7 @@ static int server_socket(const char *interface,
                          enum network_transport transport,
                          FILE *portnumber_file, bool ssl_enabled)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     int sfd;
     struct linger ling = {0, 0};
     struct addrinfo *ai;
@@ -4217,7 +4217,7 @@ static int server_socket(const char *interface,
 static int server_sockets(int port, enum network_transport transport,
                           FILE *portnumber_file)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     bool ssl_enabled = false;
 
 #ifdef TLS
@@ -4316,7 +4316,7 @@ static int server_sockets(int port, enum network_transport transport,
 #ifndef DISABLE_UNIX_SOCKET
 static int new_socket_unix(void)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     int sfd;
     int flags;
 
@@ -4338,7 +4338,7 @@ static int new_socket_unix(void)
 
 static int server_socket_unix(const char *path, int access_mask)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     int sfd;
     struct linger ling = {0, 0};
     struct sockaddr_un addr;
@@ -4510,7 +4510,7 @@ static void verify_default(const char *param, bool condition)
 
 static void usage(void)
 {
-    
+
     printf(PACKAGE " " VERSION "\n");
     printf("-p, --port=<num>          TCP port to listen on (default: %d)\n"
            "-U, --udp-port=<num>      UDP port to listen on (default: %d, off)\n",
@@ -4757,7 +4757,7 @@ static void usage_license(void)
 
 static void save_pid(const char *pid_file)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     FILE *fp;
     if (access(pid_file, F_OK) == 0)
     {
@@ -4805,7 +4805,7 @@ static void save_pid(const char *pid_file)
 
 static void remove_pidfile(const char *pid_file)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     if (pid_file == NULL)
         return;
 
@@ -4936,7 +4936,7 @@ static bool sanitycheck(void)
 
 static bool _parse_slab_sizes(char *s, uint32_t *slab_sizes)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     char *b = NULL;
     uint32_t size = 0;
     int i = 0;
@@ -4996,7 +4996,7 @@ struct _mc_meta_data
 // the lost time after restart.
 static int _mc_meta_save_cb(const char *tag, void *ctx, void *data)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     struct _mc_meta_data *meta = (struct _mc_meta_data *)data;
 
     // Settings to remember.
@@ -5062,7 +5062,7 @@ static int _mc_meta_save_cb(const char *tag, void *ctx, void *data)
 // We also re-load important runtime information.
 static int _mc_meta_load_cb(const char *tag, void *ctx, void *data)
 {
-     log_routine(__func__);
+    log_routine(__func__);
     struct _mc_meta_data *meta = (struct _mc_meta_data *)data;
     char *key;
     char *val;
@@ -6288,28 +6288,12 @@ int main(int argc, char **argv)
         }
     }
 
-    if (settings.num_napi_ids > settings.num_threads)
-    {
-        fprintf(stderr, "Number of napi_ids(%d) cannot be greater than number of threads(%d)\n",
-                settings.num_napi_ids, settings.num_threads);
-        exit(EX_USAGE);
-    }
 
-    if (settings.item_size_max < ITEM_SIZE_MAX_LOWER_LIMIT)
-    {
-        fprintf(stderr, "Item max size cannot be less than 1024 bytes.\n");
-        exit(EX_USAGE);
-    }
-    if (settings.item_size_max > (settings.maxbytes / 2))
-    {
-        fprintf(stderr, "Cannot set item size limit higher than 1/2 of memory max.\n");
-        exit(EX_USAGE);
-    }
-    if (settings.item_size_max > (ITEM_SIZE_MAX_UPPER_LIMIT))
-    {
-        fprintf(stderr, "Cannot set item size limit higher than a gigabyte.\n");
-        exit(EX_USAGE);
-    }
+
+
+
+   
+   
     if (settings.item_size_max > 1024 * 1024)
     {
         if (!slab_chunk_size_changed)
@@ -6319,26 +6303,8 @@ int main(int argc, char **argv)
         }
     }
 
-    if (settings.slab_chunk_size_max > settings.item_size_max)
-    {
-        fprintf(stderr, "slab_chunk_max (bytes: %d) cannot be larger than -I (item_size_max %d)\n",
-                settings.slab_chunk_size_max, settings.item_size_max);
-        exit(EX_USAGE);
-    }
-
-    if (settings.item_size_max % settings.slab_chunk_size_max != 0)
-    {
-        fprintf(stderr, "-I (item_size_max: %d) must be evenly divisible by slab_chunk_max (bytes: %d)\n",
-                settings.item_size_max, settings.slab_chunk_size_max);
-        exit(EX_USAGE);
-    }
-
-    if (settings.slab_page_size % settings.slab_chunk_size_max != 0)
-    {
-        fprintf(stderr, "slab_chunk_max (bytes: %d) must divide evenly into %d (slab_page_size)\n",
-                settings.slab_chunk_size_max, settings.slab_page_size);
-        exit(EX_USAGE);
-    }
+   
+    
 #ifdef EXTSTORE
     switch (storage_check_config(storage_cf))
     {
@@ -6380,18 +6346,7 @@ int main(int argc, char **argv)
         meta->slab_config = "1.25";
     }
 
-    if (settings.hot_lru_pct + settings.warm_lru_pct > 80)
-    {
-        fprintf(stderr, "hot_lru_pct + warm_lru_pct cannot be more than 80%% combined\n");
-        exit(EX_USAGE);
-    }
-
-    if (settings.temp_lru && !start_lru_maintainer)
-    {
-        fprintf(stderr, "temporary_ttl requires lru_maintainer to be enabled\n");
-        exit(EX_USAGE);
-    }
-
+   
     if (hash_init(hash_type) != 0)
     {
         fprintf(stderr, "Failed to initialize hash_algorithm!\n");
@@ -6411,27 +6366,7 @@ int main(int argc, char **argv)
         settings.num_threads_per_udp = settings.num_threads;
     }
 
-    if (settings.sasl)
-    {
-        if (!protocol_specified)
-        {
-            settings.binding_protocol = binary_prot;
-        }
-        else
-        {
-            if (settings.binding_protocol != binary_prot)
-            {
-                fprintf(stderr, "ERROR: You cannot allow the ASCII protocol while using SASL.\n");
-                exit(EX_USAGE);
-            }
-        }
-
-        if (settings.udpport)
-        {
-            fprintf(stderr, "ERROR: Cannot enable UDP while using binary SASL authentication.\n");
-            exit(EX_USAGE);
-        }
-    }
+   
 
     if (settings.auth_file)
     {
@@ -6454,24 +6389,7 @@ int main(int argc, char **argv)
         settings.port = settings.udpport;
     }
 
-#ifdef TLS
-    /*
-     * Setup SSL if enabled
-     */
-    if (settings.ssl_enabled)
-    {
-        if (!settings.port)
-        {
-            fprintf(stderr, "ERROR: You cannot enable SSL without a TCP port.\n");
-            exit(EX_USAGE);
-        }
-        // openssl init methods.
-        SSL_load_error_strings();
-        SSLeay_add_ssl_algorithms();
-        // Initiate the SSL context.
-        ssl_init();
-    }
-#endif
+
 
     if (maxcore != 0)
     {
@@ -6567,41 +6485,8 @@ int main(int argc, char **argv)
         }
     }
 
-    /* Initialize Sasl if -S was specified */
-    if (settings.sasl)
-    {
-        init_sasl();
-    }
-
-    /* daemonize if requested */
-    /* if we want to ensure our ability to dump core, don't chdir to / */
-    if (do_daemonize)
-    {
-        if (signal(SIGHUP, SIG_IGN) == SIG_ERR)
-        {
-            perror("Failed to ignore SIGHUP");
-        }
-        if (daemonize(maxcore, settings.verbose) == -1)
-        {
-            fprintf(stderr, "failed to daemon() in order to daemonize\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    /* lock paged memory if needed */
-    if (lock_memory)
-    {
-#ifdef HAVE_MLOCKALL
-        int res = mlockall(MCL_CURRENT | MCL_FUTURE);
-        if (res != 0)
-        {
-            fprintf(stderr, "warning: -k invalid, mlockall() failed: %s\n",
-                    strerror(errno));
-        }
-#else
-        fprintf(stderr, "warning: -k invalid, mlockall() not supported on this platform.  proceeding without.\n");
-#endif
-    }
+    
+   
 
     /* initialize main thread libevent instance */
 #if defined(LIBEVENT_VERSION_NUMBER) && LIBEVENT_VERSION_NUMBER >= 0x02000101
@@ -6824,12 +6709,14 @@ int main(int argc, char **argv)
     if (settings.socketpath == NULL)
     {
         const char *portnumber_filename = getenv("MEMCACHED_PORT_FILENAME");
+        printf("Portnumber file: %c\n", portnumber_filename);
         char *temp_portnumber_filename = NULL;
         size_t len;
         FILE *portnumber_file = NULL;
 
         if (portnumber_filename != NULL)
         {
+            
             len = strlen(portnumber_filename) + 4 + 1;
             temp_portnumber_filename = malloc(len);
             snprintf(temp_portnumber_filename,
@@ -6844,6 +6731,9 @@ int main(int argc, char **argv)
             }
         }
 
+        if(portnumber_file == NULL){
+            printf("Portnumber file is NULL\n");
+        }
         errno = 0;
         if (settings.port && server_sockets(settings.port, tcp_transport,
                                             portnumber_file))
