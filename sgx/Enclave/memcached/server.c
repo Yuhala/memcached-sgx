@@ -5,15 +5,18 @@
  */
 
 #include <stdio.h>
-#include <netdb.h>
+#include <sgx/netdb.h>
 #include <sgx/netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sgx/sys/socket.h>
 #include <sgx/sys/types.h>
+
+#include "Enclave.h"
+
 #define MAX 80
-#define PORT 8000
-#define SA struct sockaddr|
+#define PORT 8001
+#define SA struct sockaddr
 
 // Function designed for chat between client and server.
 void func(int sockfd)

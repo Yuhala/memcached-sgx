@@ -16,6 +16,8 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+typedef int  __pid_t;
+
 #if !defined _SIGNAL_H && !defined __need_siginfo_t \
     && !defined __need_sigevent_t
 # error "Never include this file directly.  Use <signal.h> instead"
