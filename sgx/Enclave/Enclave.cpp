@@ -45,6 +45,7 @@
 #include "graal_sgx_shim_switchless.h"
 
 #include "memcached/test.h"
+#include "memcached/memcached.h"
 
 /* Global variables */
 sgx_enclave_id_t global_eid;
@@ -78,7 +79,8 @@ void writeKissdb(int n, int storeId);
 void ecall_test()
 {
     printf("ecall test >>>>>>>>> \n");    
-    start_server();
+    //start_server();
+    memcached_init();
    
 }
 

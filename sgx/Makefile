@@ -126,7 +126,8 @@ Memcached_Objs_Out := $(Memcached_C_Files_Out:.c=.o)
 Memcached_Libs := -lpthread -lm -lssl -lcrypto -levent
 
 # Memcached include paths
-Memcached_Inc_Paths := -I$(Memcached_Src_In) -IEnclave -IEnclave/graalsgx -IEnclave/graalsgx/include
+Memcached_Inc_Paths := -I$(Memcached_Src_In) -IEnclave -IEnclave/graalsgx -IEnclave/graalsgx/include \
+-I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
 
 
 
@@ -342,4 +343,6 @@ $(Signed_Enclave_Name): $(Enclave_Name)
 .PHONY: clean
 
 clean:
-	@rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.*
+	@rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) \
+	$(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.* \
+	$(Memcached_Objs_In) $(Memcached_Objs_Out)
