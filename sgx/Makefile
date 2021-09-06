@@ -126,7 +126,7 @@ Memcached_Objs_Out := $(Memcached_C_Files_Out:.c=.o)
 Memcached_Libs := -lpthread -lm -lssl -lcrypto -levent
 
 # Memcached include paths
-Memcached_Inc_Paths := -I$(Memcached_Src_In) -IEnclave -IEnclave/graalsgx -IEnclave/graalsgx/include
+Memcached_Inc_Paths := -I$(Memcached_Src_In) 
 
 
 
@@ -179,9 +179,9 @@ Crypto_Library_Name := sgx_tcrypto
 
 
 Enclave_Cpp_Files := Enclave/Enclave.cpp $(GraalSGX_Cpp_Files_In)
-Enclave_Include_Paths := -IInclude -IInclude/in -IEnclave $(Graal_Include_Path) -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
+Enclave_Include_Paths := -IInclude -IEnclave $(Graal_Include_Path) -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
 
-Enclave_C_Flags := $(Enclave_Include_Paths) -nostdinc -fvisibility=hidden -fpie -ffunction-sections -fdata-sections -fno-stack-protector -fpermissive
+Enclave_C_Flags := $(Enclave_Include_Paths) -nostdinc -fvisibility=hidden -fpie -ffunction-sections -fdata-sections -fno-stack-protector 
 CC_BELOW_4_9 := $(shell expr "`$(CC) -dumpversion`" \< "4.9")
 ifeq ($(CC_BELOW_4_9), 1)
 	#Enclave_C_Flags += -fstack-protector
@@ -189,7 +189,7 @@ else
 	#Enclave_C_Flags += -fstack-protector-strong
 endif
 
-Enclave_Cpp_Flags := $(Enclave_C_Flags) -nostdinc++
+Enclave_Cpp_Flags := $(Enclave_C_Flags) -nostdinc++ -fpermissive
 
 # Enable the security flags
 Enclave_Security_Link_Flags := -Wl,-z,relro,-z,now,-z,noexecstack
@@ -283,7 +283,7 @@ endif
 ####### Build Memcached Objects ######
 
 $(Memcached_Src_In)/%.o: $(Memcached_Src_In)/%.c $(Memcached_Headers_In)
-		$(CC) $(Memcached_Inc_Paths) -c $< -o $@
+		$(CC) $(Memcached_Inc_Paths) $(SGX_COMMON_CFLAGS) $(Enclave_C_Flags) -c $< -o $@
 		@echo "CC <= $<"
 
 $(Memcached_Src_Out)/%.o: $(Memcached_Src_Out)/%.c $(Memcached_Headers_Out)

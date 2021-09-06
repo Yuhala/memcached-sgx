@@ -21,6 +21,9 @@
 
 #ifndef	_SIGNAL_H
 
+//pyuhala: custom definition of void sighandler_t
+typedef void (*sighandler_t)(int);
+
 #if !defined __need_sig_atomic_t && !defined __need_sigset_t
 # define _SIGNAL_H
 #endif
