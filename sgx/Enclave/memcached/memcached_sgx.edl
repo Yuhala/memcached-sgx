@@ -1,0 +1,22 @@
+/*
+ * Created on Mon Sep 06 2021
+ *
+ * Copyright (c) 2021 Peterson Yuhala, IIUN
+ */
+
+enclave {    
+
+    /* Import useful sgx sdk ocalls */
+
+    from "sgx_tstdc.edl" import *;
+    //from "sgx_pthread.edl" import *;
+    //include "struct/sgx_pthread_struct.h"
+
+    trusted {
+        public void ecall_assoc_maintenance_thread();
+
+    };
+    untrusted {
+        
+    };
+};

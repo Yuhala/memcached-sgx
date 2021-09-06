@@ -16,7 +16,7 @@
 #include <struct/sgx_time_struct.h>
 #include <sgx/netinet/in.h>
 #include <event.h>
-#include <netdb.h>
+#include <sgx/netdb.h>
 #include <sgx_thread.h>
 #include <unistd.h>
 #include <assert.h>
@@ -913,8 +913,8 @@ extern "C"
     void conn_worker_readd(conn *c);
     extern int daemonize(int nochdir, int noclose);
 
-#define mutex_lock(x) pthread_mutex_lock(x)
-#define mutex_unlock(x) pthread_mutex_unlock(x)
+#define mutex_lock(x) sgx_thread_mutex_lock(x)
+#define mutex_unlock(x) sgx_thread_mutex_unlock(x)
 
 #include "stats_prefix.h"
 #include "slabs.h"
@@ -968,8 +968,8 @@ extern "C"
 #define refcount_decr(it) --(it->refcount)
     void STATS_LOCK(void);
     void STATS_UNLOCK(void);
-#define THR_STATS_LOCK(c) pthread_mutex_lock(&c->thread->stats.mutex)
-#define THR_STATS_UNLOCK(c) pthread_mutex_unlock(&c->thread->stats.mutex)
+#define THR_STATS_LOCK(c) sgx_thread_mutex_lock(&c->thread->stats.mutex)
+#define THR_STATS_UNLOCK(c) sgx_thread_mutex_unlock(&c->thread->stats.mutex)
     void threadlocal_stats_reset(void);
     void threadlocal_stats_aggregate(struct thread_stats *stats);
     void slab_stats_aggregate(struct thread_stats *stats, struct slab_stats *out);

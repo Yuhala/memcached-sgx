@@ -85,6 +85,12 @@ uid_t getuid()
     return (uid_t)ret;
 }
 
+uid_t geteuid(void){
+    GRAAL_SGX_INFO();
+    int ret;
+    ocall_geteuid(&ret);
+    return (uid_t)ret;
+}
 char *getcwd(char *buf, size_t size)
 {
     GRAAL_SGX_INFO();

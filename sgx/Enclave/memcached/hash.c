@@ -4,14 +4,18 @@
 #include "jenkins_hash.h"
 #include "murmur3_hash.h"
 #define XXH_INLINE_ALL // modifier for xxh3's include below
-#include "xxhash.h"
+//#include "xxhash.h"
 
 #include "Enclave.h"
 
 hash_func hash;
 
 static uint32_t XXH3_hash(const void *key, size_t length) {
-    return (uint32_t)XXH3_64bits(key, length);
+
+    //pyuhala: we won't use this in the enclave; jenkins or murmur enough
+    //for minimal memcached
+    //return (uint32_t)XXH3_64bits(key, length);
+    return 0;
 }
 
 int hash_init(enum hashfunc_type type) {

@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "thread": "cpp"
+        "thread": "cpp",
+        "in.h": "c",
+        "stat.h": "c",
+        "sysexits.h": "c",
+        "memcached.h": "c"
     }
 }

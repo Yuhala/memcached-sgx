@@ -53,6 +53,7 @@ extern "C"
 #endif
 
     int printf(const char *fmt, ...);
+    void log_routine(const char *func);
     void ocall_switchless(struct buffer* switchless_buffer);
     
 

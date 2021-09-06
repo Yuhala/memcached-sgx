@@ -17,6 +17,7 @@ enclave {
     from "graalsgx/net/net.edl" import *;
     from "graalsgx/sys/sys.edl" import *;
     from "graalsgx/thread/thread.edl" import *;
+    from "memcached/memcached_sgx.edl" import *;
     
     //from "graalsgx/edl/graalsgx_ecalls.edl" import *;
     //from "graalsgx/edl/graalsgx_ocalls.edl" import *;

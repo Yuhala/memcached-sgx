@@ -8,6 +8,8 @@
 
 /* See items.c */
 
+#include <sgx_thread.h>
+
 #if defined(__cplusplus)
 extern "C"
 {
@@ -83,7 +85,7 @@ extern "C"
     item *do_item_touch(const char *key, const size_t nkey, uint32_t exptime, const uint32_t hv, conn *c);
     void do_item_bump(conn *c, item *it, const uint32_t hv);
     void item_stats_reset(void);
-    extern pthread_mutex_t lru_locks[POWER_LARGEST];
+    extern sgx_thread_mutex_t lru_locks[POWER_LARGEST];
 
     int start_lru_maintainer_thread(void *arg);
     int stop_lru_maintainer_thread(void);

@@ -6,9 +6,9 @@
 #ifdef EXTSTORE
 #include "slab_automove_extstore.h"
 #endif
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/resource.h>
+#include <sgx/sys/stat.h>
+#include <sgx/sys/socket.h>
+#include <sgx/sys/resource.h>
 #include <struct/sgx_fcntl_struct.h>
 #include <sgx/netinet/in.h>
 #include <errno.h>

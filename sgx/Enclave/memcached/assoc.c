@@ -149,11 +149,11 @@ static void assoc_expand(void) {
 
 void assoc_start_expand(uint64_t curr_items) {
     //log_routine(__func__);
-    if (pthread_mutex_trylock(&maintenance_lock) == 0) {
+    if (sgx_thread_mutex_trylock(&maintenance_lock) == 0) {
         if (curr_items > (hashsize(hashpower) * 3) / 2 && hashpower < HASHPOWER_MAX) {
-            pthread_cond_signal(&maintenance_cond);
+            sgx_thread_cond_signal(&maintenance_cond);
         }
-        pthread_mutex_unlock(&maintenance_lock);
+      sgx_thread_mutex_unlock(&maintenance_lock);
     }
 }
 
@@ -255,7 +255,7 @@ static void *assoc_maintenance_thread(void *arg) {
 
         if (!expanding) {
             /* We are done expanding.. just wait for next invocation */
-            pthread_cond_wait(&maintenance_cond, &maintenance_lock);
+            sgx_thread_cond_wait(&maintenance_cond, &maintenance_lock);
             /* assoc_expand() swaps out the hash table entirely, so we need
              * all threads to not hold any references related to the hash
              * table while this happens.
@@ -299,7 +299,7 @@ void stop_assoc_maintenance_thread() {
     log_routine(__func__);
     mutex_lock(&maintenance_lock);
     do_run_maintenance_thread = 0;
-    pthread_cond_signal(&maintenance_cond);
+    sgx_thread_cond_signal(&maintenance_cond);
     mutex_unlock(&maintenance_lock);
 
     /* Wait for the maintenance thread to stop */

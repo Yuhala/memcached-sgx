@@ -96,7 +96,8 @@ extern "C"
 
     ulong crc32(ulong crc, const Byte *buf, uint len);
     uid_t getuid(void);
-
+    uid_t geteuid(void);
+    
     //cpuid: for libchelper.a
     unsigned int get_cpuid_max(unsigned int ext, unsigned int *sig);
     int get_cpuid_count(unsigned int leaf, unsigned int subleaf, unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx);

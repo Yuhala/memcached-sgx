@@ -29,6 +29,7 @@ enclave {
 
         long ocall_sysconf(int name);
         int ocall_getuid();                   
+        int ocall_geteuid(); 
 
         void ocall_getcwd([out,size=1,count=len]char *buf, size_t len);
         void ocall_getpwuid(uid_t uid, [out]struct passwd *ret);

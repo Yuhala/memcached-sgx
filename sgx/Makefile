@@ -287,7 +287,7 @@ $(Memcached_Src_In)/%.o: $(Memcached_Src_In)/%.c $(Memcached_Headers_In)
 		@echo "CC <= $<"
 
 $(Memcached_Src_Out)/%.o: $(Memcached_Src_Out)/%.c $(Memcached_Headers_Out)
-		$(CC) -I$(Memcached_Src_Out) -c $< -o $@
+		$(CC) -I$(Memcached_Src_Out) $(SGX_COMMON_CFLAGS) $(App_C_Flags) -c $< -o $@
 		@echo "CC <= $<"
 
 ######## App Objects ########
@@ -342,4 +342,5 @@ $(Signed_Enclave_Name): $(Enclave_Name)
 .PHONY: clean
 
 clean:
-	@rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.*
+	@rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.* \
+	$(Memcached_Objs_In) $(Memcached_Objs_Out)

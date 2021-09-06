@@ -57,6 +57,13 @@ int ocall_getuid()
     return (int)ret;
 }
 
+int ocall_geteuid()
+{
+    log_ocall(__func__);
+    uid_t ret = geteuid();
+    return (int)ret;
+}
+
 void ocall_getcwd(char *buf, size_t size)
 {
     log_ocall(__func__);

@@ -6,11 +6,11 @@
 // end FIXME
 #include <stdlib.h>
 #include <limits.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/uio.h>
-#include <fcntl.h>
+#include <sgx_thread.h>
+#include <sgx/sys/types.h>
+#include <sgx/sys/stat.h>
+#include <sgx/sys/uio.h>
+#include <struct/sgx_fcntl_struct.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
