@@ -27,6 +27,9 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+
+
+
 //pyuhala: added function logging to routines
 
 /* some POSIX systems need the following definition
@@ -5044,6 +5047,7 @@ int main(int argc, char **argv)
     settings_init();
     verify_default("hash_algorithm", hash_type == MURMUR3_HASH);
 #ifdef EXTSTORE
+printf("------------------- EXT STORE enabled------------\n");
     void *storage = NULL;
     void *storage_cf = storage_init_config(&settings);
     bool storage_enabled = false;
@@ -5313,19 +5317,7 @@ int main(int argc, char **argv)
 #endif
     slabs_init(settings.maxbytes, settings.factor, preallocate,
                use_slab_sizes ? slab_sizes : NULL, mem_base, reuse_mem);
-#ifdef EXTSTORE
-    if (storage_enabled)
-    {
-        storage = storage_init(storage_cf);
-        if (storage == NULL)
-        {
-            exit(EXIT_FAILURE);
-        }
-        ext_storage = storage;
-        /* page mover algorithm for extstore needs memory prefilled */
-        prefill = true;
-    }
-#endif
+
 
     if (settings.drop_privileges)
     {
