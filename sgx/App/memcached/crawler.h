@@ -40,7 +40,14 @@ extern "C"
         CRAWLER_ERROR
     };
 
-    int start_item_crawler_thread(void);
+    //int start_item_crawler_thread(void);
+    int sgx_start_item_crawler_thread(void);
+    void *e_item_crawler_thread(void *input);
+    
+
+
+
+
 #define CRAWLER_WAIT true
 #define CRAWLER_NOWAIT false
     int stop_item_crawler_thread(bool wait);

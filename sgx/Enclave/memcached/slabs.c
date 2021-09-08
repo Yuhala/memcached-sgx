@@ -1199,10 +1199,12 @@ static void slab_rebalance_finish(void) {
     }
 }
 
+
+
 /* Slab mover thread.
  * Sits waiting for a condition to jump off and shovel some memory about
  */
-static void *slab_rebalance_thread(void *arg) {
+void *slab_rebalance_thread(void *arg) {
     int was_busy = 0;
     int backoff_timer = 1;
     int backoff_max = 1000;
@@ -1320,16 +1322,7 @@ void slabs_rebalancer_resume(void) {
 static pthread_t rebalance_tid;
 
 int start_slab_maintenance_thread(void) {
-    int ret;
-    slab_rebalance_signal = 0;
-    slab_rebal.slab_start = NULL;
-
-    if ((ret = pthread_create(&rebalance_tid, NULL,
-                              slab_rebalance_thread, NULL)) != 0) {
-        fprintf(stderr, "Can't create rebal thread: %s\n", strerror(ret));
-        return -1;
-    }
-    return 0;
+   //pyuhala: defined outside
 }
 
 /* The maintenance thread is on a sleep/loop cycle, so it should join after a

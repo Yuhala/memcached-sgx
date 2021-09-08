@@ -7,12 +7,25 @@
 #ifndef MEMCACHED_SGX_OUT_H
 #define MEMCACHED_SGX_OUT_H
 
+#include "Enclave_u.h"
+#include "sgx_urts.h"
+#include "my_logger.h"
+
+
+
+/**
+ * External variables
+ */
+extern sgx_enclave_id_t global_eid;
+
+
 #if defined(__cplusplus)
 extern "C"
 {
 #endif
 
-    void start_assoc_maintenance_thread_in();
+
+   
 
 #if defined(__cplusplus)
 }

@@ -55,7 +55,10 @@ unsigned int slabs_available_chunks(unsigned int id, bool *mem_flag, unsigned in
 void slabs_mlock(void);
 void slabs_munlock(void);
 
-int start_slab_maintenance_thread(void);
+int sgx_start_slab_maintenance_thread(void);
+
+
+
 void stop_slab_maintenance_thread(void);
 
 enum reassign_result_type {

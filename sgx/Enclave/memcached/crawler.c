@@ -408,7 +408,7 @@ static void item_crawl_hash(void) {
     return;
 }
 
-static void *item_crawler_thread(void *arg) {
+void *item_crawler_thread(void *arg) {
     int i;
     int crawls_persleep = settings.crawls_persleep;
 

@@ -204,7 +204,7 @@ static volatile int do_run_maintenance_thread = 1;
 #define DEFAULT_HASH_BULK_MOVE 1
 int hash_bulk_move = DEFAULT_HASH_BULK_MOVE;
 
-static void *assoc_maintenance_thread(void *arg) {
+void *assoc_maintenance_thread(void *arg) {
 
     log_routine(__func__);
     mutex_lock(&maintenance_lock);
@@ -276,24 +276,7 @@ static void *assoc_maintenance_thread(void *arg) {
 
 static pthread_t maintenance_tid;
 
-int start_assoc_maintenance_thread() {
-    log_routine(__func__);
-    int ret;
-    char *env = getenv("MEMCACHED_HASH_BULK_MOVE");
-    if (env != NULL) {
-        hash_bulk_move = atoi(env);
-        if (hash_bulk_move == 0) {
-            hash_bulk_move = DEFAULT_HASH_BULK_MOVE;
-        }
-    }
 
-    if ((ret = pthread_create(&maintenance_tid, NULL,
-                              assoc_maintenance_thread, NULL)) != 0) {
-        fprintf(stderr, "Can't create thread: %s\n", strerror(ret));
-        return -1;
-    }
-    return 0;
-}
 
 void stop_assoc_maintenance_thread() {
     log_routine(__func__);

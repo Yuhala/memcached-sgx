@@ -54,6 +54,7 @@ unsigned int slabs_available_chunks(unsigned int id, bool *mem_flag, unsigned in
 
 void slabs_mlock(void);
 void slabs_munlock(void);
+void *slab_rebalance_thread(void *arg);
 
 int start_slab_maintenance_thread(void);
 void stop_slab_maintenance_thread(void);

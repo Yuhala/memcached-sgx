@@ -27,6 +27,7 @@
 
 /* Set to nonzero if you want to enable extstore */
 #define EXTSTORE 1
+#undef EXTSTORE
 
 /* Define to 1 if support accept4 */
 #define HAVE_ACCEPT4 1

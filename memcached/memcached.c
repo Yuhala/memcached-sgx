@@ -5015,7 +5015,7 @@ int main(int argc, char **argv)
     bool protocol_specified = false;
     bool tcp_specified = false;
     bool udp_specified = false;
-    bool start_lru_maintainer = true;
+    bool start_lru_maintainer = false;
     bool start_lru_crawler = true;
     bool start_assoc_maint = true;
     enum hashfunc_type hash_type = MURMUR3_HASH;
@@ -5375,10 +5375,7 @@ printf("------------------- EXT STORE enabled------------\n");
         exit(EXIT_FAILURE);
     }
 
-    if (settings.idle_timeout && start_conn_timeout_thread() == -1)
-    {
-        exit(EXIT_FAILURE);
-    }
+    
 
     /* initialise clock event */
 #if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
