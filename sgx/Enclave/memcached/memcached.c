@@ -5198,6 +5198,11 @@ int main(int argc, char **argv)
             printf("Portnumber file is NULL\n");
         }
         errno = 0;
+
+
+
+
+        
         if (settings.port && server_sockets(settings.port, tcp_transport,
                                             portnumber_file))
         {

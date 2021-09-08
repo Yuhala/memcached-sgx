@@ -159,6 +159,14 @@ int ocall_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
     ret = accept(sockfd, addr, addrlen);
     return ret;
 }
+
+int ocall_accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags)
+{
+    log_ocall(__func__);
+    int ret = 0;
+    ret = accept4(sockfd, addr, addrlen, flags);
+    return ret;
+}
 int ocall_poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
     log_ocall(__func__);
@@ -225,6 +233,17 @@ ssize_t ocall_send(int sockfd, const void *buf, size_t len, int flags)
 {
     log_ocall(__func__);
     return send(sockfd, buf, len, flags);
+}
+
+ssize_t ocall_sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen)
+{
+    log_ocall(__func__);
+    return sendto(sockfd, buf, len, flags, dest_addr, addrlen);
+}
+ssize_t ocall_sendmsg(int sockfd, const struct msghdr *msg, int flags)
+{
+    log_ocall(__func__);
+    return sendmsg(sockfd, msghdr, flags);
 }
 
 uint32_t ocall_htonl(uint32_t hostlong)

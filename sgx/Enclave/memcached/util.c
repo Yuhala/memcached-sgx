@@ -8,9 +8,6 @@
 
 #include "memcached.h"
 
-#include "Enclave.h"
-
-
 static char *uriencode_map[256];
 static char uriencode_str[768];
 

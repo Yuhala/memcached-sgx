@@ -70,9 +70,6 @@
 #include <sys/sysctl.h>
 #endif
 
-
-
-
 /*
  * forward declarations
  */
@@ -145,7 +142,6 @@ enum transmit_result
     TRANSMIT_HARD_ERROR  /** Can't write (c->state is set to conn_closing) */
 };
 
-
 /**
  * Some useful routines
  */
@@ -172,7 +168,6 @@ static bool sanitycheck(void)
     return true;
 }
 
-
 /* Default methods to read from/ write to a socket */
 ssize_t tcp_read(conn *c, void *buf, size_t count)
 {
@@ -194,6 +189,67 @@ ssize_t tcp_write(conn *c, void *buf, size_t count)
     assert(c != NULL);
     return write(c->sfd, buf, count);
 }
+
+static enum transmit_result transmit(conn *c);
+
+/* This reduces the latency without adding lots of extra wiring to be able to
+ * notify the listener thread of when to listen again.
+ * Also, the clock timer could be broken out into its own thread and we
+ * can block the listener via a condition.
+ */
+static volatile bool allow_new_conns = true;
+static int stop_main_loop = NOT_STOP;
+static struct event maxconnsevent;
+static void maxconns_handler(const evutil_socket_t fd, const short which, void *arg)
+{
+    log_routine(__func__);
+    struct timeval t = {.tv_sec = 0, .tv_usec = 10000};
+
+    if (fd == -42 || allow_new_conns == false)
+    {
+        /* reschedule in 10ms if we need to keep polling */
+        evtimer_set(&maxconnsevent, maxconns_handler, 0);
+        event_base_set(main_base, &maxconnsevent);
+        evtimer_add(&maxconnsevent, &t);
+    }
+    else
+    {
+        evtimer_del(&maxconnsevent);
+        accept_new_conns(true);
+    }
+}
+
+/*
+ * given time value that's either unix time or delta from current unix time, return
+ * unix time. Use the fact that delta can't exceed one month (and real time value can't
+ * be that low).
+ */
+rel_time_t realtime(const time_t exptime)
+{
+    log_routine(__func__);
+    /* no. of seconds in 30 days - largest possible delta exptime */
+
+    if (exptime == 0)
+        return 0; /* 0 means never expire */
+
+    if (exptime > REALTIME_MAXDELTA)
+    {
+        /* if item expiration is at/before the server started, give it an
+           expiration time of 1 second after the server started.
+           (because 0 means don't expire).  without this, we'd
+           underflow and wrap around to some large value way in the
+           future, effectively making items expiring in the past
+           really expiring never */
+        if (exptime <= process_started)
+            return (rel_time_t)1;
+        return (rel_time_t)(exptime - process_started);
+    }
+    else
+    {
+        return (rel_time_t)(exptime + current_time);
+    }
+}
+
 
 static void settings_init(void)
 {
@@ -319,6 +375,167 @@ static void conn_init(void)
     }
 }
 
+static int new_socket(struct addrinfo *ai)
+{
+    log_routine(__func__);
+    int sfd;
+    int flags;
+
+    if ((sfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1)
+    {
+        return -1;
+    }
+
+    if ((flags = fcntl(sfd, F_GETFL, 0)) < 0 ||
+        fcntl(sfd, F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        perror("setting O_NONBLOCK");
+        close(sfd);
+        return -1;
+    }
+    return sfd;
+}
+
+/*
+ * Sets a socket's send buffer size to the maximum allowed by the system.
+ */
+static void maximize_sndbuf(const int sfd)
+{
+    log_routine(__func__);
+    socklen_t intsize = sizeof(int);
+    int last_good = 0;
+    int min, max, avg;
+    int old_size;
+
+    /* Start with the default size. */
+#ifdef _WIN32
+    if (getsockopt((SOCKET)sfd, SOL_SOCKET, SO_SNDBUF, (char *)&old_size, &intsize) != 0)
+    {
+#else
+    if (getsockopt(sfd, SOL_SOCKET, SO_SNDBUF, &old_size, &intsize) != 0)
+    {
+#endif /* #ifdef _WIN32 */
+        if (settings.verbose > 0)
+            perror("getsockopt(SO_SNDBUF)");
+        return;
+    }
+
+    /* Binary-search for the real maximum. */
+    min = old_size;
+    max = MAX_SENDBUF_SIZE;
+
+    while (min <= max)
+    {
+        avg = ((unsigned int)(min + max)) / 2;
+        if (setsockopt(sfd, SOL_SOCKET, SO_SNDBUF, (void *)&avg, intsize) == 0)
+        {
+            last_good = avg;
+            min = avg + 1;
+        }
+        else
+        {
+            max = avg - 1;
+        }
+    }
+
+    if (settings.verbose > 1)
+        fprintf(stderr, "<%d send buffer was %d, now %d\n", sfd, old_size, last_good);
+}
+
+#ifndef DISABLE_UNIX_SOCKET
+static int new_socket_unix(void)
+{
+    log_routine(__func__);
+    int sfd;
+    int flags;
+
+    if ((sfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
+    {
+        perror("socket()");
+        return -1;
+    }
+
+    if ((flags = fcntl(sfd, F_GETFL, 0)) < 0 ||
+        fcntl(sfd, F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        perror("setting O_NONBLOCK");
+        close(sfd);
+        return -1;
+    }
+    return sfd;
+}
+
+static int server_socket_unix(const char *path, int access_mask)
+{
+    log_routine(__func__);
+    int sfd;
+    struct linger ling = {0, 0};
+    struct sockaddr_un addr;
+    struct stat tstat;
+    int flags = 1;
+    int old_umask;
+
+    if (!path)
+    {
+        return 1;
+    }
+
+    if ((sfd = new_socket_unix()) == -1)
+    {
+        return 1;
+    }
+
+    /*
+     * Clean up a previous socket file if we left it around
+     */
+    if (lstat(path, &tstat) == 0)
+    {
+        if (S_ISSOCK(tstat.st_mode))
+            unlink(path);
+    }
+
+    setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, (void *)&flags, sizeof(flags));
+    setsockopt(sfd, SOL_SOCKET, SO_KEEPALIVE, (void *)&flags, sizeof(flags));
+    setsockopt(sfd, SOL_SOCKET, SO_LINGER, (void *)&ling, sizeof(ling));
+
+    /*
+     * the memset call clears nonstandard fields in some implementations
+     * that otherwise mess things up.
+     */
+    memset(&addr, 0, sizeof(addr));
+
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+    assert(strcmp(addr.sun_path, path) == 0);
+    old_umask = umask(~(access_mask & 0777));
+    if (bind(sfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+    {
+        perror("bind()");
+        close(sfd);
+        umask(old_umask);
+        return 1;
+    }
+    umask(old_umask);
+    if (listen(sfd, settings.backlog) == -1)
+    {
+        perror("listen()");
+        close(sfd);
+        return 1;
+    }
+    if (!(listen_conn = conn_new(sfd, conn_listening,
+                                 EV_READ | EV_PERSIST, 1,
+                                 local_transport, main_base, NULL)))
+    {
+        fprintf(stderr, "failed to create listening connection\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return 0;
+}
+#else
+#define server_socket_unix(path, access_mask) -1
+#endif /* #ifndef DISABLE_UNIX_SOCKET */
+
 /*
  * We keep the current time of day in a global variable that's updated by a
  * timer event. This saves us a bunch of time() system calls (we really only
@@ -365,8 +582,6 @@ static void clock_handler(const evutil_socket_t fd, const short which, void *arg
 
     //assoc_start_expand(stats_state.curr_items);
 
-
-
     // also, if HUP'ed we need to do some maintenance.
     // for now that's just the authfile reload.
     if (settings.sig_hup)
@@ -410,23 +625,344 @@ static void clock_handler(const evutil_socket_t fd, const short which, void *arg
     }
 }
 
+/**
+ * Create a socket and bind it to a specific port number
+ * @param interface the interface to bind to
+ * @param port the port number to bind to
+ * @param transport the transport protocol (TCP / UDP)
+ * @param portnumber_file A filepointer to write the port numbers to
+ *        when they are successfully added to the list of ports we
+ *        listen on.
+ */
+static int server_socket(const char *interface,
+                         int port,
+                         enum network_transport transport,
+                         FILE *portnumber_file, bool ssl_enabled)
+{
+    log_routine(__func__);
+    int sfd;
+    struct linger ling = {0, 0};
+    struct addrinfo *ai;
+    struct addrinfo *next;
+    struct addrinfo hints = {.ai_flags = AI_PASSIVE,
+                             .ai_family = AF_UNSPEC};
+    char port_buf[NI_MAXSERV];
+    int error;
+    int success = 0;
+    int flags = 1;
 
+    hints.ai_socktype = IS_UDP(transport) ? SOCK_DGRAM : SOCK_STREAM;
 
+    if (port == -1)
+    {
+        port = 0;
+    }
+    snprintf(port_buf, sizeof(port_buf), "%d", port);
+    error = getaddrinfo(interface, port_buf, &hints, &ai);
+    if (error != 0)
+    {
+        if (error != EAI_SYSTEM)
+            fprintf(stderr, "getaddrinfo(): %s\n", gai_strerror(error));
+        else
+            perror("getaddrinfo()");
+        return 1;
+    }
 
+    for (next = ai; next; next = next->ai_next)
+    {
+        conn *listen_conn_add;
+        if ((sfd = new_socket(next)) == -1)
+        {
+            /* getaddrinfo can return "junk" addresses,
+             * we make sure at least one works before erroring.
+             */
+            if (errno == EMFILE)
+            {
+                /* ...unless we're out of fds */
+                perror("server_socket");
+                exit(EX_OSERR);
+            }
+            continue;
+        }
 
+        if (settings.num_napi_ids)
+        {
+            socklen_t len = sizeof(socklen_t);
+            int napi_id;
+            error = getsockopt(sfd, SOL_SOCKET, SO_INCOMING_NAPI_ID, &napi_id, &len);
+            if (error != 0)
+            {
+                fprintf(stderr, "-N <num_napi_ids> option not supported\n");
+                exit(EXIT_FAILURE);
+            }
+        }
 
+#ifdef IPV6_V6ONLY
+        if (next->ai_family == AF_INET6)
+        {
+            error = setsockopt(sfd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&flags, sizeof(flags));
+            if (error != 0)
+            {
+                perror("setsockopt");
+                close(sfd);
+                continue;
+            }
+        }
+#endif
 
+        setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, (void *)&flags, sizeof(flags));
+        if (IS_UDP(transport))
+        {
+            maximize_sndbuf(sfd);
+        }
+        else
+        {
+            error = setsockopt(sfd, SOL_SOCKET, SO_KEEPALIVE, (void *)&flags, sizeof(flags));
+            if (error != 0)
+                perror("setsockopt");
 
+            error = setsockopt(sfd, SOL_SOCKET, SO_LINGER, (void *)&ling, sizeof(ling));
+            if (error != 0)
+                perror("setsockopt");
 
+            error = setsockopt(sfd, IPPROTO_TCP, TCP_NODELAY, (void *)&flags, sizeof(flags));
+            if (error != 0)
+                perror("setsockopt");
+        }
 
+        if (bind(sfd, next->ai_addr, next->ai_addrlen) == -1)
+        {
+            if (errno != EADDRINUSE)
+            {
+                perror("bind()");
+                close(sfd);
+                freeaddrinfo(ai);
+                return 1;
+            }
+            close(sfd);
+            continue;
+        }
+        else
+        {
+            success++;
+            if (!IS_UDP(transport) && listen(sfd, settings.backlog) == -1)
+            {
+                perror("listen()");
+                close(sfd);
+                freeaddrinfo(ai);
+                return 1;
+            }
+            if (portnumber_file != NULL &&
+                (next->ai_addr->sa_family == AF_INET ||
+                 next->ai_addr->sa_family == AF_INET6))
+            {
+                union
+                {
+                    struct sockaddr_in in;
+                    struct sockaddr_in6 in6;
+                } my_sockaddr;
+                socklen_t len = sizeof(my_sockaddr);
+                if (getsockname(sfd, (struct sockaddr *)&my_sockaddr, &len) == 0)
+                {
+                    if (next->ai_addr->sa_family == AF_INET)
+                    {
+                        fprintf(portnumber_file, "%s INET: %u\n",
+                                IS_UDP(transport) ? "UDP" : "TCP",
+                                ntohs(my_sockaddr.in.sin_port));
+                    }
+                    else
+                    {
+                        fprintf(portnumber_file, "%s INET6: %u\n",
+                                IS_UDP(transport) ? "UDP" : "TCP",
+                                ntohs(my_sockaddr.in6.sin6_port));
+                    }
+                }
+            }
+        }
 
+        if (IS_UDP(transport))
+        {
+            int c;
 
+            for (c = 0; c < settings.num_threads_per_udp; c++)
+            {
+                /* Allocate one UDP file descriptor per worker thread;
+                 * this allows "stats conns" to separately list multiple
+                 * parallel UDP requests in progress.
+                 *
+                 * The dispatch code round-robins new connection requests
+                 * among threads, so this is guaranteed to assign one
+                 * FD to each thread.
+                 */
+                int per_thread_fd;
+                if (c == 0)
+                {
+                    per_thread_fd = sfd;
+                }
+                else
+                {
+                    per_thread_fd = dup(sfd);
+                    if (per_thread_fd < 0)
+                    {
+                        perror("Failed to duplicate file descriptor");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                dispatch_conn_new(per_thread_fd, conn_read,
+                                  EV_READ | EV_PERSIST,
+                                  UDP_READ_BUFFER_SIZE, transport, NULL);
+            }
+        }
+        else
+        {
+            if (!(listen_conn_add = conn_new(sfd, conn_listening,
+                                             EV_READ | EV_PERSIST, 1,
+                                             transport, main_base, NULL)))
+            {
+                fprintf(stderr, "failed to create listening connection\n");
+                exit(EXIT_FAILURE);
+            }
+#ifdef TLS
+            listen_conn_add->ssl_enabled = ssl_enabled;
+#else
+            assert(ssl_enabled == false);
+#endif
+            listen_conn_add->next = listen_conn;
+            listen_conn = listen_conn_add;
+        }
+    }
 
+    freeaddrinfo(ai);
 
+    /* Return zero iff we detected no errors in starting up connections */
+    return success == 0;
+}
 
+static int server_sockets(int port, enum network_transport transport,
+                          FILE *portnumber_file)
+{
+    log_routine(__func__);
+    bool ssl_enabled = false;
 
+#ifdef TLS
+    const char *notls = "notls";
+    ssl_enabled = settings.ssl_enabled;
+#endif
 
+    if (settings.inter == NULL)
+    {
+        return server_socket(settings.inter, port, transport, portnumber_file, ssl_enabled);
+    }
+    else
+    {
+        // tokenize them and bind to each one of them..
+        char *b;
+        int ret = 0;
+        char *list = strdup(settings.inter);
 
+        if (list == NULL)
+        {
+            fprintf(stderr, "Failed to allocate memory for parsing server interface string\n");
+            return 1;
+        }
+        for (char *p = strtok_r(list, ";,", &b);
+             p != NULL;
+             p = strtok_r(NULL, ";,", &b))
+        {
+            int the_port = port;
+#ifdef TLS
+            ssl_enabled = settings.ssl_enabled;
+            // "notls" option is valid only when memcached is run with SSL enabled.
+            if (strncmp(p, notls, strlen(notls)) == 0)
+            {
+                if (!settings.ssl_enabled)
+                {
+                    fprintf(stderr, "'notls' option is valid only when SSL is enabled\n");
+                    free(list);
+                    return 1;
+                }
+                ssl_enabled = false;
+                p += strlen(notls) + 1;
+            }
+#endif
+
+            char *h = NULL;
+            if (*p == '[')
+            {
+                // expecting it to be an IPv6 address enclosed in []
+                // i.e. RFC3986 style recommended by RFC5952
+                char *e = strchr(p, ']');
+                if (e == NULL)
+                {
+                    fprintf(stderr, "Invalid IPV6 address: \"%s\"", p);
+                    free(list);
+                    return 1;
+                }
+                h = ++p; // skip the opening '['
+                *e = '\0';
+                p = ++e; // skip the closing ']'
+            }
+
+            char *s = strchr(p, ':');
+            if (s != NULL)
+            {
+                // If no more semicolons - attempt to treat as port number.
+                // Otherwise the only valid option is an unenclosed IPv6 without port, until
+                // of course there was an RFC3986 IPv6 address previously specified -
+                // in such a case there is no good option, will just send it to fail as port number.
+                if (strchr(s + 1, ':') == NULL || h != NULL)
+                {
+                    *s = '\0';
+                    ++s;
+                    if (!safe_strtol(s, &the_port))
+                    {
+                        fprintf(stderr, "Invalid port number: \"%s\"", s);
+                        free(list);
+                        return 1;
+                    }
+                }
+            }
+
+            if (h != NULL)
+                p = h;
+
+            if (strcmp(p, "*") == 0)
+            {
+                p = NULL;
+            }
+            ret |= server_socket(p, the_port, transport, portnumber_file, ssl_enabled);
+        }
+        free(list);
+        return ret;
+    }
+}
+
+void event_handler(const evutil_socket_t fd, const short which, void *arg)
+{
+    log_routine(__func__);
+    conn *c;
+
+    c = (conn *)arg;
+    assert(c != NULL);
+
+    c->which = which;
+
+    /* sanity */
+    if (fd != c->sfd)
+    {
+        if (settings.verbose > 0)
+            fprintf(stderr, "Catastrophic: event fd doesn't match conn fd!\n");
+        conn_close(c);
+        return;
+    }
+
+    //pyuhala: ecall into the enclave
+
+    ecall_drive_machine(global_eid, c);
+
+    /* wait for next event */
+    return;
+}
 
 /**
  * Initializes secure memcached: partitioned version of the memcached main routine
@@ -463,7 +999,7 @@ void init_memcached()
     bool use_slab_sizes = false;
     char *slab_sizes_unparsed = NULL;
     bool slab_chunk_size_changed = false;
-  
+
     if (!sanitycheck())
     {
         //free(meta);
@@ -663,7 +1199,7 @@ void init_memcached()
 
     //init stats
     ecall_stats_init(global_eid);
-    
+
     //init connections array
     conn_init();
 
@@ -673,7 +1209,6 @@ void init_memcached()
     //pyuhala: extstore disabled
     memcached_thread_init(settings.num_threads, NULL);
     init_lru_crawler(NULL);
-
 
     if (start_assoc_maint && sgx_start_assoc_maintenance_thread() == -1)
     {
@@ -685,7 +1220,7 @@ void init_memcached()
         exit(EXIT_FAILURE);
     }
 
-     if (settings.slab_reassign &&
+    if (settings.slab_reassign &&
         sgx_start_slab_maintenance_thread() == -1)
     {
         exit(EXIT_FAILURE);
@@ -723,5 +1258,149 @@ void init_memcached()
     }
 #endif
     clock_handler(0, 0, 0);
+
+    /* create unix mode sockets after dropping privileges */
+    if (settings.socketpath != NULL)
+    {
+        errno = 0;
+        if (server_socket_unix(settings.socketpath, settings.access))
+        {
+            vperror("failed to listen on UNIX socket: %s", settings.socketpath);
+            exit(EX_OSERR);
+        }
+    }
+
+    /* create the listening socket, bind it, and init */
+    if (settings.socketpath == NULL)
+    {
+        const char *portnumber_filename = getenv("MEMCACHED_PORT_FILENAME");
+        printf("Portnumber file: %c\n", portnumber_filename);
+        char *temp_portnumber_filename = NULL;
+        size_t len;
+        FILE *portnumber_file = NULL;
+
+        if (portnumber_filename != NULL)
+        {
+
+            len = strlen(portnumber_filename) + 4 + 1;
+            temp_portnumber_filename = malloc(len);
+            snprintf(temp_portnumber_filename,
+                     len,
+                     "%s.lck", portnumber_filename);
+
+            portnumber_file = fopen(temp_portnumber_filename, "a");
+            if (portnumber_file == NULL)
+            {
+                fprintf(stderr, "Failed to open \"%s\": %s\n",
+                        temp_portnumber_filename, strerror(errno));
+            }
+        }
+
+        if (portnumber_file == NULL)
+        {
+            printf("Portnumber file is NULL\n");
+        }
+        errno = 0;
+
+        if (settings.port && server_sockets(settings.port, tcp_transport,
+                                            portnumber_file))
+        {
+            vperror("failed to listen on TCP port %d", settings.port);
+            exit(EX_OSERR);
+        }
+
+        /*
+         * initialization order: first create the listening sockets
+         * (may need root on low ports), then drop root if needed,
+         * then daemonize if needed, then init libevent (in some cases
+         * descriptors created by libevent wouldn't survive forking).
+         */
+
+        /* create the UDP listening socket and bind it */
+        errno = 0;
+        if (settings.udpport && server_sockets(settings.udpport, udp_transport,
+                                               portnumber_file))
+        {
+            vperror("failed to listen on UDP port %d", settings.udpport);
+            exit(EX_OSERR);
+        }
+
+        if (portnumber_file)
+        {
+            fclose(portnumber_file);
+            rename(temp_portnumber_filename, portnumber_filename);
+        }
+        if (temp_portnumber_filename)
+            free(temp_portnumber_filename);
+    }
+
+    /* Give the sockets a moment to open. I know this is dumb, but the error
+     * is only an advisory.
+     */
+    usleep(1000);
+    if (stats_state.curr_conns + stats_state.reserved_fds >= settings.maxconns - 1)
+    {
+        fprintf(stderr, "Maxconns setting is too low, use -c to increase.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid_file != NULL)
+    {
+        save_pid(pid_file);
+    }
+
+    /* Drop privileges no longer needed */
+    if (settings.drop_privileges)
+    {
+        drop_privileges();
+    }
+
+
+    /* Initialize the uriencode lookup table. */
+    //seems useful in and out of the enclave.
+    uriencode_init();
+    ecall_uriencode_init();
+
+    /* enter the event loop */
+    while (!stop_main_loop)
+    {
+        if (event_base_loop(main_base, EVLOOP_ONCE) != 0)
+        {
+            retval = EXIT_FAILURE;
+            break;
+        }
+    }
+
+    switch (stop_main_loop)
+    {
+    case GRACE_STOP:
+        fprintf(stderr, "Gracefully stopping\n");
+        break;
+    case EXIT_NORMALLY:
+        // Don't need to print anything to STDERR for a normal shutdown.
+        break;
+    default:
+        fprintf(stderr, "Exiting on error\n");
+        break;
+    }
+
+    stop_threads();
+    if (settings.memory_file != NULL && stop_main_loop == GRACE_STOP)
+    {
+        restart_mmap_close();
+    }
+
+   
+    /* Clean up strdup() call for bind() address */
+    if (settings.inter)
+        free(settings.inter);
+
+    /* cleanup base */
+    event_base_free(main_base);
+
+    
+
+    return retval;
+
 
 }

@@ -188,6 +188,14 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
     ocall_accept(&ret, sockfd, addr, addrlen);
     return ret;
 }
+
+int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags)
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    ocall_accept4(&ret, sockfd, addr, addrlen, flags);
+    return ret;
+}
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
     GRAAL_SGX_INFO();
@@ -231,6 +239,21 @@ ssize_t send(int sockfd, const void *buf, size_t len, int flags)
     GRAAL_SGX_INFO();
     ssize_t ret;
     ocall_send(&ret, sockfd, buf, len, flags);
+    return ret;
+}
+
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen)
+{
+    GRAAL_SGX_INFO();
+    ssize_t ret;
+    ocall_sendto(&ret, sockfd, buf, len, flags, dest_addr, addrlen);
+    return ret;
+}
+ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags)
+{
+    GRAAL_SGX_INFO();
+    ssize_t ret;
+    ocall_sendmsg(&ret, sockfd, msg, flags);
     return ret;
 }
 

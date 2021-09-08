@@ -97,7 +97,7 @@ extern "C"
     ulong crc32(ulong crc, const Byte *buf, uint len);
     uid_t getuid(void);
     uid_t geteuid(void);
-    
+
     //cpuid: for libchelper.a
     unsigned int get_cpuid_max(unsigned int ext, unsigned int *sig);
     int get_cpuid_count(unsigned int leaf, unsigned int subleaf, unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx);
@@ -200,7 +200,6 @@ extern "C"
     char *strcat(char *dest, const char *src);
 
     int getchar(void);
-    
 
     //net
     int socket(int domain, int type, int protocol);
@@ -304,8 +303,12 @@ extern "C"
 
     int listen(int sockfd, int backlog);
     int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+    int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
     int poll(struct pollfd *fds, nfds_t nfds, int timeout);
     int epoll_create(int size);
+
+    ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+    ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
 
     //Added for halodb
     int environ(void);
