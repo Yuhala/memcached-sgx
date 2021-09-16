@@ -36,7 +36,7 @@ extern "C"
 #define __need_IOV_MAX
 #endif
 
-//pyuhala
+    //pyuhala
 
 #if defined __need_IOV_MAX && !defined IOV_MAX
 #define IOV_MAX 1024
@@ -1014,6 +1014,11 @@ extern "C"
     void stats_reset(void);
     void process_stat_settings(ADD_STAT add_stats, void *c);
     void process_stats_conns(ADD_STAT add_stats, void *c);
+
+//pyuhala: used to manage cross-enclave connections
+#define MAX_ENC_CONNS 100
+    void setConnEvent(struct event *ev, int conn_id);
+    struct event *getConnEvent(int conn_id);
 
 #if HAVE_DROP_PRIVILEGES
     extern void setup_privilege_violations_handler(void);

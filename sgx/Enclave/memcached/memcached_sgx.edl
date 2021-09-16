@@ -41,6 +41,10 @@ enclave {
     };
     
     untrusted {
-        
+        //fd and flags should be const but for some reason edger8 fails
+        int ocall_setup_conn_event(int fd, int event_flags, [user_check]struct event_base *base, [user_check]void *c, int conn_id) allow(ecall_drive_machine);
+        void ocall_update_conn_event(int fd, int event_flags, [user_check]struct event_base *base, [user_check]void *c, int conn_id) allow(ecall_drive_machine);
+        int ocall_sgx_event_del(int conn_id);
+        int ocall_sgx_event_add(int conn_id);
     };
 };

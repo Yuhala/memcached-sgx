@@ -16,7 +16,7 @@ int event_del(struct event *ev)
 {
     GRAAL_SGX_INFO();
     int ret;
-    ocall_event_del(&ret, ev);
+    //ocall_event_del(&ret, ev);
     return ret;
 }
 

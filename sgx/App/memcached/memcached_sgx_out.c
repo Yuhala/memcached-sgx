@@ -161,9 +161,20 @@ enum transmit_result
     TRANSMIT_HARD_ERROR  /** Can't write (c->state is set to conn_closing) */
 };
 
-/**
- * Some useful routines
- */
+//pyuhala: used to manage cross-enclave connections
+struct event *event_array[MAX_ENC_CONNS];
+
+//set event structure for enclave conn variable
+void setConnEvent(struct event *ev, int conn_id)
+{
+    event_array[conn_id] = ev;
+}
+
+//get event structure for enclave conn variable
+struct event *getConnEvent(int conn_id)
+{
+    return event_array[conn_id];
+}
 
 /**
  * Do basic sanity check of the runtime environment
@@ -599,7 +610,7 @@ static int64_t monotonic_start;
  * ensure their clocks are correct before starting memcached. */
 static void clock_handler(const evutil_socket_t fd, const short which, void *arg)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
     struct timeval t = {.tv_sec = 1, .tv_usec = 0};
     static bool initialized = false;
 
@@ -1078,7 +1089,7 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
 
     //pyuhala: ecall into the enclave
 
-    ecall_drive_machine(global_eid, c);
+    ecall_drive_machine(global_eid, (void *)c);
 
     /* wait for next event */
     return;
@@ -1103,6 +1114,67 @@ static void sig_usrhandler(const int sig)
     printf("Graceful shutdown signal handled: %s.\n", strsignal(sig));
     stop_main_loop = GRACE_STOP;
 }
+
+// >>>>>>>>>>>>>>>>>>>>>>>>> memcached ocalls start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+/**
+ * pyuhala: sets up the event structures for a connection
+ */
+int ocall_setup_conn_event(int fd, int flags, struct event_base *base, void *conn_ptr, int conn_id)
+{
+    log_routine(__func__);
+    const int sfd = fd;
+    const int event_flags = flags;
+    struct event *ev = (struct event *)malloc(sizeof(struct event));
+    //TODO: if base is always main_base, remove the base param
+    conn *c = (conn *)conn_ptr;
+
+    event_set(ev, sfd, event_flags, event_handler, (void *)c);
+    event_base_set(main_base, ev);
+
+    if (event_add(ev, 0) == -1)
+    {
+
+        perror("event_add");
+        return OCALL_FAILED;
+    }
+    //printf("ocall_setup_conn_event:: event_add passed >>>>>>>>> \n");
+
+    setConnEvent(ev, conn_id);
+    return 0;
+}
+
+void ocall_update_conn_event(int fd, int new_flags, struct event_base *base, void *conn_ptr, int conn_id)
+{
+    log_routine(__func__);
+    const int sfd = fd;
+    const int event_flags = new_flags;
+    conn *c = (conn *)conn_ptr;
+
+    struct event *ev = getConnEvent(conn_id);
+    event_set(ev, sfd, event_flags, event_handler, (void *)c);
+    event_base_set(main_base, ev);
+}
+
+int ocall_sgx_event_del(int conn_id)
+{
+    log_routine(__func__);
+    struct event *ev = getConnEvent(conn_id);
+    if (event_del(ev) == -1)
+        return -1;
+
+    return 0;
+}
+int ocall_sgx_event_add(int conn_id)
+{
+    log_routine(__func__);
+    struct event *ev = getConnEvent(conn_id);
+    if (event_add(ev, 0) == -1)
+        return -1;
+    return 0;
+}
+
+// >>>>>>>>>>>>>>>>>>>>>>>>> memcached ocalls end >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 /**
  * Initializes secure memcached: partitioned version of the memcached main routine

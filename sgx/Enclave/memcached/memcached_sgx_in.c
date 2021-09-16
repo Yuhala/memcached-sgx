@@ -63,6 +63,7 @@ extern sgx_thread_mutex_t conn_lock;
 /**
  * Other globals
  */
+static int conn_count = 0;
 
 //pyuhala: int is not the real type of errno. Done this way for porting reasons and simplicy
 int errno;
@@ -1099,18 +1100,32 @@ void do_accept_new_conns(const bool do_accept)
 
 static bool update_event(conn *c, const int new_flags)
 {
+    //pyuhala: modified to do event handling outside
     log_routine(__func__);
     assert(c != NULL);
 
     struct event_base *base = c->event.ev_base;
     if (c->ev_flags == new_flags)
         return true;
-    if (event_del(&c->event) == -1)
+
+    int ret_del;
+    ocall_sgx_event_del(&ret_del, c->conn_id);
+    if (ret_del == -1)
         return false;
-    event_set(&c->event, c->sfd, new_flags, event_handler, (void *)c);
-    event_base_set(base, &c->event);
+
+    int fd = c->sfd;
+    int flags = new_flags;
+
+    ocall_update_conn_event(fd, flags, base, (void *)c, c->conn_id);
+
+    //event_set(&c->event, c->sfd, new_flags, event_handler, (void *)c);
+    //event_base_set(base, &c->event);
+
     c->ev_flags = new_flags;
-    if (event_add(&c->event, 0) == -1)
+
+    int ret_add;
+    ocall_sgx_event_add(&ret_add, c->conn_id);
+    if (ret_add == -1)
         return false;
     return true;
 }
@@ -1856,6 +1871,7 @@ static int new_socket(struct addrinfo *ai)
 
     if ((sfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1)
     {
+        printf("FAILED to create new socket in enclave >>>>>>>>>>>>>>>>>>>>>>>>>\n");
         return -1;
     }
 
@@ -1963,6 +1979,8 @@ static int server_socket(const char *interface,
         conn *listen_conn_add;
         if ((sfd = new_socket(next)) == -1)
         {
+            printf("FAILED to create new socket >>>>>>>>>>\n");
+
             /* getaddrinfo can return "junk" addresses,
              * we make sure at least one works before erroring.
              */
@@ -2022,6 +2040,7 @@ static int server_socket(const char *interface,
 
         if (bind(sfd, next->ai_addr, next->ai_addrlen) == -1)
         {
+            printf("FAILED to bind sockfd >>>>>>>>>>\n");
             if (errno != EADDRINUSE)
             {
                 perror("bind()");
@@ -2125,6 +2144,7 @@ static int server_socket(const char *interface,
     freeaddrinfo(ai);
 
     /* Return zero iff we detected no errors in starting up connections */
+    printf("SUCCESS in connection creation >>>>>>>>>>>>> \n");
     return success == 0;
 }
 
@@ -2635,15 +2655,23 @@ conn *conn_new(const int sfd, enum conn_states init_state,
         }
     }
 
-    event_set(&c->event, sfd, event_flags, event_handler, (void *)c);
-    event_base_set(base, &c->event);
-    c->ev_flags = event_flags;
+    /**
+     * pyuhala: we do all these gymnastics to correctly set up the event structure for this connection outside
+     */
+    int ret;
 
-    if (event_add(&c->event, 0) == -1)
+    int id = conn_count++;
+
+    ocall_setup_conn_event(&ret, sfd, event_flags, base, (void *)c, id);
+    if (ret == -1)
     {
-        perror("event_add");
+        //pyuhala:this happens if event_add fails
         return NULL;
     }
+    //c->event = *(struct event *)ev_ptr;
+
+    c->ev_flags = event_flags;
+    c->conn_id = id;
 
     STATS_LOCK();
     stats_state.curr_conns++;
@@ -2749,7 +2777,9 @@ static void conn_close(conn *c)
     assert(c != NULL);
 
     /* delete the event, the socket and the conn */
-    event_del(&c->event);
+    //event_del(&c->event);
+    int ret_del;
+    ocall_sgx_event_del(&ret_del, c->conn_id);
 
     if (settings.verbose > 1)
         fprintf(stderr, "<%d connection closed.\n", c->sfd);
@@ -4259,7 +4289,7 @@ void ecall_start_slab_rebalance()
 
 void ecall_assoc_start_expand()
 {
-    log_routine(__func__);
+    //log_routine(__func__);
     assoc_start_expand(stats_state.curr_items);
 }
 
@@ -4305,6 +4335,7 @@ void ecall_init_server_sockets()
             }
         }
 
+        printf("portnumber SGX_FILE fd: %d >>>>>>>\n");
         if (portnumber_file == NULL)
         {
             printf("Portnumber file is NULL\n");
@@ -4334,7 +4365,7 @@ void ecall_init_server_sockets()
             exit(EX_OSERR);
         }
 
-        if (portnumber_file)
+        if (portnumber_file != -1)
         {
             fclose(portnumber_file);
             rename(temp_portnumber_filename, portnumber_filename);
@@ -4346,7 +4377,7 @@ void ecall_init_server_sockets()
     /* Give the sockets a moment to open. I know this is dumb, but the error
      * is only an advisory.
      */
-    usleep(1000);
+    //usleep(1000);
     if (stats_state.curr_conns + stats_state.reserved_fds >= settings.maxconns - 1)
     {
         fprintf(stderr, "Maxconns setting is too low, use -c to increase.\n");

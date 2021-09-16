@@ -39,6 +39,9 @@ typedef unsigned int useconds_t;
 #define SIGTRAP 5 /* Trace trap. */
 #define SIGABRT 6 /* Abort. */
 
+//custom error types
+#define OCALL_FAILED -1
+
 #define LOOPS_PER_THREAD 500
 //#define GRAAL_SGX_DEBUG 1
 

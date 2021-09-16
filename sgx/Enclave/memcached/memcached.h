@@ -784,6 +784,8 @@ extern "C"
     {
         sasl_conn_t *sasl_conn;
         int sfd;
+        //pyuhala: conn id variable
+        int conn_id;
         bool sasl_started;
         bool authenticated;
         bool set_stale;
