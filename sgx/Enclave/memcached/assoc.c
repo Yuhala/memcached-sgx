@@ -12,12 +12,13 @@
  */
 
 #include "memcached.h"
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/resource.h>
+#include <sgx/sys/stat.h>
+#include <sgx/sys/socket.h>
+#include <sgx/sys/resource.h>
 #include <sgx/signal.h>
-#include <fcntl.h>
-#include <netinet/in.h>
+//#include <fcntl.h>
+#include <struct/sgx_fcntl_struct.h>
+#include <sgx/netinet/in.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,8 +30,8 @@
 
 #include "my_logger.h"
 
-static pthread_cond_t maintenance_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t maintenance_lock = PTHREAD_MUTEX_INITIALIZER;
+static sgx_thread_cond_t maintenance_cond = SGX_THREAD_COND_INITIALIZER;
+static sgx_thread_mutex_t maintenance_lock = SGX_THREAD_MUTEX_INITIALIZER;
 
 typedef  uint32_t  ub4;   /* unsigned 4-byte quantities */
 typedef  unsigned       char ub1;   /* unsigned 1-byte quantities */

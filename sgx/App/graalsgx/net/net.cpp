@@ -229,6 +229,17 @@ ssize_t ocall_recv(int sockfd, void *buf, size_t len, int flags)
     log_ocall(__func__);
     return recv(sockfd, buf, len, flags);
 }
+
+ssize_t ocall_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen)
+{
+    log_ocall(__func__);
+    return recvfrom(sockfd, buf, len, flags, src_addr, addrlen);
+}
+ssize_t ocall_recvmsg(int sockfd, struct msghdr *msg, int flags)
+{
+    log_ocall(__func__);
+    return recvmsg(sockfd, msg, flags);
+}
 ssize_t ocall_send(int sockfd, const void *buf, size_t len, int flags)
 {
     log_ocall(__func__);
@@ -243,7 +254,7 @@ ssize_t ocall_sendto(int sockfd, const void *buf, size_t len, int flags, const s
 ssize_t ocall_sendmsg(int sockfd, const struct msghdr *msg, int flags)
 {
     log_ocall(__func__);
-    return sendmsg(sockfd, msghdr, flags);
+    return sendmsg(sockfd, msg, flags);
 }
 
 uint32_t ocall_htonl(uint32_t hostlong)
@@ -265,4 +276,23 @@ uint16_t ocall_ntohs(uint16_t netshort)
 {
     log_ocall(__func__);
     return ntohs(netshort);
+}
+
+int ocall_getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+    log_ocall(__func__);
+    return getpeername(sockfd, addr, addrlen);
+}
+
+time_t ocall_time(time_t *t)
+{
+    log_ocall(__func__);
+    return time(t);
+}
+
+char *ocall_inet_ntop(int af, const void *src, char *dst, socklen_t size)
+{
+    log_ocall(__func__);
+
+    return (char *)inet_ntop(af, src, dst, size);
 }

@@ -13,9 +13,33 @@ enclave {
     //include "struct/sgx_pthread_struct.h"
 
     trusted {
-        public void ecall_assoc_maintenance_thread();
+       
+        include "sgx/event2/util.h"
+    };
+
+
+    trusted {     
+
+        public void ecall_init_settings();
+        public void ecall_init_hash();
+        public void ecall_stats_init();
+        public void ecall_init_hashtable();
+        public void ecall_start_assoc_maintenance();
+        public void ecall_start_item_crawler();
+        public void ecall_start_slab_rebalance();
+        public void ecall_assoc_start_expand();
+        public void ecall_init_server_sockets();
+        public void ecall_init_mainbase([user_check]void *mb);
+        public void ecall_drive_machine([user_check]void* conn);
+        public void ecall_uriencode_init();
+        public void ecall_conn_init();
+        public void ecall_item_lru_bump_buf_create();
+        public void ecall_thread_libevent_process(evutil_socket_t fd, short which, [user_check]void *arg);
+
+
 
     };
+    
     untrusted {
         
     };

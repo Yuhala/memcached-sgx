@@ -8,8 +8,10 @@
 
 enclave {    
     include "user_types.h"
-
+    include "unistd.h"
+  
     trusted {
+       
         include "sgx/sys/types.h"
         include "sgx/sys/stat.h"
         include "struct/sgx_sysstat_struct.h"
@@ -21,6 +23,7 @@ enclave {
         include "struct/sgx_utsname_struct.h"
     };
 
+   
     untrusted {
 
         //dynamic loading
@@ -40,6 +43,7 @@ enclave {
         int ocall_setrlimit(int resource, [in]struct rlimit *rlim);
         int ocall_uname([out]struct utsname *buf);
         unsigned int ocall_sleep(unsigned int secs);
+        int ocall_usleep(useconds_t usec);
         void ocall_realpath([in, string]const char *path, [out]char *res_path);
         void ocall_xpg_strerror_r(int errnum, [out,size=buflen,count=1]char *buf, size_t buflen);
 
@@ -49,6 +53,8 @@ enclave {
         //int ocall_sigaction(int signum, [user_check]const struct sigaction *act, [user_check]struct sigaction *oldact);
         //int ocall_sigprocmask(int how, [user_check]const sigset_t *set, [user_check]sigset_t *oldset);
         __sighandler_t ocall_signal(int signum,__sighandler_t handler);
+
+        int ocall_kill(pid_t pid, int sig);
 
        
        

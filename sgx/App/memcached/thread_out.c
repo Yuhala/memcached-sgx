@@ -3,6 +3,7 @@
  * Thread management for memcached.
  */
 #include "memcached.h"
+#include "memcached_sgx_out.h"
 #ifdef EXTSTORE
 #include "storage.h"
 #endif
@@ -119,16 +120,19 @@ void *item_trylock(uint32_t hv)
 
 void item_trylock_unlock(void *lock)
 {
+    log_routine(__func__);
     mutex_unlock((pthread_mutex_t *)lock);
 }
 
 void item_unlock(uint32_t hv)
 {
+    log_routine(__func__);
     mutex_unlock(&item_locks[hv & hashmask(item_lock_hashpower)]);
 }
 
 static void wait_for_thread_registration(int nthreads)
 {
+    log_routine(__func__);
     while (init_count < nthreads)
     {
         pthread_cond_wait(&init_cond, &init_lock);
@@ -137,6 +141,7 @@ static void wait_for_thread_registration(int nthreads)
 
 static void register_thread_initialized(void)
 {
+    log_routine(__func__);
     pthread_mutex_lock(&init_lock);
     init_count++;
     pthread_cond_signal(&init_cond);
@@ -149,6 +154,7 @@ static void register_thread_initialized(void)
 /* Must not be called with any deeper locks held */
 void pause_threads(enum pause_thread_types type)
 {
+    log_routine(__func__);
     char buf[1];
     int i;
 
@@ -210,6 +216,7 @@ void pause_threads(enum pause_thread_types type)
 // loop in order to call this function.
 void stop_threads(void)
 {
+    log_routine(__func__);
     char buf[1];
     int i;
 
@@ -287,6 +294,7 @@ void stop_threads(void)
  */
 static void cq_init(CQ *cq)
 {
+    log_routine(__func__);
     pthread_mutex_init(&cq->lock, NULL);
     cq->head = NULL;
     cq->tail = NULL;
@@ -502,20 +510,40 @@ static void setup_thread(LIBEVENT_THREAD *me)
 #endif
 }
 
+void *e_item_lru_bump_buf_create()
+{
+    ecall_item_lru_bump_buf_create(global_eid);
+}
+
 /*
  * Worker thread: main event loop
  */
 static void *worker_libevent(void *arg)
 {
+    log_routine(__func__);
     LIBEVENT_THREAD *me = arg;
 
     /* Any per-thread setup can happen here; memcached_thread_init() will block until
      * all threads have finished initializing.
      */
     me->l = logger_create();
+    //pyuhala: not sure how this would point to a buffer in the enclave 
+    //me->lru_bump_buf = e_item_lru_bump_buf_create();
     me->lru_bump_buf = item_lru_bump_buf_create();
+
+    if (me->l == NULL)
+    {
+        printf("me->l is NULL ..aborting\n");
+    }
+
+    if (me->lru_bump_buf == NULL)
+    {
+        printf("me->lru_bump_buf is NULL ..aborting\n");
+    }
+
     if (me->l == NULL || me->lru_bump_buf == NULL)
     {
+
         abort();
     }
 
@@ -542,6 +570,10 @@ static void *worker_libevent(void *arg)
 static void thread_libevent_process(evutil_socket_t fd, short which, void *arg)
 {
     log_routine(__func__);
+    ecall_thread_libevent_process(global_eid, fd, which, arg);
+    return;
+    //pyuhala: this should probably be done inside the enclave
+
     LIBEVENT_THREAD *me = arg;
     CQ_ITEM *item;
     char buf[1];

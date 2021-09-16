@@ -79,7 +79,8 @@
 //paldb benchmarking
 #include "paldb/Paldb.h"
 
-#include "memcached/test-out.h"
+
+
 
 
 /* Benchmarking */
@@ -656,7 +657,7 @@ void destroy_switchless(void)
 }
 
 /* Application entry */
-int SGX_CDECL main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     (void)(argc);
     (void)(argv);
@@ -699,6 +700,9 @@ int SGX_CDECL main(int argc, char *argv[])
     int id = global_eid;
 
    
+    init_memcached();
+    return 0;
+
 
     //ecall_create_enclave_isolate(global_eid);
     /**

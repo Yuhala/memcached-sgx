@@ -7,7 +7,27 @@ extern "C"
 {
 #endif
 
+
+
 #include "bipbuffer.h"
+
+/**
+ * timeval issues, so included here
+ */
+#ifndef __timeval_defined
+#define __timeval_defined 1
+
+#include <sgx/bits/types.h>
+
+/* A time value that is accurate to the nearest
+   microsecond but also has a range of years.  */
+struct timeval
+{
+  __time_t tv_sec;		/* Seconds.  */
+  __suseconds_t tv_usec;	/* Microseconds.  */
+};
+#endif
+
 
 /* TODO: starttime tunable */
 #define LOGGER_BUF_SIZE 1024 * 64
@@ -144,7 +164,7 @@ extern "C"
     {
         struct _logger *prev;
         struct _logger *next;
-        pthread_mutex_t mutex;   /* guard for this + *buf */
+        sgx_thread_mutex_t mutex;   /* guard for this + *buf */
         uint64_t written;        /* entries written to the buffer */
         uint64_t dropped;        /* entries dropped */
         uint64_t blocked;        /* times blocked instead of dropped */

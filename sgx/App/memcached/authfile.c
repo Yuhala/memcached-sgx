@@ -9,7 +9,7 @@
 #include <inttypes.h>
 
 #include "authfile.h"
-#include "util.h"
+//#include "util.h"
 
 // TODO: frontend needs a refactor so this can avoid global objects.
 
@@ -106,6 +106,24 @@ enum authfile_ret authfile_load(const char *file) {
     (void)fclose(pwfile);
 
     return AUTHFILE_OK;
+}
+
+//pyuhala: strangely linker does not find this fxn. So redefine as static here
+static bool safe_memcmp(const void *a, const void *b, size_t len) {
+    const volatile unsigned char *ua = (const volatile unsigned char *)a;
+    const volatile unsigned char *ub = (const volatile unsigned char *)b;
+    int delta = 0;
+    size_t x;
+
+    for (x = 0; x < len; x++) {
+        delta |= ua[x] ^ ub[x];
+    }
+
+    if (delta == 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 // if only loading the file could be this short...

@@ -107,6 +107,12 @@ unsigned int ocall_sleep(unsigned int secs)
     return sleep(secs);
 }
 
+int ocall_usleep(useconds_t usec)
+{
+    log_ocall(__func__);
+    return usleep(usec);
+}
+
 void ocall_realpath(const char *path, char *res_path)
 {
     log_ocall(__func__);
@@ -149,6 +155,12 @@ __sighandler_t ocall_signal(int signum, __sighandler_t handler)
 {
     log_ocall(__func__);
     return nullptr; //signal(signum, handler);
+}
+
+int ocall_kill(pid_t pid, int sig)
+{
+    log_ocall(__func__);
+    return kill(pid, sig);
 }
 
 /* Mem management */

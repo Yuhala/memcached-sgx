@@ -40,7 +40,10 @@ extern "C"
         CRAWLER_ERROR
     };
 
-    //int start_item_crawler_thread(void);
+    int start_item_crawler_thread(void);
+    void *item_crawler_thread(void *arg);
+
+    //pyuhala: added for sgx thread
     int sgx_start_item_crawler_thread(void);
     void *e_item_crawler_thread(void *input);
     

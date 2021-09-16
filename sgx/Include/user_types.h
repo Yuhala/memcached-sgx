@@ -16,6 +16,22 @@ typedef size_t z_size_t;
 
 typedef void (*__sighandler_t)(int);
 
+
+
+/* Other types */
+# ifndef __useconds_t_defined
+typedef unsigned int useconds_t;
+#  define __useconds_t_defined
+# endif
+
+/* Values for the second argument to access.
+   These may be OR'd together.  */
+#define	R_OK	4		/* Test for read permission.  */
+#define	W_OK	2		/* Test for write permission.  */
+#define	X_OK	1		/* Test for execute permission.  */
+#define	F_OK	0		/* Test for existence.  */
+
+
 #define SIGHUP 1  /* Hangup the process */
 #define SIGINT 2  /* Interrupt the process */
 #define SIGQUIT 3 /* Quit the process */

@@ -24,7 +24,8 @@ extern "C"
 {
 #endif
 
-
+void *e_slab_rebalance_thread(void *);
+void * e_item_lru_bump_buf_create(void);
    
 
 #if defined(__cplusplus)

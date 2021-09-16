@@ -50,7 +50,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
 #include <assert.h>
 #include <sysexits.h>
 #include <stddef.h>
@@ -90,6 +90,16 @@ enum try_read_result
     READ_MEMORY_ERROR /** failed to allocate more memory */
 };
 
+struct _mc_meta_data
+{
+    void *mmap_base;
+    uint64_t old_base;
+    char *slab_config; // string containing either factor or custom slab list.
+    int64_t time_delta;
+    uint64_t process_started;
+    uint32_t current_time;
+};
+
 static int try_read_command_negotiate(conn *c);
 static int try_read_command_udp(conn *c);
 
@@ -123,6 +133,15 @@ conn **conns;
 
 struct slab_rebalance slab_rebal;
 volatile int slab_rebalance_signal;
+
+extern pthread_mutex_t conn_lock;
+
+/* Connection timeout thread bits */
+static pthread_t conn_timeout_tid;
+static int do_run_conn_timeout_thread;
+//static pthread_cond_t conn_timeout_cond = PTHREAD_COND_INITIALIZER;
+//static pthread_mutex_t conn_timeout_lock = PTHREAD_MUTEX_INITIALIZER;
+
 #ifdef EXTSTORE
 /* hoping this is temporary; I'd prefer to cut globals, but will complete this
  * battle another day.
@@ -152,6 +171,7 @@ enum transmit_result
  */
 static bool sanitycheck(void)
 {
+    log_routine(__func__);
     /* One of our biggest problems is old and bogus libevents */
     const char *ever = event_get_version();
     if (ever != NULL)
@@ -249,7 +269,6 @@ rel_time_t realtime(const time_t exptime)
         return (rel_time_t)(exptime + current_time);
     }
 }
-
 
 static void settings_init(void)
 {
@@ -375,6 +394,25 @@ static void conn_init(void)
     }
 }
 
+static void conn_cleanup(conn *c)
+{
+    log_routine(__func__);
+    assert(c != NULL);
+
+    conn_release_items(c);
+
+    if (c->sasl_conn)
+    {
+        assert(settings.sasl);
+        sasl_dispose(&c->sasl_conn);
+        c->sasl_conn = NULL;
+    }
+
+    if (IS_UDP(c->transport))
+    {
+        conn_set_state(c, conn_read);
+    }
+}
 static int new_socket(struct addrinfo *ai)
 {
     log_routine(__func__);
@@ -561,7 +599,7 @@ static int64_t monotonic_start;
  * ensure their clocks are correct before starting memcached. */
 static void clock_handler(const evutil_socket_t fd, const short which, void *arg)
 {
-    //log_routine(__func__);
+    log_routine(__func__);
     struct timeval t = {.tv_sec = 1, .tv_usec = 0};
     static bool initialized = false;
 
@@ -937,6 +975,89 @@ static int server_sockets(int port, enum network_transport transport,
     }
 }
 
+/*
+ * read buffer cache helper functions
+ */
+static void rbuf_release(conn *c)
+{
+    log_routine(__func__);
+    if (c->rbuf != NULL && c->rbytes == 0 && !IS_UDP(c->transport))
+    {
+        if (c->rbuf_malloced)
+        {
+            free(c->rbuf);
+            c->rbuf_malloced = false;
+        }
+        else
+        {
+            do_cache_free(c->thread->rbuf_cache, c->rbuf);
+        }
+        c->rsize = 0;
+        c->rbuf = NULL;
+        c->rcurr = NULL;
+    }
+}
+
+static bool rbuf_alloc(conn *c)
+{
+    log_routine(__func__);
+    if (c->rbuf == NULL)
+    {
+        c->rbuf = do_cache_alloc(c->thread->rbuf_cache);
+        if (!c->rbuf)
+        {
+            THR_STATS_LOCK(c);
+            c->thread->stats.read_buf_oom++;
+            THR_STATS_UNLOCK(c);
+            return false;
+        }
+        c->rsize = READ_BUFFER_SIZE;
+        c->rcurr = c->rbuf;
+    }
+    return true;
+}
+
+static void conn_close(conn *c)
+{
+    log_routine(__func__);
+    assert(c != NULL);
+
+    /* delete the event, the socket and the conn */
+    event_del(&c->event);
+
+    if (settings.verbose > 1)
+        fprintf(stderr, "<%d connection closed.\n", c->sfd);
+
+    conn_cleanup(c);
+
+    // force release of read buffer.
+    if (c->thread)
+    {
+        c->rbytes = 0;
+        rbuf_release(c);
+    }
+
+    MEMCACHED_CONN_RELEASE(c->sfd);
+    conn_set_state(c, conn_closed);
+#ifdef TLS
+    if (c->ssl)
+    {
+        SSL_shutdown(c->ssl);
+        SSL_free(c->ssl);
+    }
+#endif
+    close(c->sfd);
+    pthread_mutex_lock(&conn_lock);
+    allow_new_conns = true;
+    pthread_mutex_unlock(&conn_lock);
+
+    STATS_LOCK();
+    stats_state.curr_conns--;
+    STATS_UNLOCK();
+
+    return;
+}
+
 void event_handler(const evutil_socket_t fd, const short which, void *arg)
 {
     log_routine(__func__);
@@ -944,7 +1065,6 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
 
     c = (conn *)arg;
     assert(c != NULL);
-
     c->which = which;
 
     /* sanity */
@@ -964,6 +1084,26 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
     return;
 }
 
+static void sig_handler(const int sig)
+{
+    log_routine(__func__);
+    stop_main_loop = EXIT_NORMALLY;
+    printf("Signal handled: %s.\n", strsignal(sig));
+}
+
+static void sighup_handler(const int sig)
+{
+    log_routine(__func__);
+    settings.sig_hup = true;
+}
+
+static void sig_usrhandler(const int sig)
+{
+    log_routine(__func__);
+    printf("Graceful shutdown signal handled: %s.\n", strsignal(sig));
+    stop_main_loop = GRACE_STOP;
+}
+
 /**
  * Initializes secure memcached: partitioned version of the memcached main routine
  * In-enclave: settings init, binary/ASCII handling, slab/cache management, hash fxns
@@ -972,6 +1112,7 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
 
 void init_memcached()
 {
+    log_routine(__func__);
     printf(" =============== pyuhala: init_memcached_out ==================\n");
     printf(" Do: telnet 127.0.0.1 11211 in terminal\n");
     int c;
@@ -1000,9 +1141,12 @@ void init_memcached()
     char *slab_sizes_unparsed = NULL;
     bool slab_chunk_size_changed = false;
 
+    struct _mc_meta_data *meta = malloc(sizeof(struct _mc_meta_data));
+    meta->slab_config = NULL;
+
     if (!sanitycheck())
     {
-        //free(meta);
+        free(meta);
         return EX_OSERR;
     }
 
@@ -1017,12 +1161,12 @@ void init_memcached()
       * this struct in and out of the enclave.
       */
     settings_init();
-    //ecall_init_settings(global_eid);
+    ecall_init_settings(global_eid);
 
     /* set stderr non-buffering (for running under, say, daemontools) */
     setbuf(stderr, NULL);
 
-    //ecall_init_hash(global_eid);
+    ecall_init_hash(global_eid);
 
     /*
      * Use one workerthread to serve each UDP port if the user specified
@@ -1197,11 +1341,16 @@ void init_memcached()
         }
     }
 
+    //TODO: group these into 1 ecall
+
+    //init enclave main_base event handle
+    ecall_init_mainbase(global_eid, (void *)main_base);
+
     //init stats
     ecall_stats_init(global_eid);
 
     //init connections array
-    conn_init();
+    ecall_conn_init(global_eid);
 
     //init hash table
     ecall_init_hashtable(global_eid);
@@ -1259,95 +1408,7 @@ void init_memcached()
 #endif
     clock_handler(0, 0, 0);
 
-    /* create unix mode sockets after dropping privileges */
-    if (settings.socketpath != NULL)
-    {
-        errno = 0;
-        if (server_socket_unix(settings.socketpath, settings.access))
-        {
-            vperror("failed to listen on UNIX socket: %s", settings.socketpath);
-            exit(EX_OSERR);
-        }
-    }
-
-    /* create the listening socket, bind it, and init */
-    if (settings.socketpath == NULL)
-    {
-        const char *portnumber_filename = getenv("MEMCACHED_PORT_FILENAME");
-        printf("Portnumber file: %c\n", portnumber_filename);
-        char *temp_portnumber_filename = NULL;
-        size_t len;
-        FILE *portnumber_file = NULL;
-
-        if (portnumber_filename != NULL)
-        {
-
-            len = strlen(portnumber_filename) + 4 + 1;
-            temp_portnumber_filename = malloc(len);
-            snprintf(temp_portnumber_filename,
-                     len,
-                     "%s.lck", portnumber_filename);
-
-            portnumber_file = fopen(temp_portnumber_filename, "a");
-            if (portnumber_file == NULL)
-            {
-                fprintf(stderr, "Failed to open \"%s\": %s\n",
-                        temp_portnumber_filename, strerror(errno));
-            }
-        }
-
-        if (portnumber_file == NULL)
-        {
-            printf("Portnumber file is NULL\n");
-        }
-        errno = 0;
-
-        if (settings.port && server_sockets(settings.port, tcp_transport,
-                                            portnumber_file))
-        {
-            vperror("failed to listen on TCP port %d", settings.port);
-            exit(EX_OSERR);
-        }
-
-        /*
-         * initialization order: first create the listening sockets
-         * (may need root on low ports), then drop root if needed,
-         * then daemonize if needed, then init libevent (in some cases
-         * descriptors created by libevent wouldn't survive forking).
-         */
-
-        /* create the UDP listening socket and bind it */
-        errno = 0;
-        if (settings.udpport && server_sockets(settings.udpport, udp_transport,
-                                               portnumber_file))
-        {
-            vperror("failed to listen on UDP port %d", settings.udpport);
-            exit(EX_OSERR);
-        }
-
-        if (portnumber_file)
-        {
-            fclose(portnumber_file);
-            rename(temp_portnumber_filename, portnumber_filename);
-        }
-        if (temp_portnumber_filename)
-            free(temp_portnumber_filename);
-    }
-
-    /* Give the sockets a moment to open. I know this is dumb, but the error
-     * is only an advisory.
-     */
-    usleep(1000);
-    if (stats_state.curr_conns + stats_state.reserved_fds >= settings.maxconns - 1)
-    {
-        fprintf(stderr, "Maxconns setting is too low, use -c to increase.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (pid_file != NULL)
-    {
-        save_pid(pid_file);
-    }
+    ecall_init_server_sockets(global_eid);
 
     /* Drop privileges no longer needed */
     if (settings.drop_privileges)
@@ -1355,11 +1416,10 @@ void init_memcached()
         drop_privileges();
     }
 
-
     /* Initialize the uriencode lookup table. */
     //seems useful in and out of the enclave.
     uriencode_init();
-    ecall_uriencode_init();
+    ecall_uriencode_init(global_eid);
 
     /* enter the event loop */
     while (!stop_main_loop)
@@ -1387,10 +1447,11 @@ void init_memcached()
     stop_threads();
     if (settings.memory_file != NULL && stop_main_loop == GRACE_STOP)
     {
-        restart_mmap_close();
+        //restart_mmap_close();
     }
 
-   
+    free(meta);
+
     /* Clean up strdup() call for bind() address */
     if (settings.inter)
         free(settings.inter);
@@ -1398,9 +1459,5 @@ void init_memcached()
     /* cleanup base */
     event_base_free(main_base);
 
-    
-
     return retval;
-
-
 }

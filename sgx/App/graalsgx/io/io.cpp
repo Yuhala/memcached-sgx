@@ -91,6 +91,22 @@ int ocall_ioctl(int fd, unsigned long request, int arg)
     return ioctl(fd, request, arg);
 }
 
+int ocall_stat(const char *path, struct stat *buf)
+{
+    log_ocall(__func__);
+    return stat(path, buf);
+}
+int ocall_fstat(int fd, struct stat *buf)
+{
+    log_ocall(__func__);
+    return fstat(fd, buf);
+}
+int ocall_lstat(const char *path, struct stat *buf)
+{
+    log_ocall(__func__);
+    return lstat(path, buf);
+}
+
 int ocall_fstat64(int fd, struct stat *buf)
 {
     log_ocall(__func__);
@@ -442,7 +458,7 @@ ssize_t ocall_pwrite(int fd, const void *buf, size_t count, off_t offset)
     log_ocall(__func__);
     return pwrite(fd, buf, count, offset);
 }
-int ocall_getenv(const char *env, int envlen, char *ret_str, int ret_len)
+/* int ocall_getenv(const char *env, int envlen, char *ret_str, int ret_len)
 {
     log_ocall(__func__);
     const char *env_val = getenv(env);
@@ -452,7 +468,15 @@ int ocall_getenv(const char *env, int envlen, char *ret_str, int ret_len)
     }
     memcpy(ret_str, env_val, strlen(env_val) + 1);
     return 0;
+} */
+
+
+char *ocall_getenv(const char *name)
+{
+     log_ocall(__func__);
+	return getenv(name);
 }
+
 int ocall_chdir(const char *path)
 {
     log_ocall(__func__);
@@ -483,4 +507,17 @@ int ocall_getchar()
 {
     log_ocall(__func__);
     return getchar();
+}
+
+int ocall_fputc(int c, SGX_FILE stream)
+{
+    log_ocall(__func__);
+    FILE *f = getFile(stream);
+    return fputc(c, f);
+}
+int ocall_putc(int c, SGX_FILE stream)
+{
+    log_ocall(__func__);
+    FILE *f = getFile(stream);
+    return putc(c, f);
 }

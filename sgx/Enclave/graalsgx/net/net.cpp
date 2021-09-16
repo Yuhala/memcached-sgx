@@ -286,3 +286,42 @@ uint16_t ntohs(uint16_t netshort)
     ocall_ntohs(&ret, netshort);
     return ret;
 }
+
+int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+    GRAAL_SGX_INFO();
+    int ret;
+    ocall_getpeername(&ret, sockfd, addr, addrlen);
+    return ret;
+}
+
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen)
+{
+    GRAAL_SGX_INFO();
+    ssize_t ret;
+    ocall_recvfrom(&ret, sockfd, buf, len, flags, src_addr, addrlen);
+    return ret;
+}
+ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags)
+{
+    GRAAL_SGX_INFO();
+    ssize_t ret;
+    ocall_recvmsg(&ret, sockfd, msg, flags);
+    return ret;
+}
+time_t time(time_t *t)
+{
+    GRAAL_SGX_INFO();
+    time_t ret;
+    ocall_time(&ret, t);
+    return ret;
+}
+
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
+{
+    GRAAL_SGX_INFO();
+    const char *ret;
+    ocall_inet_ntop(&ret, af, src, dst, size);
+    ret = dst;
+    return ret;
+}

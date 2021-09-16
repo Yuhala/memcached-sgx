@@ -31,6 +31,7 @@ extern "C"
 
     void *pg_aligned_malloc(size_t size);
     void *mmap_resv(void *hint, size_t size, int prot, int flags);
+    int posix_memalign(void **res, size_t align, size_t len);
 
 #if defined(__cplusplus)
 }

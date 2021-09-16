@@ -230,6 +230,31 @@ int pthread_cond_init(pthread_cond_t *__restrict__ cond, const pthread_condattr_
     return sgx_thread_cond_init((sgx_thread_cond_t *)cond, (sgx_thread_condattr_t *)attr);
 }
 
+int pthread_key_create(pthread_key_t *key, void (*destructor)(void *))
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    void *ptr = malloc(sizeof(pthread_key_t));
+    key = ptr; //nonsense ?
+    printf("TODO: %s\n", __func__);
+    return ret;
+}
+
+void *pthread_getspecific(pthread_key_t key)
+{
+
+    GRAAL_SGX_INFO();
+    printf("TODO: %s\n", __func__);
+    return NULL;
+}
+int pthread_setspecific(pthread_key_t key, const void *value)
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    printf("TODO: %s\n", __func__);
+    return ret;
+}
+
 int sched_yield(void)
 {
     GRAAL_SGX_INFO();

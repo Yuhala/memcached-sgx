@@ -11,11 +11,14 @@
 #include "config.h"
 #endif
 
+#include "Enclave.h"
 #include <sgx/sys/types.h>
 #include <sgx/sys/socket.h>
 #include <struct/sgx_time_struct.h>
+#include <struct/sgx_fcntl_struct.h>
 #include <sgx/netinet/in.h>
-#include <event.h>
+#include <sgx/event.h>
+#include <sgx/sys/eventfd.h>
 #include <sgx/netdb.h>
 #include <sgx_thread.h>
 #include <unistd.h>
@@ -39,6 +42,14 @@ extern "C"
 #if defined __need_IOV_MAX && !defined IOV_MAX
 #define IOV_MAX 1024
 #endif
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
+    extern SGX_FILE stdin;
+    extern SGX_FILE stdout;
+    extern SGX_FILE stderr;
 
 #include <limits.h>
 /* FreeBSD 4.x doesn't have IOV_MAX exposed. */
@@ -358,7 +369,7 @@ extern "C"
  */
     struct thread_stats
     {
-        pthread_mutex_t mutex;
+        sgx_thread_mutex_t mutex;
 #define X(name) uint64_t name;
         THREAD_STATS_FIELDS
 #ifdef EXTSTORE
