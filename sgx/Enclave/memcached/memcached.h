@@ -212,6 +212,9 @@ extern "C"
     /**
  * Possible states of a connection.
  */
+
+#ifndef MCD_CONN_STATES
+#define MCD_CONN_STATES
     enum conn_states
     {
         conn_listening, /**< the socket which listens for connections */
@@ -229,6 +232,7 @@ extern "C"
         conn_io_queue,  /**< wait on async. process to get response object */
         conn_max_state  /**< Max state value (used for assertion) */
     };
+#endif
 
     enum bin_substates
     {
@@ -253,13 +257,16 @@ extern "C"
         negotiating_prot /* Discovering the protocol */
     };
 
+#ifndef MCD_NET_TRANS
+#define MCD_NET_TRANS
+
     enum network_transport
     {
         local_transport, /* Unix sockets*/
         tcp_transport,
         udp_transport
     };
-
+#endif
     enum pause_thread_types
     {
         PAUSE_WORKER_THREADS = 0,
@@ -687,7 +694,8 @@ extern "C"
 #ifdef TLS
         char *ssl_wbuf;
 #endif
-        int napi_id; /* napi id associated with this thread */
+        int napi_id;      /* napi id associated with this thread */
+        int libevent_tid; /** pyuhala: id of corresponding LIBEVENT_THREAD */
 
     } LIBEVENT_THREAD;
 
@@ -784,8 +792,8 @@ extern "C"
     {
         sasl_conn_t *sasl_conn;
         int sfd;
-        //pyuhala: conn id variable
-        int conn_id;
+        int conn_id;      /** pyuhala: conn id variable */
+        int libevent_tid; /** pyuhala: id of corresponding LIBEVENT_THREAD */
         bool sasl_started;
         bool authenticated;
         bool set_stale;

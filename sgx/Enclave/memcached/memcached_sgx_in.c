@@ -25,6 +25,11 @@
 #include <sgx/sysexits.h>
 
 /**
+ * some prototypes
+ */
+void sgx_thread_libevent_process(evutil_socket_t fd, short which, void *arg);
+
+/**
  * Some global variables used for initialisation.
  * These are local in the normal main fxn but since we initialise in 
  * different steps via ecalls, we need to have global visibility.
@@ -1109,14 +1114,14 @@ static bool update_event(conn *c, const int new_flags)
         return true;
 
     int ret_del;
-    ocall_sgx_event_del(&ret_del, c->conn_id);
+    mcd_ocall_event_del(&ret_del, c->conn_id);
     if (ret_del == -1)
         return false;
 
     int fd = c->sfd;
     int flags = new_flags;
 
-    ocall_update_conn_event(fd, flags, base, (void *)c, c->conn_id);
+    mcd_ocall_update_conn_event(fd, flags, base, (void *)c, c->conn_id);
 
     //event_set(&c->event, c->sfd, new_flags, event_handler, (void *)c);
     //event_base_set(base, &c->event);
@@ -1124,7 +1129,7 @@ static bool update_event(conn *c, const int new_flags)
     c->ev_flags = new_flags;
 
     int ret_add;
-    ocall_sgx_event_add(&ret_add, c->conn_id);
+    mcd_ocall_event_add(&ret_add, c->conn_id);
     if (ret_add == -1)
         return false;
     return true;
@@ -2662,7 +2667,7 @@ conn *conn_new(const int sfd, enum conn_states init_state,
 
     int id = conn_count++;
 
-    ocall_setup_conn_event(&ret, sfd, event_flags, base, (void *)c, id);
+    mcd_ocall_setup_conn_event(&ret, sfd, event_flags, base, (void *)c, id);
     if (ret == -1)
     {
         //pyuhala:this happens if event_add fails
@@ -2779,7 +2784,7 @@ static void conn_close(conn *c)
     /* delete the event, the socket and the conn */
     //event_del(&c->event);
     int ret_del;
-    ocall_sgx_event_del(&ret_del, c->conn_id);
+    mcd_ocall_event_del(&ret_del, c->conn_id);
 
     if (settings.verbose > 1)
         fprintf(stderr, "<%d connection closed.\n", c->sfd);
@@ -4426,5 +4431,14 @@ void ecall_item_lru_bump_buf_create()
 void ecall_thread_libevent_process(evutil_socket_t fd, short which, void *arg)
 {
     log_routine(__func__);
-    ecall_thread_libevent_process(fd, which, arg);
+    sgx_thread_libevent_process(fd, which, arg);
+}
+
+void *ecall_conn_new(int sfd, enum conn_states init_state,
+                     int event_flags,
+                     int read_buffer_size, enum network_transport transport,
+                     struct event_base *base, void *ssl)
+{
+    log_routine(__func__);
+    return (void *)conn_new(sfd, init_state, event_flags, read_buffer_size, transport, base, ssl);
 }

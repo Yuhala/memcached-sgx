@@ -45,6 +45,7 @@
         "fcntl.h": "c",
         "socket.h": "c",
         "signal.h": "c",
-        "storage.h": "c"
+        "storage.h": "c",
+        "future": "c"
     }
 }

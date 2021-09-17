@@ -15,7 +15,6 @@
 
 #include "Enclave.h"
 
-
 #ifdef __sun
 //#include <atomic.h>
 #endif
@@ -94,7 +93,7 @@ static int init_count = 0;
 static sgx_thread_mutex_t init_lock;
 static sgx_thread_cond_t init_cond;
 
-static void thread_libevent_process(evutil_socket_t fd, short which, void *arg);
+void thread_libevent_process(evutil_socket_t fd, short which, void *arg);
 
 /* item_lock() must be held for an item before any modifications to either its
  * associated hash bucket, or the structure itself.
@@ -112,6 +111,7 @@ void item_lock(uint32_t hv)
 
 void *item_trylock(uint32_t hv)
 {
+    log_routine(__func__);
     sgx_thread_mutex_t *lock = &item_locks[hv & hashmask(item_lock_hashpower)];
     if (sgx_thread_mutex_trylock(lock) == 0)
     {
@@ -122,11 +122,13 @@ void *item_trylock(uint32_t hv)
 
 void item_trylock_unlock(void *lock)
 {
+    log_routine(__func__);
     mutex_unlock((sgx_thread_mutex_t *)lock);
 }
 
 void item_unlock(uint32_t hv)
 {
+    log_routine(__func__);
     mutex_unlock(&item_locks[hv & hashmask(item_lock_hashpower)]);
 }
 
@@ -140,6 +142,7 @@ static void wait_for_thread_registration(int nthreads)
 
 static void register_thread_initialized(void)
 {
+    log_routine(__func__);
     sgx_thread_mutex_lock(&init_lock);
     init_count++;
     sgx_thread_cond_signal(&init_cond);
@@ -152,6 +155,7 @@ static void register_thread_initialized(void)
 /* Must not be called with any deeper locks held */
 void pause_threads(enum pause_thread_types type)
 {
+    log_routine(__func__);
     char buf[1];
     int i;
 
@@ -213,6 +217,7 @@ void pause_threads(enum pause_thread_types type)
 // loop in order to call this function.
 void stop_threads(void)
 {
+    log_routine(__func__);
     char buf[1];
     int i;
 
@@ -290,6 +295,7 @@ void stop_threads(void)
  */
 static void cq_init(CQ *cq)
 {
+    log_routine(__func__);
     sgx_thread_mutex_init(&cq->lock, NULL);
     cq->head = NULL;
     cq->tail = NULL;
@@ -302,6 +308,7 @@ static void cq_init(CQ *cq)
  */
 static CQ_ITEM *cq_pop(CQ *cq)
 {
+    log_routine(__func__);
     CQ_ITEM *item;
 
     sgx_thread_mutex_lock(&cq->lock);
@@ -322,6 +329,7 @@ static CQ_ITEM *cq_pop(CQ *cq)
  */
 static void cq_push(CQ *cq, CQ_ITEM *item)
 {
+    log_routine(__func__);
     item->next = NULL;
 
     sgx_thread_mutex_lock(&cq->lock);
@@ -338,6 +346,7 @@ static void cq_push(CQ *cq, CQ_ITEM *item)
  */
 static CQ_ITEM *cqi_new(void)
 {
+    log_routine(__func__);
     CQ_ITEM *item = NULL;
     sgx_thread_mutex_lock(&cqi_freelist_lock);
     if (cqi_freelist)
@@ -383,6 +392,7 @@ static CQ_ITEM *cqi_new(void)
  */
 static void cqi_free(CQ_ITEM *item)
 {
+    log_routine(__func__);
     sgx_thread_mutex_lock(&cqi_freelist_lock);
     item->next = cqi_freelist;
     cqi_freelist = item;
@@ -412,6 +422,7 @@ static void create_worker(void *(*func)(void *), void *arg)
  */
 void accept_new_conns(const bool do_accept)
 {
+    log_routine(__func__);
     sgx_thread_mutex_lock(&conn_lock);
     do_accept_new_conns(do_accept);
     sgx_thread_mutex_unlock(&conn_lock);
@@ -423,6 +434,7 @@ void accept_new_conns(const bool do_accept)
  */
 static void setup_thread(LIBEVENT_THREAD *me)
 {
+    log_routine(__func__);
 #if defined(LIBEVENT_VERSION_NUMBER) && LIBEVENT_VERSION_NUMBER >= 0x02000101
     struct event_config *ev_config;
     ev_config = event_config_new();
@@ -510,6 +522,7 @@ static void setup_thread(LIBEVENT_THREAD *me)
  */
 static void *worker_libevent(void *arg)
 {
+    log_routine(__func__);
     LIBEVENT_THREAD *me = arg;
 
     /* Any per-thread setup can happen here; memcached_thread_init() will block until
@@ -542,10 +555,10 @@ static void *worker_libevent(void *arg)
  * Processes an incoming "handle a new connection" item. This is called when
  * input arrives on the libevent wakeup pipe.
  */
-static void thread_libevent_process(evutil_socket_t fd, short which, void *arg)
+void sgx_thread_libevent_process(evutil_socket_t fd, short which, void *arg)
 {
     log_routine(__func__);
-    LIBEVENT_THREAD *me = arg;
+    LIBEVENT_THREAD *me = (LIBEVENT_THREAD *)arg;
     CQ_ITEM *item;
     char buf[1];
     conn *c;
@@ -565,6 +578,7 @@ static void thread_libevent_process(evutil_socket_t fd, short which, void *arg)
 
         if (NULL == item)
         {
+            
             break;
         }
         switch (item->mode)
@@ -647,7 +661,7 @@ static void thread_libevent_process(evutil_socket_t fd, short which, void *arg)
         break;
     /* asked to stop */
     case 's':
-        event_base_loopexit(me->base, NULL);
+        mcd_ocall_event_base_loopexit();
         break;
     }
 }
@@ -660,6 +674,7 @@ static int last_thread_by_napi_id = -1;
 
 static LIBEVENT_THREAD *select_thread_round_robin(void)
 {
+    log_routine(__func__);
     int tid = (last_thread + 1) % settings.num_threads;
 
     last_thread = tid;
@@ -669,6 +684,7 @@ static LIBEVENT_THREAD *select_thread_round_robin(void)
 
 static void reset_threads_napi_id(void)
 {
+    log_routine(__func__);
     LIBEVENT_THREAD *thread;
     int i;
 
@@ -687,6 +703,7 @@ static void reset_threads_napi_id(void)
  */
 static LIBEVENT_THREAD *select_thread_by_napi_id(int sfd)
 {
+    log_routine(__func__);
     LIBEVENT_THREAD *thread;
     int napi_id, err, i;
     socklen_t len;
@@ -740,6 +757,7 @@ select:
 void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
                        int read_buffer_size, enum network_transport transport, void *ssl)
 {
+    log_routine(__func__);
     CQ_ITEM *item = cqi_new();
     char buf[1];
     if (item == NULL)
@@ -782,6 +800,7 @@ void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
 #define REDISPATCH_MSG_SIZE (1 + sizeof(int))
 void redispatch_conn(conn *c)
 {
+    log_routine(__func__);
     char buf[REDISPATCH_MSG_SIZE];
     LIBEVENT_THREAD *thread = c->thread;
 
@@ -796,6 +815,7 @@ void redispatch_conn(conn *c)
 /* This misses the allow_new_conns flag :( */
 void sidethread_conn_close(conn *c)
 {
+    log_routine(__func__);
     if (settings.verbose > 1)
         fprintf(stderr, "<%d connection closing from side thread.\n", c->sfd);
 
@@ -804,8 +824,6 @@ void sidethread_conn_close(conn *c)
     redispatch_conn(c);
     return;
 }
-
-//pyuhala: I added function logging in some routines
 
 /********************************* ITEM ACCESS *******************************/
 

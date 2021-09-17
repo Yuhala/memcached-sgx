@@ -84,6 +84,7 @@ unsigned int item_lock_hashpower;
  * can use to signal that they've put a new connection on its queue.
  */
 static LIBEVENT_THREAD *threads;
+static int libevent_thread_count = 0;
 
 /*
  * Number of worker threads that have finished setting themselves up.
@@ -307,6 +308,7 @@ static void cq_init(CQ *cq)
  */
 static CQ_ITEM *cq_pop(CQ *cq)
 {
+    log_routine(__func__);
     CQ_ITEM *item;
 
     pthread_mutex_lock(&cq->lock);
@@ -327,6 +329,7 @@ static CQ_ITEM *cq_pop(CQ *cq)
  */
 static void cq_push(CQ *cq, CQ_ITEM *item)
 {
+    log_routine(__func__);
     item->next = NULL;
 
     pthread_mutex_lock(&cq->lock);
@@ -343,6 +346,7 @@ static void cq_push(CQ *cq, CQ_ITEM *item)
  */
 static CQ_ITEM *cqi_new(void)
 {
+    log_routine(__func__);
     CQ_ITEM *item = NULL;
     pthread_mutex_lock(&cqi_freelist_lock);
     if (cqi_freelist)
@@ -388,6 +392,7 @@ static CQ_ITEM *cqi_new(void)
  */
 static void cqi_free(CQ_ITEM *item)
 {
+    log_routine(__func__);
     pthread_mutex_lock(&cqi_freelist_lock);
     item->next = cqi_freelist;
     cqi_freelist = item;
@@ -399,6 +404,7 @@ static void cqi_free(CQ_ITEM *item)
  */
 static void create_worker(void *(*func)(void *), void *arg)
 {
+    log_routine(__func__);
     pthread_attr_t attr;
     int ret;
 
@@ -417,6 +423,7 @@ static void create_worker(void *(*func)(void *), void *arg)
  */
 void accept_new_conns(const bool do_accept)
 {
+    log_routine(__func__);
     pthread_mutex_lock(&conn_lock);
     do_accept_new_conns(do_accept);
     pthread_mutex_unlock(&conn_lock);
@@ -428,6 +435,7 @@ void accept_new_conns(const bool do_accept)
  */
 static void setup_thread(LIBEVENT_THREAD *me)
 {
+    log_routine(__func__);
 #if defined(LIBEVENT_VERSION_NUMBER) && LIBEVENT_VERSION_NUMBER >= 0x02000101
     struct event_config *ev_config;
     ev_config = event_config_new();
@@ -512,6 +520,7 @@ static void setup_thread(LIBEVENT_THREAD *me)
 
 void *e_item_lru_bump_buf_create()
 {
+    log_routine(__func__);
     ecall_item_lru_bump_buf_create(global_eid);
 }
 
@@ -527,11 +536,11 @@ static void *worker_libevent(void *arg)
      * all threads have finished initializing.
      */
     me->l = logger_create();
-    //pyuhala: not sure how this would point to a buffer in the enclave 
+    //pyuhala: not sure how this would point to a buffer in the enclave
     //me->lru_bump_buf = e_item_lru_bump_buf_create();
     me->lru_bump_buf = item_lru_bump_buf_create();
 
-    if (me->l == NULL)
+    /*if (me->l == NULL)
     {
         printf("me->l is NULL ..aborting\n");
     }
@@ -539,7 +548,7 @@ static void *worker_libevent(void *arg)
     if (me->lru_bump_buf == NULL)
     {
         printf("me->lru_bump_buf is NULL ..aborting\n");
-    }
+    }*/
 
     if (me->l == NULL || me->lru_bump_buf == NULL)
     {
@@ -570,8 +579,8 @@ static void *worker_libevent(void *arg)
 static void thread_libevent_process(evutil_socket_t fd, short which, void *arg)
 {
     log_routine(__func__);
-    ecall_thread_libevent_process(global_eid, fd, which, arg);
-    return;
+    //ecall_thread_libevent_process(global_eid, fd, which, arg);
+    //return;
     //pyuhala: this should probably be done inside the enclave
 
     LIBEVENT_THREAD *me = arg;
@@ -689,6 +698,7 @@ static int last_thread_by_napi_id = -1;
 
 static LIBEVENT_THREAD *select_thread_round_robin(void)
 {
+    log_routine(__func__);
     int tid = (last_thread + 1) % settings.num_threads;
 
     last_thread = tid;
@@ -698,6 +708,7 @@ static LIBEVENT_THREAD *select_thread_round_robin(void)
 
 static void reset_threads_napi_id(void)
 {
+    log_routine(__func__);
     LIBEVENT_THREAD *thread;
     int i;
 
@@ -716,6 +727,7 @@ static void reset_threads_napi_id(void)
  */
 static LIBEVENT_THREAD *select_thread_by_napi_id(int sfd)
 {
+    log_routine(__func__);
     LIBEVENT_THREAD *thread;
     int napi_id, err, i;
     socklen_t len;
@@ -769,6 +781,7 @@ select:
 void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
                        int read_buffer_size, enum network_transport transport, void *ssl)
 {
+    log_routine(__func__);
     CQ_ITEM *item = cqi_new();
     char buf[1];
     if (item == NULL)
@@ -811,6 +824,7 @@ void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
 #define REDISPATCH_MSG_SIZE (1 + sizeof(int))
 void redispatch_conn(conn *c)
 {
+    log_routine(__func__);
     char buf[REDISPATCH_MSG_SIZE];
     LIBEVENT_THREAD *thread = c->thread;
 
@@ -825,6 +839,7 @@ void redispatch_conn(conn *c)
 /* This misses the allow_new_conns flag :( */
 void sidethread_conn_close(conn *c)
 {
+    log_routine(__func__);
     if (settings.verbose > 1)
         fprintf(stderr, "<%d connection closing from side thread.\n", c->sfd);
 
@@ -1080,6 +1095,7 @@ void slab_stats_aggregate(struct thread_stats *stats, struct slab_stats *out)
  */
 void memcached_thread_init(int nthreads, void *arg)
 {
+    log_routine(__func__);
     int i;
     int power;
 

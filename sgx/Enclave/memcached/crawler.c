@@ -484,7 +484,7 @@ void *item_crawler_thread(void *arg)
     log_routine(__func__);
     int i;
     int crawls_persleep = settings.crawls_persleep;
-
+    do_run_lru_crawler_thread = 1;
     sgx_thread_mutex_lock(&lru_crawler_lock);
     sgx_thread_cond_signal(&lru_crawler_cond);
     settings.lru_crawler = true;

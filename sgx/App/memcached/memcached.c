@@ -183,6 +183,37 @@ static void maxconns_handler(const evutil_socket_t fd, const short which, void *
     }
 }
 
+/*
+ * given time value that's either unix time or delta from current unix time, return
+ * unix time. Use the fact that delta can't exceed one month (and real time value can't
+ * be that low).
+ */
+rel_time_t realtimexxx(const time_t exptime)
+{
+    log_routine(__func__);
+    /* no. of seconds in 30 days - largest possible delta exptime */
+
+    if (exptime == 0)
+        return 0; /* 0 means never expire */
+
+    if (exptime > REALTIME_MAXDELTA)
+    {
+        /* if item expiration is at/before the server started, give it an
+           expiration time of 1 second after the server started.
+           (because 0 means don't expire).  without this, we'd
+           underflow and wrap around to some large value way in the
+           future, effectively making items expiring in the past
+           really expiring never */
+        if (exptime <= process_started)
+            return (rel_time_t)1;
+        return (rel_time_t)(exptime - process_started);
+    }
+    else
+    {
+        return (rel_time_t)(exptime + current_time);
+    }
+}
+
 static void stats_init(void)
 {
     log_routine(__func__);
@@ -241,7 +272,7 @@ static void settings_init(void)
     settings.auth_file = NULL;  /* by default, not using ASCII authentication tokens */
     settings.factor = 1.25;
     settings.chunk_size = 48; /* space for a modest key and value */
-    settings.num_threads = 4; /* N workers */
+    settings.num_threads = 2; /* N workers */
     settings.num_threads_per_udp = 0;
     settings.prefix_delimiter = ':';
     settings.detail_enabled = 0;
@@ -579,6 +610,7 @@ void conn_worker_readd(conn *c)
         }
     }
     c->ev_flags = EV_READ | EV_PERSIST;
+   
     event_set(&c->event, c->sfd, c->ev_flags, event_handler, (void *)c);
     event_base_set(c->thread->base, &c->event);
 
@@ -658,7 +690,7 @@ static void conn_io_queue_complete(conn *c)
     }
 }
 
-conn *conn_new(const int sfd, enum conn_states init_state,
+conn *conn_newxxx(const int sfd, enum conn_states init_state,
                const int event_flags,
                const int read_buffer_size, enum network_transport transport,
                struct event_base *base, void *ssl)
@@ -847,6 +879,7 @@ conn *conn_new(const int sfd, enum conn_states init_state,
         }
     }
 
+    event_set(&c->event, sfd, event_flags, NULL, (void *)c);
     event_set(&c->event, sfd, event_flags, event_handler, (void *)c);
     event_base_set(base, &c->event);
     c->ev_flags = event_flags;
@@ -999,7 +1032,7 @@ static void conn_close(conn *c)
 // Since some connections might be off on side threads and some are managed as
 // listeners we need to walk through them all from a central point.
 // Must be called with all worker threads hung or in the process of closing.
-void conn_close_all(void)
+void conn_close_allxxx(void)
 {
     log_routine(__func__);
     int i;
@@ -3393,6 +3426,7 @@ static void drive_machine(conn *c)
         switch (c->state)
         {
         case conn_listening:
+
             addrlen = sizeof(addr);
 #ifdef HAVE_ACCEPT4
             if (use_accept4)
@@ -3526,6 +3560,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_waiting:
+
             rbuf_release(c);
             if (!update_event(c, EV_READ | EV_PERSIST))
             {
@@ -3540,6 +3575,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_read:
+
             if (!IS_UDP(c->transport))
             {
                 // Assign a read buffer if necessary.
@@ -3560,12 +3596,15 @@ static void drive_machine(conn *c)
             switch (res)
             {
             case READ_NO_DATA_RECEIVED:
+
                 conn_set_state(c, conn_waiting);
                 break;
             case READ_DATA_RECEIVED:
+
                 conn_set_state(c, conn_parse_cmd);
                 break;
             case READ_ERROR:
+
                 conn_set_state(c, conn_closing);
                 break;
             case READ_MEMORY_ERROR: /* Failed to allocate more memory */
@@ -3575,6 +3614,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_parse_cmd:
+
             c->noreply = false;
             if (c->try_read_command(c) == 0)
             {
@@ -3593,6 +3633,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_new_cmd:
+
             /* Only process nreqs at a time to avoid starving other
                connections */
 
@@ -3632,6 +3673,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_nread:
+
             if (c->rlbytes == 0)
             {
                 complete_nread(c);
@@ -3735,6 +3777,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_swallow:
+
             /* we are reading sbytes and throwing them away */
             if (c->sbytes <= 0)
             {
@@ -3787,6 +3830,7 @@ static void drive_machine(conn *c)
 
         case conn_write:
         case conn_mwrite:
+
             /* have side IO's that must process before transmit() can run.
              * remove the connection from the worker thread and dispatch the
              * IO queue
@@ -4957,37 +5001,3 @@ struct _mc_meta_data
     uint32_t current_time;
 };
 
-// We need to remember a combination of configuration settings and global
-// state for restart viability and resumption of internal services.
-// Compared to the number of tunables and state values, relatively little
-// does need to be remembered.
-// Time is the hardest; we have to assume the sys clock is correct and re-sync for
-// the lost time after restart.
-static int _mc_meta_save_cb(const char *tag, void *ctx, void *data)
-{
-    //pyuhala: removed
-
-    return 0;
-}
-
-// We must see at least this number of checked lines. Else empty/missing lines
-// could cause a false-positive.
-// TODO: Once crc32'ing of the metadata file is done this could be ensured better by
-// the restart module itself (crc32 + count of lines must match on the
-// backend)
-#define RESTART_REQUIRED_META 17
-
-// With this callback we make a decision on if the current configuration
-// matches up enough to allow reusing the cache.
-// We also re-load important runtime information.
-static int _mc_meta_load_cb(const char *tag, void *ctx, void *data)
-{
-
-    //pyuhala:removed
-    return 0;
-}
-
-/**
- * pyuhala: main removed.
- * see memcached_sgx_out: init_memcached()
- */

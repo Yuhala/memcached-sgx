@@ -161,8 +161,18 @@ enum transmit_result
     TRANSMIT_HARD_ERROR  /** Can't write (c->state is set to conn_closing) */
 };
 
-//pyuhala: used to manage cross-enclave connections
+//pyuhala: used to manage cross-enclave connections and libevent threads
 struct event *event_array[MAX_ENC_CONNS];
+LIBEVENT_THREAD *event_thread_array[MAX_ENC_CONNS];
+
+void setEventThread(LIBEVENT_THREAD *lt, int conn_id)
+{
+    event_thread_array[conn_id] = lt;
+}
+LIBEVENT_THREAD *getEventThread(int conn_id)
+{
+    return event_thread_array[conn_id];
+}
 
 //set event structure for enclave conn variable
 void setConnEvent(struct event *ev, int conn_id)
@@ -219,6 +229,316 @@ ssize_t tcp_write(conn *c, void *buf, size_t count)
     log_routine(__func__);
     assert(c != NULL);
     return write(c->sfd, buf, count);
+}
+
+//add new routines here
+
+static const char *prot_text(enum protocol prot)
+{
+    log_routine(__func__);
+    char *rv = "unknown";
+    switch (prot)
+    {
+    case ascii_prot:
+        rv = "ascii";
+        break;
+    case binary_prot:
+        rv = "binary";
+        break;
+    case negotiating_prot:
+        rv = "auto-negotiate";
+        break;
+    }
+    return rv;
+}
+
+static int try_read_command_negotiate(conn *c)
+{
+    log_routine(__func__);
+    assert(c->protocol == negotiating_prot);
+    assert(c != NULL);
+    assert(c->rcurr <= (c->rbuf + c->rsize));
+    assert(c->rbytes > 0);
+
+    if ((unsigned char)c->rbuf[0] == (unsigned char)PROTOCOL_BINARY_REQ)
+    {
+        c->protocol = binary_prot;
+        c->try_read_command = try_read_command_binary;
+    }
+    else
+    {
+        // authentication doesn't work with negotiated protocol.
+        c->protocol = ascii_prot;
+        c->try_read_command = try_read_command_ascii;
+    }
+
+    if (settings.verbose > 1)
+    {
+        fprintf(stderr, "%d: Client using the %s protocol\n", c->sfd,
+                prot_text(c->protocol));
+    }
+
+    return c->try_read_command(c);
+}
+
+static int try_read_command_udp(conn *c)
+{
+    log_routine(__func__);
+    assert(c != NULL);
+    assert(c->rcurr <= (c->rbuf + c->rsize));
+    assert(c->rbytes > 0);
+
+    if ((unsigned char)c->rbuf[0] == (unsigned char)PROTOCOL_BINARY_REQ)
+    {
+        c->protocol = binary_prot;
+        return try_read_command_binary(c);
+    }
+    else
+    {
+        c->protocol = ascii_prot;
+        return try_read_command_ascii(c);
+    }
+}
+
+conn *conn_new(const int sfd, enum conn_states init_state,
+               const int event_flags,
+               const int read_buffer_size, enum network_transport transport,
+               struct event_base *base, void *ssl)
+{
+
+    log_routine(__func__);
+    void *ret;
+    int fd = sfd;
+    int flags = event_flags;
+    int bufsz = read_buffer_size;
+    ecall_conn_new(global_eid, &ret, fd, init_state, flags, bufsz, transport, base, ssl);
+    return (conn *)ret;
+
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    conn *c;
+
+    assert(sfd >= 0 && sfd < max_fds);
+    c = conns[sfd];
+
+    if (NULL == c)
+    {
+        if (!(c = (conn *)calloc(1, sizeof(conn))))
+        {
+            STATS_LOCK();
+            stats.malloc_fails++;
+            STATS_UNLOCK();
+            fprintf(stderr, "Failed to allocate connection object\n");
+            return NULL;
+        }
+        MEMCACHED_CONN_CREATE(c);
+        c->read = NULL;
+        c->sendmsg = NULL;
+        c->write = NULL;
+        c->rbuf = NULL;
+
+        c->rsize = read_buffer_size;
+
+        // UDP connections use a persistent static buffer.
+        if (c->rsize)
+        {
+            c->rbuf = (char *)malloc((size_t)c->rsize);
+        }
+
+        if (c->rsize && c->rbuf == NULL)
+        {
+            conn_free(c);
+            STATS_LOCK();
+            stats.malloc_fails++;
+            STATS_UNLOCK();
+            fprintf(stderr, "Failed to allocate buffers for connection\n");
+            return NULL;
+        }
+
+        STATS_LOCK();
+        stats_state.conn_structs++;
+        STATS_UNLOCK();
+
+        c->sfd = sfd;
+        conns[sfd] = c;
+    }
+
+    c->transport = transport;
+    c->protocol = settings.binding_protocol;
+
+    /* unix socket mode doesn't need this, so zeroed out.  but why
+     * is this done for every command?  presumably for UDP
+     * mode.  */
+    if (!settings.socketpath)
+    {
+        c->request_addr_size = sizeof(c->request_addr);
+    }
+    else
+    {
+        c->request_addr_size = 0;
+    }
+
+    if (transport == tcp_transport && init_state == conn_new_cmd)
+    {
+        if (getpeername(sfd, (struct sockaddr *)&c->request_addr,
+                        &c->request_addr_size))
+        {
+            perror("getpeername");
+            memset(&c->request_addr, 0, sizeof(c->request_addr));
+        }
+    }
+
+    if (settings.verbose > 1)
+    {
+        if (init_state == conn_listening)
+        {
+            fprintf(stderr, "<%d server listening (%s)\n", sfd,
+                    prot_text(c->protocol));
+        }
+        else if (IS_UDP(transport))
+        {
+            fprintf(stderr, "<%d server listening (udp)\n", sfd);
+        }
+        else if (c->protocol == negotiating_prot)
+        {
+            fprintf(stderr, "<%d new auto-negotiating client connection\n",
+                    sfd);
+        }
+        else if (c->protocol == ascii_prot)
+        {
+            fprintf(stderr, "<%d new ascii client connection.\n", sfd);
+        }
+        else if (c->protocol == binary_prot)
+        {
+            fprintf(stderr, "<%d new binary client connection.\n", sfd);
+        }
+        else
+        {
+            fprintf(stderr, "<%d new unknown (%d) client connection\n",
+                    sfd, c->protocol);
+            assert(false);
+        }
+    }
+
+#ifdef TLS
+    c->ssl = NULL;
+    c->ssl_wbuf = NULL;
+    c->ssl_enabled = false;
+#endif
+    c->state = init_state;
+    c->rlbytes = 0;
+    c->cmd = -1;
+    c->rbytes = 0;
+    c->rcurr = c->rbuf;
+    c->ritem = 0;
+    c->rbuf_malloced = false;
+    c->item_malloced = false;
+    c->sasl_started = false;
+    c->set_stale = false;
+    c->mset_res = false;
+    c->close_after_write = false;
+    c->last_cmd_time = current_time; /* initialize for idle kicker */
+    // wipe all queues.
+    memset(c->io_queues, 0, sizeof(c->io_queues));
+    c->io_queues_submitted = 0;
+
+    c->item = 0;
+
+    c->noreply = false;
+
+#ifdef TLS
+    if (ssl)
+    {
+        c->ssl = (SSL *)ssl;
+        c->read = ssl_read;
+        c->sendmsg = ssl_sendmsg;
+        c->write = ssl_write;
+        c->ssl_enabled = true;
+        SSL_set_info_callback(c->ssl, ssl_callback);
+    }
+    else
+#else
+    // This must be NULL if TLS is not enabled.
+    assert(ssl == NULL);
+#endif
+    {
+        c->read = tcp_read;
+        c->sendmsg = tcp_sendmsg;
+        c->write = tcp_write;
+    }
+
+    if (IS_UDP(transport))
+    {
+        c->try_read_command = try_read_command_udp;
+    }
+    else
+    {
+        switch (c->protocol)
+        {
+        case ascii_prot:
+            if (settings.auth_file == NULL)
+            {
+                c->authenticated = true;
+                c->try_read_command = try_read_command_ascii;
+            }
+            else
+            {
+                c->authenticated = false;
+                c->try_read_command = try_read_command_asciiauth;
+            }
+            break;
+        case binary_prot:
+            // binprot handles its own authentication via SASL parsing.
+            c->authenticated = false;
+            c->try_read_command = try_read_command_binary;
+            break;
+        case negotiating_prot:
+            c->try_read_command = try_read_command_negotiate;
+            break;
+        }
+    }
+
+    event_set(&c->event, sfd, event_flags, event_handler, (void *)c);
+    event_base_set(base, &c->event);
+    c->ev_flags = event_flags;
+
+    if (event_add(&c->event, 0) == -1)
+    {
+        perror("event_add");
+        return NULL;
+    }
+
+    STATS_LOCK();
+    stats_state.curr_conns++;
+    stats.total_conns++;
+    STATS_UNLOCK();
+
+    MEMCACHED_CONN_ALLOCATE(c->sfd);
+
+    return c;
+}
+
+/*
+ * Frees a connection.
+ */
+void conn_free(conn *c)
+{
+    log_routine(__func__);
+    if (c)
+    {
+        assert(c != NULL);
+        assert(c->sfd >= 0 && c->sfd < max_fds);
+
+        MEMCACHED_CONN_DESTROY(c);
+        conns[c->sfd] = NULL;
+        if (c->rbuf)
+            free(c->rbuf);
+#ifdef TLS
+        if (c->ssl_wbuf)
+            c->ssl_wbuf = NULL;
+#endif
+
+        free(c);
+    }
 }
 
 static enum transmit_result transmit(conn *c);
@@ -1069,6 +1389,23 @@ static void conn_close(conn *c)
     return;
 }
 
+// Since some connections might be off on side threads and some are managed as
+// listeners we need to walk through them all from a central point.
+// Must be called with all worker threads hung or in the process of closing.
+void conn_close_all(void)
+{
+    log_routine(__func__);
+    int i;
+    for (i = 0; i < max_fds; i++)
+    {
+        if (conns[i] && conns[i]->state != conn_closed)
+        {
+            conn_close(conns[i]);
+        }
+    }
+}
+
+
 void event_handler(const evutil_socket_t fd, const short which, void *arg)
 {
     log_routine(__func__);
@@ -1120,7 +1457,7 @@ static void sig_usrhandler(const int sig)
 /**
  * pyuhala: sets up the event structures for a connection
  */
-int ocall_setup_conn_event(int fd, int flags, struct event_base *base, void *conn_ptr, int conn_id)
+int mcd_ocall_setup_conn_event(int fd, int flags, struct event_base *base, void *conn_ptr, int conn_id)
 {
     log_routine(__func__);
     const int sfd = fd;
@@ -1144,7 +1481,7 @@ int ocall_setup_conn_event(int fd, int flags, struct event_base *base, void *con
     return 0;
 }
 
-void ocall_update_conn_event(int fd, int new_flags, struct event_base *base, void *conn_ptr, int conn_id)
+void mcd_ocall_update_conn_event(int fd, int new_flags, struct event_base *base, void *conn_ptr, int conn_id)
 {
     log_routine(__func__);
     const int sfd = fd;
@@ -1156,7 +1493,7 @@ void ocall_update_conn_event(int fd, int new_flags, struct event_base *base, voi
     event_base_set(main_base, ev);
 }
 
-int ocall_sgx_event_del(int conn_id)
+int mcd_ocall_event_del(int conn_id)
 {
     log_routine(__func__);
     struct event *ev = getConnEvent(conn_id);
@@ -1165,13 +1502,18 @@ int ocall_sgx_event_del(int conn_id)
 
     return 0;
 }
-int ocall_sgx_event_add(int conn_id)
+int mcd_ocall_event_add(int conn_id)
 {
     log_routine(__func__);
     struct event *ev = getConnEvent(conn_id);
     if (event_add(ev, 0) == -1)
         return -1;
     return 0;
+}
+
+void mcd_ocall_event_base_loopexit()
+{
+    event_base_loopexit(main_base, NULL);
 }
 
 // >>>>>>>>>>>>>>>>>>>>>>>>> memcached ocalls end >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1422,7 +1764,8 @@ void init_memcached()
     ecall_stats_init(global_eid);
 
     //init connections array
-    ecall_conn_init(global_eid);
+    //ecall_conn_init(global_eid);
+    conn_init();
 
     //init hash table
     ecall_init_hashtable(global_eid);
