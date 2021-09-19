@@ -221,6 +221,7 @@ ssize_t read(int fd, void *buf, size_t count)
     if (should_be_switchless(FN_TOKEN_READ))
         ret = read_switchless(fd, buf, count);
     else
+
         ocall_read(&ret, fd, buf, count);
     //printf("read fd: %d\n", fd);
     return ret;
@@ -367,13 +368,12 @@ int lstat(const char *path, struct stat *buf)
     return ret;
 }
 
-
 char *getenv(const char *name)
 {
-	char* retval;
-	sgx_status_t status = ocall_getenv(&retval, name);
-	//CHECK_STATUS(status);
-	return retval;
+    char *retval;
+    sgx_status_t status = ocall_getenv(&retval, name);
+    //CHECK_STATUS(status);
+    return retval;
 }
 
 ulong crc32(ulong crc, const Byte *buf, uint len)

@@ -613,6 +613,7 @@ static void thread_libevent_process(evutil_socket_t fd, short which, void *arg)
                          me->base, item->ssl);
             if (c == NULL)
             {
+
                 if (IS_UDP(item->transport))
                 {
                     fprintf(stderr, "Can't listen for events on UDP socket\n");
@@ -637,7 +638,10 @@ static void thread_libevent_process(evutil_socket_t fd, short which, void *arg)
             }
             else
             {
-                c->thread = me;
+                //pyuhala: associate connection to libevent_thread
+                //c->thread = me;
+                setEventThread(me, item->sfd);
+                ecall_set_conn_thread(global_eid, (void *)c, (void *)me);
 #ifdef EXTSTORE
                 if (c->thread->storage)
                 {
@@ -645,7 +649,8 @@ static void thread_libevent_process(evutil_socket_t fd, short which, void *arg)
                                       storage_submit_cb, storage_complete_cb, storage_finalize_cb);
                 }
 #endif
-                conn_io_queue_add(c, IO_QUEUE_NONE, NULL, NULL, NULL, NULL);
+                ecall_conn_io_queue_add(global_eid, c, IO_QUEUE_NONE);
+                //conn_io_queue_add(c, IO_QUEUE_NONE, NULL, NULL, NULL, NULL);
 
 #ifdef TLS
                 if (settings.ssl_enabled && c->ssl != NULL)
@@ -798,6 +803,9 @@ void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
         thread = select_thread_round_robin();
     else
         thread = select_thread_by_napi_id(sfd);
+
+    //pyuhala: set event thread
+    setEventThread(thread, sfd);
 
     item->sfd = sfd;
     item->init_state = init_state;
@@ -1169,6 +1177,8 @@ void memcached_thread_init(int nthreads, void *arg)
 
     for (i = 0; i < nthreads; i++)
     {
+        //pyuhala: give custom ids to libevent threads; will be used with conns
+        threads[i].libevent_tid = i;
         int fds[2];
         if (pipe(fds))
         {

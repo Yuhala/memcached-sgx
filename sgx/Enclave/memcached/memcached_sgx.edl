@@ -39,9 +39,11 @@ enclave {
         public void ecall_conn_init();
         public void ecall_item_lru_bump_buf_create();
         public void ecall_thread_libevent_process(evutil_socket_t fd, short which, [user_check]void *arg);
+        public void ecall_event_handler(evutil_socket_t fd, short which, [user_check]void *arg);
 
         public void* ecall_conn_new(int sfd,enum conn_states init_state,int flags,int rd_buff_sz, enum network_transport tport, [user_check]struct event_base *base, [user_check]void* ssl);
-
+        public void ecall_conn_io_queue_add([user_check]void *c, int type);
+        public void ecall_set_conn_thread([user_check]void *c, [user_check]void *libevent_thread);
 
 
     };
@@ -53,5 +55,10 @@ enclave {
         void mcd_ocall_event_base_loopexit();
         int mcd_ocall_event_del(int conn_id);
         int mcd_ocall_event_add(int conn_id);
+        void mcd_ocall_dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags, int read_buffer_size, enum network_transport transport, [user_check]void *ssl);
+        void *mcd_ocall_do_cache_alloc(int conn_id, int lvt_thread_id);
+        void mcd_ocall_do_cache_free(int conn_id, int lvt_thread_id,[user_check]void* bundle);
+        void mcd_ocall_mutex_lock_lthread_stats(int conn_id);
+        void mcd_ocall_mutex_unlock_lthread_stats(int conn_id);
     };
 };

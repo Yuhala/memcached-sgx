@@ -150,9 +150,9 @@ void complete_nread_ascii(conn *c)
     enum store_item_type ret;
     bool is_valid = false;
 
-    sgx_thread_mutex_lock(&c->thread->stats.mutex);
+    THR_STATS_LOCK(c)
     c->thread->stats.slab_stats[ITEM_clsid(it)].set_cmds++;
-    sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+    THR_STATS_UNLOCK(c)
 
     if ((it->it_flags & ITEM_CHUNKED) == 0)
     {
@@ -396,6 +396,7 @@ int try_read_command_asciiauth(conn *c)
         {
             if (c->rbytes > 1024)
             {
+                 printf("c-rbytes > 1024 is the prob >>>>>>>>>>>>>>>>>>>\n");
                 conn_set_state(c, conn_closing);
                 return 1;
             }
@@ -421,6 +422,7 @@ int try_read_command_asciiauth(conn *c)
             {
                 if (!resp_start(c))
                 {
+                     printf("Resp_start is the prob >>>>>>>>>>>>>>>>>>>\n");
                     conn_set_state(c, conn_closing);
                     return 1;
                 }
@@ -447,6 +449,7 @@ int try_read_command_asciiauth(conn *c)
     {
         if (!resp_start(c))
         {
+             printf("Resp_start, attach a resp obj >>>>>>>>>>>>>>>>>>>\n");
             conn_set_state(c, conn_closing);
             return 1;
         }
@@ -482,17 +485,17 @@ int try_read_command_asciiauth(conn *c)
         out_string(c, "STORED");
         c->authenticated = true;
         c->try_read_command = try_read_command_ascii;
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         c->thread->stats.auth_cmds++;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
     }
     else
     {
         out_string(c, "CLIENT_ERROR authentication failure");
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         c->thread->stats.auth_cmds++;
         c->thread->stats.auth_errors++;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
     }
 
     return 1;
@@ -525,6 +528,7 @@ int try_read_command_ascii(conn *c)
                 (strncmp(ptr, "get ", 4) && strncmp(ptr, "gets ", 5)))
             {
 
+                 printf("ptr-c->rcurr is prob >>>>>>>>>>>>>>>>>>>\n");
                 conn_set_state(c, conn_closing);
                 return 1;
             }
@@ -536,6 +540,7 @@ int try_read_command_ascii(conn *c)
             {
                 if (!rbuf_switch_to_malloc(c))
                 {
+                     printf("rbuf switch to malloc is prob >>>>>>>>>>>>>>>>>>>\n");
                     conn_set_state(c, conn_closing);
                     return 1;
                 }
@@ -688,9 +693,9 @@ static inline void process_get_command(conn *c, token_t *tokens, size_t ntokens,
                     {
                         if (storage_get_item(c, it, resp) != 0)
                         {
-                            sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                            THR_STATS_LOCK(c)
                             c->thread->stats.get_oom_extstore++;
-                            sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                            THR_STATS_UNLOCK(c)
 
                             item_remove(it);
                             goto stop;
@@ -728,7 +733,7 @@ static inline void process_get_command(conn *c, token_t *tokens, size_t ntokens,
                 }
 
                 /* item_get() has incremented it->refcount for us */
-                sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                THR_STATS_LOCK(c)
                 if (should_touch)
                 {
                     c->thread->stats.touch_cmds++;
@@ -739,7 +744,7 @@ static inline void process_get_command(conn *c, token_t *tokens, size_t ntokens,
                     c->thread->stats.lru_hits[it->slabs_clsid]++;
                     c->thread->stats.get_cmds++;
                 }
-                sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                THR_STATS_UNLOCK(c)
 #ifdef EXTSTORE
                 /* If ITEM_HDR, an io_wrap owns the reference. */
                 if ((it->it_flags & ITEM_HDR) == 0)
@@ -752,7 +757,7 @@ static inline void process_get_command(conn *c, token_t *tokens, size_t ntokens,
             }
             else
             {
-                sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                THR_STATS_LOCK(c)
                 if (should_touch)
                 {
                     c->thread->stats.touch_cmds++;
@@ -764,7 +769,7 @@ static inline void process_get_command(conn *c, token_t *tokens, size_t ntokens,
                     c->thread->stats.get_cmds++;
                 }
                 MEMCACHED_COMMAND_GET(c->sfd, key, nkey, -1, 0);
-                sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                THR_STATS_UNLOCK(c)
             }
 
             key_token++;
@@ -811,6 +816,7 @@ stop:
         if (!resp_start(c))
         {
             // severe out of memory error.
+             printf("severe is the prob >>>>>>>>>>>>>>>>>>>\n");
             conn_set_state(c, conn_closing);
             return;
         }
@@ -1047,9 +1053,9 @@ static void process_meta_command(conn *c, token_t *tokens, const size_t ntokens)
     {
         out_string(c, "EN");
     }
-    sgx_thread_mutex_lock(&c->thread->stats.mutex);
+    THR_STATS_LOCK(c)
     c->thread->stats.meta_cmds++;
-    sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+    THR_STATS_UNLOCK(c)
 }
 
 #define MFLAG_MAX_OPT_LENGTH 20
@@ -1483,9 +1489,9 @@ static void process_mget_command(conn *c, token_t *tokens, const size_t ntokens)
             {
                 if (storage_get_item(c, it, resp) != 0)
                 {
-                    sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                    THR_STATS_LOCK(c)
                     c->thread->stats.get_oom_extstore++;
-                    sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                    THR_STATS_UNLOCK(c)
 
                     failed = true;
                 }
@@ -1559,7 +1565,7 @@ static void process_mget_command(conn *c, token_t *tokens, const size_t ntokens)
     // TODO: for autovivify case, miss never happens. Is this okay?
     if (!failed)
     {
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         if (ttl_set)
         {
             c->thread->stats.touch_cmds++;
@@ -1570,13 +1576,13 @@ static void process_mget_command(conn *c, token_t *tokens, const size_t ntokens)
             c->thread->stats.lru_hits[it->slabs_clsid]++;
             c->thread->stats.get_cmds++;
         }
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
 
         conn_set_state(c, conn_new_cmd);
     }
     else
     {
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         if (ttl_set)
         {
             c->thread->stats.touch_cmds++;
@@ -1588,7 +1594,7 @@ static void process_mget_command(conn *c, token_t *tokens, const size_t ntokens)
             c->thread->stats.get_cmds++;
         }
         MEMCACHED_COMMAND_GET(c->sfd, key, nkey, -1, 0);
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
 
         // This gets elided in noreply mode.
         out_string(c, "EN");
@@ -1894,9 +1900,9 @@ static void process_mdelete_command(conn *c, token_t *tokens, const size_t ntoke
         // allow only deleting/marking if a CAS value matches.
         if (of.has_cas && ITEM_get_cas(it) != req_cas_id)
         {
-            sgx_thread_mutex_lock(&c->thread->stats.mutex);
+            THR_STATS_LOCK(c)
             c->thread->stats.delete_misses++;
-            sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+            THR_STATS_UNLOCK(c)
 
             memcpy(resp->wbuf, "EX ", 3);
             goto cleanup;
@@ -1931,9 +1937,9 @@ static void process_mdelete_command(conn *c, token_t *tokens, const size_t ntoke
         }
         else
         {
-            sgx_thread_mutex_lock(&c->thread->stats.mutex);
+            THR_STATS_LOCK(c)
             c->thread->stats.slab_stats[ITEM_clsid(it)].delete_hits++;
-            sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+            THR_STATS_UNLOCK(c)
 
             do_item_unlink(it, hv);
             STORAGE_delete(c->thread->storage, it);
@@ -1952,9 +1958,9 @@ static void process_mdelete_command(conn *c, token_t *tokens, const size_t ntoke
     }
     else
     {
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         c->thread->stats.delete_misses++;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
 
         memcpy(resp->wbuf, "NF ", 3);
         goto cleanup;
@@ -2105,7 +2111,7 @@ static void process_marithmetic_command(conn *c, token_t *tokens, const size_t n
         }
         else
         {
-            sgx_thread_mutex_lock(&c->thread->stats.mutex);
+            THR_STATS_LOCK(c)
             if (incr)
             {
                 c->thread->stats.incr_misses++;
@@ -2114,7 +2120,7 @@ static void process_marithmetic_command(conn *c, token_t *tokens, const size_t n
             {
                 c->thread->stats.decr_misses++;
             }
-            sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+            THR_STATS_UNLOCK(c)
             // won't have a valid it here.
             memcpy(p, "NF ", 3);
             p += 3;
@@ -2320,8 +2326,8 @@ static void process_update_command(conn *c, token_t *tokens, const size_t ntoken
             out_of_memory(c, "SERVER_ERROR out of memory storing object");
             status = NO_MEMORY;
         }
-        LOGGER_LOG(c->thread->l, LOG_MUTATIONS, LOGGER_ITEM_STORE,
-                   NULL, status, comm, key, nkey, 0, 0, c->sfd);
+        //LOGGER_LOG(c->thread->l, LOG_MUTATIONS, LOGGER_ITEM_STORE,
+        //          NULL, status, comm, key, nkey, 0, 0, c->sfd);
         /* swallow the data line */
         conn_set_state(c, conn_swallow);
         c->sbytes = vlen;
@@ -2358,6 +2364,7 @@ static void process_update_command(conn *c, token_t *tokens, const size_t ntoken
 #endif
     c->rlbytes = it->nbytes;
     c->cmd = comm;
+    
     conn_set_state(c, conn_nread);
 }
 
@@ -2393,20 +2400,20 @@ static void process_touch_command(conn *c, token_t *tokens, const size_t ntokens
     it = item_touch(key, nkey, exptime, c);
     if (it)
     {
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         c->thread->stats.touch_cmds++;
         c->thread->stats.slab_stats[ITEM_clsid(it)].touch_hits++;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
 
         out_string(c, "TOUCHED");
         item_remove(it);
     }
     else
     {
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         c->thread->stats.touch_cmds++;
         c->thread->stats.touch_misses++;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
 
         out_string(c, "NOT_FOUND");
     }
@@ -2451,7 +2458,7 @@ static void process_arithmetic_command(conn *c, token_t *tokens, const size_t nt
         out_of_memory(c, "SERVER_ERROR out of memory");
         break;
     case DELTA_ITEM_NOT_FOUND:
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         if (incr)
         {
             c->thread->stats.incr_misses++;
@@ -2460,7 +2467,7 @@ static void process_arithmetic_command(conn *c, token_t *tokens, const size_t nt
         {
             c->thread->stats.decr_misses++;
         }
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
 
         out_string(c, "NOT_FOUND");
         break;
@@ -2511,9 +2518,9 @@ static void process_delete_command(conn *c, token_t *tokens, const size_t ntoken
     {
         MEMCACHED_COMMAND_DELETE(c->sfd, ITEM_key(it), it->nkey);
 
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         c->thread->stats.slab_stats[ITEM_clsid(it)].delete_hits++;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
 
         do_item_unlink(it, hv);
         STORAGE_delete(c->thread->storage, it);
@@ -2522,9 +2529,9 @@ static void process_delete_command(conn *c, token_t *tokens, const size_t ntoken
     }
     else
     {
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        THR_STATS_LOCK(c)
         c->thread->stats.delete_misses++;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        THR_STATS_UNLOCK(c)
 
         out_string(c, "NOT_FOUND");
     }
@@ -2952,9 +2959,9 @@ static void process_flush_all_command(conn *c, token_t *tokens, const size_t nto
 
     set_noreply_maybe(c, tokens, ntokens);
 
-    sgx_thread_mutex_lock(&c->thread->stats.mutex);
+    THR_STATS_LOCK(c)
     c->thread->stats.flush_cmds++;
-    sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+    THR_STATS_UNLOCK(c)
 
     if (!settings.flush_enabled)
     {
@@ -3282,6 +3289,7 @@ static void process_command(conn *c, char *command)
     // Prep the response object for this query.
     if (!resp_start(c))
     {
+         printf("Resp_start is the prob >>>>>>>>>>>>>>>>>>>\n");
         conn_set_state(c, conn_closing);
         return;
     }

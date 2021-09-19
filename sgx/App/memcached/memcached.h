@@ -1025,7 +1025,7 @@ extern "C"
     void process_stats_conns(ADD_STAT add_stats, void *c);
 
 //pyuhala: used to manage cross-enclave connections
-#define MAX_ENC_CONNS 100
+#define MAX_ENC_CONNS 1000
     void setConnEvent(struct event *ev, int conn_id);
     struct event *getConnEvent(int conn_id);
 

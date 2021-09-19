@@ -578,7 +578,7 @@ void sgx_thread_libevent_process(evutil_socket_t fd, short which, void *arg)
 
         if (NULL == item)
         {
-            
+
             break;
         }
         switch (item->mode)
@@ -613,7 +613,8 @@ void sgx_thread_libevent_process(evutil_socket_t fd, short which, void *arg)
             }
             else
             {
-                c->thread = me;
+                //c->thread = me;
+                //pyuhala: will do this via an ecall after conn_io_queue_add
 #ifdef EXTSTORE
                 if (c->thread->storage)
                 {
@@ -758,6 +759,11 @@ void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
                        int read_buffer_size, enum network_transport transport, void *ssl)
 {
     log_routine(__func__);
+    mcd_ocall_dispatch_conn_new(sfd, init_state, event_flags, read_buffer_size, transport, ssl);
+
+    //petman: this is more logical outside, so ocall and return
+    //todo:cleanup
+    return;
     CQ_ITEM *item = cqi_new();
     char buf[1];
     if (item == NULL)

@@ -1145,9 +1145,9 @@ item *do_item_get(const char *key, const size_t nkey, const uint32_t hv, conn *c
             STORAGE_delete(c->thread->storage, it);
             do_item_remove(it);
             it = NULL;
-            sgx_thread_mutex_lock(&c->thread->stats.mutex);
+            mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
             c->thread->stats.get_flushed++;
-            sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+            mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
             if (settings.verbose > 2)
             {
                 fprintf(stderr, " -nuked by flush");
@@ -1160,9 +1160,9 @@ item *do_item_get(const char *key, const size_t nkey, const uint32_t hv, conn *c
             STORAGE_delete(c->thread->storage, it);
             do_item_remove(it);
             it = NULL;
-            sgx_thread_mutex_lock(&c->thread->stats.mutex);
+            mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
             c->thread->stats.get_expired++;
-            sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+            mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
             if (settings.verbose > 2)
             {
                 fprintf(stderr, " -nuked by expire");

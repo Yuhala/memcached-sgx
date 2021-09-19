@@ -19,6 +19,7 @@
 #include "ocall_logger.h"
 #include "Enclave_u.h"
 
+//#include <libexplain/libexplain.h>
 #include "io.h"
 
 using namespace std;
@@ -233,7 +234,17 @@ off_t ocall_ftello(SGX_FILE stream)
 ssize_t ocall_read(int fd, void *buf, size_t count)
 {
     log_ocall(__func__);
-    return read(fd, buf, count);
+    ssize_t ret = read(fd, buf, count);
+
+    if (ret < 0)
+    {
+        ssize_t debug_ret = read(fd, 0, 0);
+        printf("read debug ret: %d >>>>>>>>>>>>>>>>>>>>>>\n", debug_ret);
+        //printf("Read error: %s\n", explain_read(fd, buf, count));
+        //install libexplain-dev: sudo apt install libexplain-dev
+        //exit(EXIT_FAILURE);
+    }
+    return ret;
 }
 
 ssize_t ocall_write(int fd, const void *buf, size_t count)
@@ -470,11 +481,10 @@ ssize_t ocall_pwrite(int fd, const void *buf, size_t count, off_t offset)
     return 0;
 } */
 
-
 char *ocall_getenv(const char *name)
 {
-     log_ocall(__func__);
-	return getenv(name);
+    log_ocall(__func__);
+    return getenv(name);
 }
 
 int ocall_chdir(const char *path)

@@ -869,6 +869,7 @@ extern "C"
         ssize_t (*read)(conn *c, void *buf, size_t count);
         ssize_t (*sendmsg)(conn *c, struct msghdr *msg, int flags);
         ssize_t (*write)(conn *c, void *buf, size_t count);
+        LIBEVENT_THREAD *thread_in; /*pyuhala: this will be allocated inside */
     };
 
     /* array of conn structures, indexed by file descriptor */
@@ -989,8 +990,8 @@ extern "C"
 #define refcount_decr(it) --(it->refcount)
     void STATS_LOCK(void);
     void STATS_UNLOCK(void);
-#define THR_STATS_LOCK(c) sgx_thread_mutex_lock(&c->thread->stats.mutex)
-#define THR_STATS_UNLOCK(c) sgx_thread_mutex_unlock(&c->thread->stats.mutex)
+#define THR_STATS_LOCK(c) mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+#define THR_STATS_UNLOCK(c) mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
     void threadlocal_stats_reset(void);
     void threadlocal_stats_aggregate(struct thread_stats *stats);
     void slab_stats_aggregate(struct thread_stats *stats, struct slab_stats *out);

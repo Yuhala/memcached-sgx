@@ -164,13 +164,28 @@ enum transmit_result
 //pyuhala: used to manage cross-enclave connections and libevent threads
 struct event *event_array[MAX_ENC_CONNS];
 LIBEVENT_THREAD *event_thread_array[MAX_ENC_CONNS];
+conn *my_conn_array[MAX_ENC_CONNS];
+static int conn_count = 0;
+
+void setConn(conn *c, int conn_id)
+{
+    my_conn_array[conn_id] = c;
+}
+
+//the conn_id is the sfd
+conn *getConn(int conn_id)
+{
+    return my_conn_array[conn_id];
+}
 
 void setEventThread(LIBEVENT_THREAD *lt, int conn_id)
 {
     event_thread_array[conn_id] = lt;
+    printf("setEventThread: %d <==> Connection: %d\n", lt->libevent_tid, conn_id);
 }
 LIBEVENT_THREAD *getEventThread(int conn_id)
 {
+    printf("getEventThread for conn: %d\n", conn_id);
     return event_thread_array[conn_id];
 }
 
@@ -232,6 +247,66 @@ ssize_t tcp_write(conn *c, void *buf, size_t count)
 }
 
 //add new routines here
+
+static void save_pid(const char *pid_file)
+{
+    log_routine(__func__);
+    SGX_FILE fp;
+    if (access(pid_file, F_OK) == 0)
+    {
+        if ((fp = fopen(pid_file, "r")) != NULL)
+        {
+            char buffer[1024];
+            if (fgets(buffer, sizeof(buffer), fp) != NULL)
+            {
+                unsigned int pid;
+                if (safe_strtoul(buffer, &pid) && kill((pid_t)pid, 0) == 0)
+                {
+                    fprintf(stderr, "WARNING: The pid file contained the following (running) pid: %u\n", pid);
+                }
+            }
+            fclose(fp);
+        }
+    }
+
+    /* Create the pid file first with a temporary name, then
+     * atomically move the file to the real name to avoid a race with
+     * another process opening the file to read the pid, but finding
+     * it empty.
+     */
+    char tmp_pid_file[1024];
+    snprintf(tmp_pid_file, sizeof(tmp_pid_file), "%s.tmp", pid_file);
+
+    if ((fp = fopen(tmp_pid_file, "w")) == NULL)
+    {
+        vperror("Could not open the pid file %s for writing", tmp_pid_file);
+        return;
+    }
+
+    fprintf(fp, "%ld\n", (long)getpid());
+    if (fclose(fp) == -1)
+    {
+        vperror("Could not close the pid file %s", tmp_pid_file);
+    }
+
+    if (rename(tmp_pid_file, pid_file) != 0)
+    {
+        vperror("Could not rename the pid file from %s to %s",
+                tmp_pid_file, pid_file);
+    }
+}
+
+static void remove_pidfile(const char *pid_file)
+{
+    log_routine(__func__);
+    if (pid_file == NULL)
+        return;
+
+    if (unlink(pid_file) != 0)
+    {
+        vperror("Could not remove the pid file %s", pid_file);
+    }
+}
 
 static const char *prot_text(enum protocol prot)
 {
@@ -312,6 +387,11 @@ conn *conn_new(const int sfd, enum conn_states init_state,
     int flags = event_flags;
     int bufsz = read_buffer_size;
     ecall_conn_new(global_eid, &ret, fd, init_state, flags, bufsz, transport, base, ssl);
+    if (ret == NULL)
+    {
+        printf("ecall_conn_new: ret is NULL >>>>>>>>>>>>\n");
+    }
+    //setConn((conn *)ret, fd);
     return (conn *)ret;
 
     //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1405,10 +1485,16 @@ void conn_close_all(void)
     }
 }
 
-
 void event_handler(const evutil_socket_t fd, const short which, void *arg)
 {
     log_routine(__func__);
+
+    evutil_socket_t sfd = fd;
+    short wch = which;
+
+    ecall_event_handler(global_eid, sfd, wch, arg);
+    return;
+
     conn *c;
 
     c = (conn *)arg;
@@ -1454,6 +1540,50 @@ static void sig_usrhandler(const int sig)
 
 // >>>>>>>>>>>>>>>>>>>>>>>>> memcached ocalls start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+void mcd_ocall_do_cache_free(int conn_id, int lvt_thread_id, void *ptr)
+{
+
+    log_routine(__func__);
+
+    LIBEVENT_THREAD *lthread = getEventThread(conn_id);
+    if (lthread == NULL)
+    {
+        printf("lthread is NULL >>>>>>>>>>>>>>>>>>>>>>\n");
+    }
+    //pyuhala: memory leaks outside..not a big deal for now..
+    do_cache_free(lthread->rbuf_cache, ptr);
+}
+void *mcd_ocall_do_cache_alloc(int conn_id, int lvt_thread_id)
+{
+    log_routine(__func__);
+
+    LIBEVENT_THREAD *lthread = getEventThread(conn_id);
+    if (lthread == NULL)
+    {
+        printf("lthread is NULL >>>>>>>>>>>>>>>>>>>>>>\n");
+    }
+    /**
+     * pyuhala: this should have been allocated already but for some reason I receive segfaults which says its NULL
+     * todo: check why it is null at this point. For now I reallocate
+     */
+    if (lthread->rbuf_cache == NULL)
+    {
+        lthread->rbuf_cache = cache_create("rbuf", READ_BUFFER_SIZE, sizeof(char *), NULL, NULL);
+        if (lthread->rbuf_cache == NULL)
+        {
+            fprintf(stderr, "Failed to create read buffer cache\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return do_cache_alloc(lthread->rbuf_cache);
+}
+
+void mcd_ocall_dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags, int read_buffer_size, enum network_transport transport, void *ssl)
+{
+    log_routine(__func__);
+    dispatch_conn_new(sfd, init_state, event_flags, read_buffer_size, transport, ssl);
+}
+
 /**
  * pyuhala: sets up the event structures for a connection
  */
@@ -1464,10 +1594,30 @@ int mcd_ocall_setup_conn_event(int fd, int flags, struct event_base *base, void 
     const int event_flags = flags;
     struct event *ev = (struct event *)malloc(sizeof(struct event));
     //TODO: if base is always main_base, remove the base param
+
+    //conn *c = getConn(fd);
+
     conn *c = (conn *)conn_ptr;
 
+    /**
+     * pyuhala: this connection's event base should be the same as that of its lthread
+     */
+    LIBEVENT_THREAD *lth = getEventThread(conn_id);
+
+    if (c == NULL)
+    {
+        printf("mcd_ocall_setup_conn_event:: conn_ptr is NULL >>>>>>>>>>>>>>>>\n");
+    }
+
     event_set(ev, sfd, event_flags, event_handler, (void *)c);
-    event_base_set(main_base, ev);
+    if (lth == NULL)
+    {
+        event_base_set(main_base, ev);
+    }
+    else
+    {
+        event_base_set(lth->base, ev);
+    }
 
     if (event_add(ev, 0) == -1)
     {
@@ -1513,7 +1663,22 @@ int mcd_ocall_event_add(int conn_id)
 
 void mcd_ocall_event_base_loopexit()
 {
+    log_routine(__func__);
     event_base_loopexit(main_base, NULL);
+}
+
+void mcd_ocall_mutex_lock_lthread_stats(int conn_id)
+{
+    log_routine(__func__);
+    LIBEVENT_THREAD *lthread = getEventThread(conn_id);
+    pthread_mutex_lock(&lthread->stats.mutex);
+}
+
+void mcd_ocall_mutex_unlock_lthread_stats(int conn_id)
+{
+    log_routine(__func__);
+    LIBEVENT_THREAD *lthread = getEventThread(conn_id);
+    pthread_mutex_unlock(&lthread->stats.mutex);
 }
 
 // >>>>>>>>>>>>>>>>>>>>>>>>> memcached ocalls end >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1763,8 +1928,8 @@ void init_memcached()
     //init stats
     ecall_stats_init(global_eid);
 
-    //init connections array
-    //ecall_conn_init(global_eid);
+    //init connections variables in & out
+    ecall_conn_init(global_eid);
     conn_init();
 
     //init hash table
@@ -1823,7 +1988,99 @@ void init_memcached()
 #endif
     clock_handler(0, 0, 0);
 
-    ecall_init_server_sockets(global_eid);
+    //>>>>>>> init server sockets >>>>>>
+    /* create unix mode sockets after dropping privileges */
+    if (settings.socketpath != NULL)
+    {
+        errno = 0;
+        if (server_socket_unix(settings.socketpath, settings.access))
+        {
+            vperror("failed to listen on UNIX socket: %s", settings.socketpath);
+            exit(EX_OSERR);
+        }
+    }
+
+    /* create the listening socket, bind it, and init */
+    if (settings.socketpath == NULL)
+    {
+        const char *portnumber_filename = getenv("MEMCACHED_PORT_FILENAME");
+        printf("Portnumber file: %c\n", portnumber_filename);
+        char *temp_portnumber_filename = NULL;
+        size_t len;
+        FILE *portnumber_file = NULL;
+
+        if (portnumber_filename != NULL)
+        {
+
+            len = strlen(portnumber_filename) + 4 + 1;
+            temp_portnumber_filename = malloc(len);
+            snprintf(temp_portnumber_filename,
+                     len,
+                     "%s.lck", portnumber_filename);
+
+            portnumber_file = fopen(temp_portnumber_filename, "a");
+            if (portnumber_file == NULL)
+            {
+                fprintf(stderr, "Failed to open \"%s\": %s\n",
+                        temp_portnumber_filename, strerror(errno));
+            }
+        }
+
+        if (portnumber_file == NULL)
+        {
+            printf("Portnumber file is NULL\n");
+        }
+        errno = 0;
+        if (settings.port && server_sockets(settings.port, tcp_transport,
+                                            portnumber_file))
+        {
+            vperror("failed to listen on TCP port %d", settings.port);
+            exit(EX_OSERR);
+        }
+
+        /*
+         * initialization order: first create the listening sockets
+         * (may need root on low ports), then drop root if needed,
+         * then daemonize if needed, then init libevent (in some cases
+         * descriptors created by libevent wouldn't survive forking).
+         */
+
+        /* create the UDP listening socket and bind it */
+        errno = 0;
+        if (settings.udpport && server_sockets(settings.udpport, udp_transport,
+                                               portnumber_file))
+        {
+            vperror("failed to listen on UDP port %d", settings.udpport);
+            exit(EX_OSERR);
+        }
+
+        if (portnumber_file)
+        {
+            fclose(portnumber_file);
+            rename(temp_portnumber_filename, portnumber_filename);
+        }
+        if (temp_portnumber_filename)
+            free(temp_portnumber_filename);
+    }
+
+    /* Give the sockets a moment to open. I know this is dumb, but the error
+     * is only an advisory.
+     */
+    usleep(1000);
+    if (stats_state.curr_conns + stats_state.reserved_fds >= settings.maxconns - 1)
+    {
+        fprintf(stderr, "Maxconns setting is too low, use -c to increase.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid_file != NULL)
+    {
+        save_pid(pid_file);
+    }
+
+    //>>>>>> end >>>>>>>>>>>>>
+
+    //ecall_init_server_sockets(global_eid);
 
     /* Drop privileges no longer needed */
     if (settings.drop_privileges)

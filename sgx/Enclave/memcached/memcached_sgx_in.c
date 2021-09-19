@@ -69,6 +69,7 @@ extern sgx_thread_mutex_t conn_lock;
  * Other globals
  */
 static int conn_count = 0;
+const uint64_t redzone = 0xdeadbeefcafebabe;
 
 //pyuhala: int is not the real type of errno. Done this way for porting reasons and simplicy
 int errno;
@@ -181,6 +182,48 @@ ssize_t tcp_write(conn *c, void *buf, size_t count)
 }
 
 //add new static routines here; if possible add prototypes above
+
+/**
+ * pyuhala:allocate a LIBEVENT_THREAD variable which will provide read buffers for this connection
+ * inside the enclave.
+ */
+static void alloc_lthread_inside(conn *c)
+{
+    LIBEVENT_THREAD *myLthread = calloc(1, sizeof(LIBEVENT_THREAD));
+
+    myLthread->rbuf_cache = cache_create("rbuf", READ_BUFFER_SIZE, sizeof(char *), NULL, NULL);
+    if (myLthread->rbuf_cache == NULL)
+    {
+        printf("Failed to alloc rbuf_cache inside >>>>>>>>>>>>>>>>>>\n");
+        fprintf(stderr, "Failed to create read buffer cache\n");
+        exit(EXIT_FAILURE);
+    }
+    // Note: we were cleanly passing in num_threads before, but this now
+    // relies on settings globals too much.
+    if (settings.read_buf_mem_limit)
+    {
+        int limit = settings.read_buf_mem_limit / settings.num_threads;
+        if (limit < READ_BUFFER_SIZE)
+        {
+            limit = 1;
+        }
+        else
+        {
+            limit = limit / READ_BUFFER_SIZE;
+        }
+        cache_set_limit(myLthread->rbuf_cache, limit);
+    }
+
+    myLthread->io_cache = cache_create("io", sizeof(io_pending_t), sizeof(char *), NULL, NULL);
+    if (myLthread->io_cache == NULL)
+    {
+        printf("Failed to alloc io_cache inside >>>>>>>>>>>>>>>>>>\n");
+        fprintf(stderr, "Failed to create IO object cache\n");
+        exit(EXIT_FAILURE);
+    }
+
+    c->thread_in = myLthread;
+}
 
 static inline void get_conn_text(const conn *c, const int af,
                                  char *addr, struct sockaddr *sock_addr)
@@ -485,7 +528,7 @@ enum delta_result_type do_add_delta(conn *c, const char *key, const size_t nkey,
         MEMCACHED_COMMAND_DECR(c->sfd, ITEM_key(it), it->nkey, value);
     }
 
-    sgx_thread_mutex_lock(&c->thread->stats.mutex);
+    mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
     if (incr)
     {
         c->thread->stats.slab_stats[ITEM_clsid(it)].incr_hits++;
@@ -494,7 +537,7 @@ enum delta_result_type do_add_delta(conn *c, const char *key, const size_t nkey,
     {
         c->thread->stats.slab_stats[ITEM_clsid(it)].decr_hits++;
     }
-    sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+    mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
 
     itoa_u64(value, buf);
     res = strlen(buf);
@@ -674,7 +717,7 @@ mc_resp *resp_finish(conn *c, mc_resp *resp)
         // If we had a pending IO, tell it to internally clean up then return
         // the main object back to our thread cache.
         resp->io_pending->q->finalize_cb(resp->io_pending);
-        do_cache_free(c->thread->io_cache, resp->io_pending);
+        do_cache_free(c->thread_in->io_cache, resp->io_pending);
         resp->io_pending = NULL;
     }
     if (c->resp_head == resp)
@@ -813,9 +856,9 @@ static int read_into_chunked_item(conn *c)
                           (unused > c->rlbytes ? c->rlbytes : unused));
             if (res > 0)
             {
-                sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.bytes_read += res;
-                sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
                 ch->used += res;
                 total += res;
                 c->rlbytes -= res;
@@ -862,6 +905,7 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
     /* sanity */
     if (fd != c->sfd)
     {
+        printf("sanity check failed fd != c->sfd >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
         if (settings.verbose > 0)
             fprintf(stderr, "Catastrophic: event fd doesn't match conn fd!\n");
         conn_close(c);
@@ -939,9 +983,9 @@ static enum try_read_result try_read_udp(conn *c)
     if (res > 8)
     {
         unsigned char *buf = (unsigned char *)c->rbuf;
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
         c->thread->stats.bytes_read += res;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
 
         /* Beginning of UDP packet is the request ID; save it. */
         c->request_id = buf[0] * 256 + buf[1];
@@ -985,6 +1029,7 @@ static enum try_read_result try_read_network(conn *c)
 
     if (c->rcurr != c->rbuf)
     {
+        printf("rcurr != rbuf >>>>>>>>>>>>\n");
         if (c->rbytes != 0) /* otherwise there's nothing to copy */
             memmove(c->rbuf, c->rcurr, c->rbytes);
         c->rcurr = c->rbuf;
@@ -1003,6 +1048,7 @@ static enum try_read_result try_read_network(conn *c)
             char *new_rbuf = realloc(c->rbuf, c->rsize * 2);
             if (!new_rbuf)
             {
+                printf("NOT new rbuf >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
                 STATS_LOCK();
                 stats.malloc_fails++;
                 STATS_UNLOCK();
@@ -1020,12 +1066,19 @@ static enum try_read_result try_read_network(conn *c)
         }
 
         int avail = c->rsize - c->rbytes;
+
+        printf("try_read_network:: c->rbytes = %d avail = %d >>>>>>>>>>>>>>\n", c->rbytes, avail);
         res = c->read(c, c->rbuf + c->rbytes, avail);
+        printf("try_read_network fd: %d avail: %d RES: \"%s\" size: %d >>>>>>>>>>>>>>>>\n", c->sfd, avail, (char *)c->rbuf, res);
+
         if (res > 0)
         {
-            sgx_thread_mutex_lock(&c->thread->stats.mutex);
+            //pyuhala:
+
+            mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
             c->thread->stats.bytes_read += res;
-            sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+            mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+
             gotdata = READ_DATA_RECEIVED;
             c->rbytes += res;
             if (res == avail && c->rbuf_malloced)
@@ -1150,7 +1203,7 @@ static void rbuf_release(conn *c)
         }
         else
         {
-            do_cache_free(c->thread->rbuf_cache, c->rbuf);
+            do_cache_free(c->thread_in->rbuf_cache, c->rbuf);
         }
         c->rsize = 0;
         c->rbuf = NULL;
@@ -1163,7 +1216,7 @@ static bool rbuf_alloc(conn *c)
     log_routine(__func__);
     if (c->rbuf == NULL)
     {
-        c->rbuf = do_cache_alloc(c->thread->rbuf_cache);
+        c->rbuf = do_cache_alloc(c->thread_in->rbuf_cache);
         if (!c->rbuf)
         {
             THR_STATS_LOCK(c);
@@ -1189,7 +1242,7 @@ bool rbuf_switch_to_malloc(conn *c)
     if (!tmp)
         return false;
 
-    do_cache_free(c->thread->rbuf_cache, c->rbuf);
+    do_cache_free(c->thread_in->rbuf_cache, c->rbuf);
     memcpy(tmp, c->rcurr, c->rbytes);
 
     c->rcurr = c->rbuf = tmp;
@@ -1386,9 +1439,9 @@ static enum transmit_result transmit(conn *c)
     res = c->sendmsg(c, &msg, 0);
     if (res >= 0)
     {
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
         c->thread->stats.bytes_written += res;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
 
         // Decrement any partial IOV's and complete any finished resp's.
         _transmit_post(c, res);
@@ -1540,9 +1593,9 @@ static enum transmit_result transmit_udp(conn *c)
     res = sendmsg(c->sfd, &msg, 0);
     if (res >= 0)
     {
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
         c->thread->stats.bytes_written += res;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
 
         // Ignore the header size from forwarding the IOV's
         res -= UDP_HEADER_SIZE;
@@ -2365,9 +2418,9 @@ void conn_close_idle(conn *c)
         if (settings.verbose > 1)
             fprintf(stderr, "Closing idle fd %d\n", c->sfd);
 
-        sgx_thread_mutex_lock(&c->thread->stats.mutex);
+        mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
         c->thread->stats.idle_kicks++;
-        sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
 
         conn_set_state(c, conn_closing);
         drive_machine(c);
@@ -2498,6 +2551,9 @@ conn *conn_new(const int sfd, enum conn_states init_state,
         c->sendmsg = NULL;
         c->write = NULL;
         c->rbuf = NULL;
+
+        //pyuhala
+        c->conn_id = sfd;
 
         c->rsize = read_buffer_size;
 
@@ -2665,9 +2721,7 @@ conn *conn_new(const int sfd, enum conn_states init_state,
      */
     int ret;
 
-    int id = conn_count++;
-
-    mcd_ocall_setup_conn_event(&ret, sfd, event_flags, base, (void *)c, id);
+    mcd_ocall_setup_conn_event(&ret, sfd, event_flags, base, (void *)c, sfd);
     if (ret == -1)
     {
         //pyuhala:this happens if event_add fails
@@ -2676,7 +2730,7 @@ conn *conn_new(const int sfd, enum conn_states init_state,
     //c->event = *(struct event *)ev_ptr;
 
     c->ev_flags = event_flags;
-    c->conn_id = id;
+    c->conn_id = sfd;
 
     STATS_LOCK();
     stats_state.curr_conns++;
@@ -2684,6 +2738,9 @@ conn *conn_new(const int sfd, enum conn_states init_state,
     STATS_UNLOCK();
 
     MEMCACHED_CONN_ALLOCATE(c->sfd);
+
+    //pyuhala: create libevent thread struct inside to provide read buffers
+    alloc_lthread_inside(c);
 
     return c;
 }
@@ -2864,7 +2921,10 @@ static const char *state_text(enum conn_states state)
  */
 void conn_set_state(conn *c, enum conn_states state)
 {
-    log_routine(__func__);
+
+    //log_routine(__func__);
+    printf("conn_set_state: %s\n", state_text(state));
+
     assert(c != NULL);
     assert(state >= conn_listening && state < conn_max_state);
 
@@ -2939,7 +2999,7 @@ void resp_add_chunked_iov(mc_resp *resp, const void *buf, int len)
 static mc_resp *resp_allocate(conn *c)
 {
     log_routine(__func__);
-    LIBEVENT_THREAD *th = c->thread;
+    LIBEVENT_THREAD *th = c->thread_in;
     mc_resp *resp = NULL;
     mc_resp_bundle *b = th->open_bundle;
 
@@ -2978,8 +3038,13 @@ static mc_resp *resp_allocate(conn *c)
 
     if (resp == NULL)
     {
+
         assert(th->open_bundle == NULL);
         b = do_cache_alloc(th->rbuf_cache);
+        //void *ret;
+        //mcd_ocall_do_cache_alloc(&ret, c->conn_id, th->libevent_tid);
+        //b = ret;
+
         if (b)
         {
             THR_STATS_LOCK(c);
@@ -3010,11 +3075,13 @@ static mc_resp *resp_allocate(conn *c)
 static void resp_free(conn *c, mc_resp *resp)
 {
     log_routine(__func__);
-    LIBEVENT_THREAD *th = c->thread;
+    LIBEVENT_THREAD *th = c->thread_in;
     mc_resp_bundle *b = resp->bundle;
 
     resp->free = true;
+    printf("resp_free:: b->refcount = %d >>>>>>>>>>\n", b->refcount);
     b->refcount--;
+
     if (b->refcount == 0)
     {
         if (b == th->open_bundle && b->next == 0)
@@ -3042,6 +3109,8 @@ static void resp_free(conn *c, mc_resp *resp)
 
             // Now completely done with this buffer.
             do_cache_free(th->rbuf_cache, b);
+            //mcd_ocall_do_cache_free(c->conn_id, th->libevent_tid, (void *)b);
+
             THR_STATS_LOCK(c);
             c->thread->stats.response_obj_bytes -= READ_BUFFER_SIZE;
             THR_STATS_UNLOCK(c);
@@ -3541,9 +3610,9 @@ enum store_item_type do_store_item(item *it, int comm, conn *c, const uint32_t h
                 // cas validates
                 // it and old_it may belong to different classes.
                 // I'm updating the stats for the one that's getting pushed out
-                sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.slab_stats[ITEM_clsid(old_it)].cas_hits++;
-                sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
                 do_store = true;
             }
             else if (cas_res == CAS_STALE)
@@ -3559,17 +3628,17 @@ enum store_item_type do_store_item(item *it, int comm, conn *c, const uint32_t h
                     it->it_flags |= ITEM_TOKEN_SENT;
                 }
 
-                sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.slab_stats[ITEM_clsid(old_it)].cas_hits++;
-                sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
                 do_store = true;
             }
             else
             {
                 // NONE or BADVAL are the same for CAS cmd
-                sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.slab_stats[ITEM_clsid(old_it)].cas_badval++;
-                sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
 
                 if (settings.verbose > 1)
                 {
@@ -3654,9 +3723,9 @@ enum store_item_type do_store_item(item *it, int comm, conn *c, const uint32_t h
         case NREAD_CAS:
             // LRU expired
             stored = NOT_FOUND;
-            sgx_thread_mutex_lock(&c->thread->stats.mutex);
+            mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
             c->thread->stats.cas_misses++;
-            sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+            mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
             break;
         case NREAD_REPLACE:
         case NREAD_APPEND:
@@ -3879,6 +3948,7 @@ static void drive_machine(conn *c)
             rbuf_release(c);
             if (!update_event(c, EV_READ | EV_PERSIST))
             {
+                printf("Failed to update event at conn_waiting >>>>>>>>>>>>>>>>>>>>\n");
                 if (settings.verbose > 0)
                     fprintf(stderr, "Couldn't update event\n");
                 conn_set_state(c, conn_closing);
@@ -3916,6 +3986,7 @@ static void drive_machine(conn *c)
                 conn_set_state(c, conn_parse_cmd);
                 break;
             case READ_ERROR:
+                printf("READ_ERROR >>>>>>>>>>>>>>>>>>>>\n");
                 conn_set_state(c, conn_closing);
                 break;
             case READ_MEMORY_ERROR: /* Failed to allocate more memory */
@@ -3931,11 +4002,13 @@ static void drive_machine(conn *c)
                 /* wee need more data! */
                 if (c->resp_head)
                 {
+                    printf("we need more data >>>>>>>>>>>>>>\n");
                     // Buffered responses waiting, flush in the meantime.
                     conn_set_state(c, conn_mwrite);
                 }
                 else
                 {
+                    printf("in conn_parse_cmd, setting conn state to waiting >>>>>>>>>>>>>>\n");
                     conn_set_state(c, conn_waiting);
                 }
             }
@@ -3958,9 +4031,9 @@ static void drive_machine(conn *c)
             }
             else
             {
-                sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.conn_yields++;
-                sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
                 if (c->rbytes > 0)
                 {
                     /* We have already read in data into the input buffer,
@@ -3971,6 +4044,7 @@ static void drive_machine(conn *c)
                     */
                     if (!update_event(c, EV_WRITE | EV_PERSIST))
                     {
+                        printf("Failed to update event at conn_new_cmd >>>>>>>>>>>>>>>>>>>>\n");
                         if (settings.verbose > 0)
                             fprintf(stderr, "Couldn't update event\n");
                         conn_set_state(c, conn_closing);
@@ -3982,8 +4056,10 @@ static void drive_machine(conn *c)
             break;
 
         case conn_nread:
+
             if (c->rlbytes == 0)
             {
+                printf("c->rlbytes == 0 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
                 complete_nread(c);
                 break;
             }
@@ -3991,6 +4067,7 @@ static void drive_machine(conn *c)
             /* Check if rbytes < 0, to prevent crash */
             if (c->rlbytes < 0)
             {
+                printf("closing conn: c->rlbytes < 0 >>>>>>>>>>>>>>>>>>>>\n");
                 if (settings.verbose)
                 {
                     fprintf(stderr, "Invalid rlbytes to read: len %d\n", c->rlbytes);
@@ -3999,12 +4076,12 @@ static void drive_machine(conn *c)
                 break;
             }
 
-            // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             if (c->item_malloced || ((((item *)c->item)->it_flags & ITEM_CHUNKED) == 0))
             {
                 /* first check if we have leftovers in the conn_read buffer */
                 if (c->rbytes > 0)
                 {
+                    printf("we have leftovers >>>>>>>>>>>>>>>>>");
                     int tocopy = c->rbytes > c->rlbytes ? c->rlbytes : c->rbytes;
                     memmove(c->ritem, c->rcurr, tocopy);
                     c->ritem += tocopy;
@@ -4019,11 +4096,13 @@ static void drive_machine(conn *c)
 
                 /*  now try reading from the socket */
                 res = c->read(c, c->ritem, c->rlbytes);
+
+                printf("allocing item: tcp read rlbytes: %d read fd: %d res: %d >>>>>>>>>>>>>>>>>>>>>>>\n", c->rlbytes, c->sfd, res);
                 if (res > 0)
                 {
-                    sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                    mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                     c->thread->stats.bytes_read += res;
-                    sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                    mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
                     if (c->rcurr == c->ritem)
                     {
                         c->rcurr += res;
@@ -4048,6 +4127,7 @@ static void drive_machine(conn *c)
 
             if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
             {
+                printf("res == -1; closing connection >>>>>>>>>>>>>>>>>>>\n");
                 if (!update_event(c, EV_READ | EV_PERSIST))
                 {
                     if (settings.verbose > 0)
@@ -4073,8 +4153,15 @@ static void drive_machine(conn *c)
                 break;
             }
             /* otherwise we have a real error, on which we close the connection */
-            if (settings.verbose > 0)
+            if (settings.verbose > 0 || true)
             {
+                /*printf("Failed to read, and not due to blocking:\n"
+                       "errno: %d %s \n"
+                       "rcurr=%p ritem=%p rbuf=%p rlbytes=%d rsize=%d\n",
+                       errno, strerror(errno),
+                       (void *)c->rcurr, (void *)c->ritem, (void *)c->rbuf,
+                       (int)c->rlbytes, (int)c->rsize);*/
+
                 fprintf(stderr, "Failed to read, and not due to blocking:\n"
                                 "errno: %d %s \n"
                                 "rcurr=%p ritem=%p rbuf=%p rlbytes=%d rsize=%d\n",
@@ -4107,9 +4194,9 @@ static void drive_machine(conn *c)
             res = c->read(c, c->rbuf, c->rsize > c->sbytes ? c->sbytes : c->rsize);
             if (res > 0)
             {
-                sgx_thread_mutex_lock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.bytes_read += res;
-                sgx_thread_mutex_unlock(&c->thread->stats.mutex);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
                 c->sbytes -= res;
                 break;
             }
@@ -4441,4 +4528,28 @@ void *ecall_conn_new(int sfd, enum conn_states init_state,
 {
     log_routine(__func__);
     return (void *)conn_new(sfd, init_state, event_flags, read_buffer_size, transport, base, ssl);
+}
+
+void ecall_event_handler(const evutil_socket_t fd, const short which, void *arg)
+{
+    log_routine(__func__);
+    const evutil_socket_t sfd = fd;
+    const short wch = which;
+    event_handler(sfd, wch, arg);
+}
+
+void ecall_conn_io_queue_add(void *conn_ptr, int type)
+{
+    log_routine(__func__);
+    conn *c = (conn *)conn_ptr;
+    //pyuhala: extstore disabled so all the rest will always be NULL
+    conn_io_queue_add(c, type, NULL, NULL, NULL, NULL);
+}
+
+void ecall_set_conn_thread(void *conn_ptr, void *libevent_th)
+{
+    log_routine(__func__);
+    conn *c = (conn *)conn_ptr;
+    LIBEVENT_THREAD *lthread = (LIBEVENT_THREAD *)libevent_th;
+    c->thread = lthread;
 }
