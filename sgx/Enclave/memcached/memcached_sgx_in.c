@@ -1403,6 +1403,33 @@ static void _transmit_post(conn *c, ssize_t res)
     }
 }
 
+/**
+ * pyuhala: performs deep copy of in-enclave msghdr structure into one outside
+ * TODO: move to shim library; very important routine for network related stuff
+ */
+static msg_deep_cpy(struct msghdr *msg_out, struct msghdr *msg_in)
+{
+
+    log_routine(__func__);
+
+    //pyuhala: deep copy message name
+    memcpy(msg_out->msg_name, msg_in->msg_name, msg_in->msg_namelen);
+    //pyuhala: deep copy message control
+    memcpy(msg_out->msg_control, msg_in->msg_control, msg_in->msg_controllen);
+    //pyuhala: deep copy msg_iov; tricky: copy each struct in the iovec array
+
+    for (int i = 0; i < msg_in->msg_iovlen; i++)
+    {
+
+        memcpy(msg_out->msg_iov[i].iov_base, msg_in->msg_iov[i].iov_base, msg_in->msg_iov[i].iov_len);
+        msg_out->msg_iov[i].iov_len = msg_in->msg_iov[i].iov_len;
+    }
+    //copy lengths and flags
+    msg_out->msg_namelen = msg_in->msg_namelen;
+    msg_out->msg_iovlen = msg_in->msg_iovlen;
+    msg_out->msg_flags = msg_in->msg_flags;
+}
+
 /*
  * Transmit the next chunk of data from our list of msgbuf structures.
  *
@@ -1417,26 +1444,46 @@ static enum transmit_result transmit(conn *c)
     log_routine(__func__);
     assert(c != NULL);
     struct iovec iovs[IOV_MAX];
-    struct msghdr msg;
+
     int iovused = 0;
 
-    // init the msg.
-    memset(&msg, 0, sizeof(struct msghdr));
-    msg.msg_iov = iovs;
+    // init the msg inside
+    //pyuhala: modified abit but the same thing/better than previous
+    struct msghdr *msg_in = (struct msghdr *)malloc(sizeof(struct msghdr));
+
+    memset(msg_in, 0, sizeof(struct msghdr));
+    msg_in->msg_iov = iovs;
+
+    //init msg outside
+    void *ptr;
+    ocall_transmit_prepare(&ptr);
+    struct msghdr *msg_out = (struct msghdr *)ptr;
 
     iovused = _transmit_pre(c, iovs, iovused, TRANSMIT_ALL_RESP);
+    ocall_getErrno(&errno);
+
     if (iovused == 0)
     {
         // Avoid the syscall if we're only handling a noreply.
         // Return the response object.
         _transmit_post(c, 0);
+        printf("after _transmit_post: TRANSMIT COMPLETE >>>>>>>>>>>>>>>>>>>>>>\n");
         return TRANSMIT_COMPLETE;
     }
 
     // Alright, send.
     ssize_t res;
-    msg.msg_iovlen = iovused;
-    res = c->sendmsg(c, &msg, 0);
+    msg_in->msg_iovlen = iovused;
+
+    //deep copy msg in to that out and send that out
+    msg_deep_cpy(msg_out, msg_in);
+
+    res = c->sendmsg(c, msg_out, 0);
+
+    printf("ERRNO before call: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", errno);
+    ocall_getErrno(&errno);
+
+    printf("Transmit sendmsg: res is: %d iovused: %d ERRNO: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", res, iovused, errno);
     if (res >= 0)
     {
         mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
@@ -1452,9 +1499,11 @@ static enum transmit_result transmit(conn *c)
         }
         else
         {
+            printf("TRANSMIT COMPLETE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
             return TRANSMIT_COMPLETE;
         }
     }
+    ocall_getErrno(&errno);
 
     if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
     {
@@ -1472,6 +1521,7 @@ static enum transmit_result transmit(conn *c)
     if (settings.verbose > 0)
         perror("Failed to write, and not due to blocking");
 
+    printf("Transmit closing connections >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
     conn_set_state(c, conn_closing);
     return TRANSMIT_HARD_ERROR;
 }
@@ -1591,6 +1641,7 @@ static enum transmit_result transmit_udp(conn *c)
     msg.msg_iovlen = iovused;
     // NOTE: uses system sendmsg since we have no support for indirect UDP.
     res = sendmsg(c->sfd, &msg, 0);
+    ocall_getErrno(&errno);
     if (res >= 0)
     {
         mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
@@ -2731,7 +2782,6 @@ conn *conn_new(const int sfd, enum conn_states init_state,
     //c->event = *(struct event *)ev_ptr;
 
     c->ev_flags = event_flags;
-   
 
     STATS_LOCK();
     stats_state.curr_conns++;
@@ -2941,6 +2991,7 @@ void conn_set_state(conn *c, enum conn_states state)
         if (state == conn_write || state == conn_mwrite)
         {
             MEMCACHED_PROCESS_COMMAND_END(c->sfd, c->resp->wbuf, c->resp->wbytes);
+            ocall_getErrno(&errno);
         }
         c->state = state;
     }
@@ -3826,8 +3877,11 @@ static void drive_machine(conn *c)
 #else
             sfd = accept(c->sfd, (struct sockaddr *)&addr, &addrlen);
 #endif
+            ocall_getErrno(&errno);
             if (sfd == -1)
+
             {
+
                 if (use_accept4 && errno == ENOSYS)
                 {
                     use_accept4 = 0;
@@ -3947,6 +4001,8 @@ static void drive_machine(conn *c)
 
         case conn_waiting:
             rbuf_release(c);
+            ocall_getErrno(&errno);
+
             if (!update_event(c, EV_READ | EV_PERSIST))
             {
                 printf("Failed to update event at conn_waiting >>>>>>>>>>>>>>>>>>>>\n");
@@ -3987,7 +4043,6 @@ static void drive_machine(conn *c)
                 conn_set_state(c, conn_parse_cmd);
                 break;
             case READ_ERROR:
-                printf("READ_ERROR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx >>>>>>>>>>>>>>>>>>>>>\n");
                 conn_set_state(c, conn_closing);
                 break;
             case READ_MEMORY_ERROR: /* Failed to allocate more memory */
@@ -4021,6 +4076,7 @@ static void drive_machine(conn *c)
                connections */
 
             --nreqs;
+            ocall_getErrno(&errno);
             if (nreqs >= 0)
             {
                 reset_cmd_handler(c);
@@ -4046,6 +4102,7 @@ static void drive_machine(conn *c)
 
                     if (!update_event(c, EV_WRITE | EV_PERSIST))
                     {
+                        ocall_getErrno(&errno);
                         printf("Failed to update event at conn_new_cmd >>>>>>>>>>>>>>>>>>>>\n");
                         if (settings.verbose > 0)
                             fprintf(stderr, "Couldn't update event\n");
@@ -4063,6 +4120,7 @@ static void drive_machine(conn *c)
             {
                 printf("c->rlbytes == 0 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
                 complete_nread(c);
+                ocall_getErrno(&errno);
                 break;
             }
 
@@ -4099,7 +4157,9 @@ static void drive_machine(conn *c)
                 /*  now try reading from the socket */
                 res = c->read(c, c->ritem, c->rlbytes);
 
-                printf("allocing item: tcp read rlbytes: %d read fd: %d res: %d >>>>>>>>>>>>>>>>>>>>>>>\n", c->rlbytes, c->sfd, res);
+                ocall_getErrno(&errno);
+
+                printf("allocing item: tcp read rlbytes: %d read fd: %d res: %d ERRNO: %d >>>>>>>>>>>>>>>>>>>>>>>\n", c->rlbytes, c->sfd, res, errno);
                 if (res > 0)
                 {
                     mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
@@ -4116,6 +4176,7 @@ static void drive_machine(conn *c)
             }
             else
             {
+                printf("reading into chunked item >>>>>>>>>>>>>>>>>>>>>>>\n");
                 res = read_into_chunked_item(c);
                 if (res > 0)
                     break;
@@ -4129,7 +4190,7 @@ static void drive_machine(conn *c)
 
             if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
             {
-                printf("res == -1; closing connection >>>>>>>>>>>>>>>>>>>\n");
+
                 if (!update_event(c, EV_READ | EV_PERSIST))
                 {
                     if (settings.verbose > 0)
@@ -4194,6 +4255,8 @@ static void drive_machine(conn *c)
 
             /*  now try reading from the socket */
             res = c->read(c, c->rbuf, c->rsize > c->sbytes ? c->sbytes : c->rsize);
+            ocall_getErrno(&errno);
+
             if (res > 0)
             {
                 mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
@@ -4266,6 +4329,7 @@ static void drive_machine(conn *c)
                     conn_set_state(c, conn_new_cmd);
                     if (c->close_after_write)
                     {
+                        printf("close after write >>>>>>>>>>>>>>>>>>>>>>\n");
                         conn_set_state(c, conn_closing);
                     }
                 }

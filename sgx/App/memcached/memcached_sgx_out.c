@@ -1641,8 +1641,9 @@ void mcd_ocall_update_conn_event(int fd, int new_flags, struct event_base *base,
     conn *c = (conn *)conn_ptr;
 
     struct event *ev = getConnEvent(conn_id);
+    LIBEVENT_THREAD *lth = getEventThread(conn_id);
     event_set(ev, sfd, event_flags, event_handler, (void *)c);
-    event_base_set(base, ev);
+    event_base_set(lth->base, ev);
 }
 
 int mcd_ocall_event_del(int conn_id)
