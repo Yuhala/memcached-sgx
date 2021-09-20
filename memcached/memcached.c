@@ -27,9 +27,6 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-
-
-
 //pyuhala: added function logging to routines
 
 /* some POSIX systems need the following definition
@@ -467,9 +464,42 @@ static void rbuf_release(conn *c)
     }
 }
 
+const uint64_t redzone = 0xdeadbeefcafebabe;
 static bool rbuf_alloc(conn *c)
 {
+
     log_routine(__func__);
+    if (c->rbuf == NULL)
+    {
+
+        //c->rbuf = do_cache_alloc(c->thread->rbuf_cache);
+        //void *ret;
+        //mcd_ocall_do_cache_alloc(&ret, c->conn_id, c->thread->libevent_tid);
+        //c->rbuf = ret;
+
+        /**
+         * pyuhala: allocating this inside prevents complex bugs when using LIBEVENT thread's buffer allocated outside.
+         * I'm not sure 100% if the below code makes sense but my gut tells me it does :)
+         */
+
+        ssize_t size = READ_BUFFER_SIZE + 2 * sizeof(redzone);
+        c->rbuf = (char *)malloc(size);
+        c->rbuf_malloced = true;
+
+        if (!c->rbuf)
+        {
+            THR_STATS_LOCK(c);
+            c->thread->stats.read_buf_oom++;
+            THR_STATS_UNLOCK(c);
+            return false;
+        }
+        c->rsize = READ_BUFFER_SIZE;
+        c->rcurr = c->rbuf;
+    }
+    printf("RBUF ALLOC SUCCESSS >>>>>>>>>>\n");
+    return true;
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    /*log_routine(__func__);
     if (c->rbuf == NULL)
     {
         c->rbuf = do_cache_alloc(c->thread->rbuf_cache);
@@ -483,7 +513,7 @@ static bool rbuf_alloc(conn *c)
         c->rsize = READ_BUFFER_SIZE;
         c->rcurr = c->rbuf;
     }
-    return true;
+    return true;*/
 }
 
 // Just for handling huge ASCII multigets.
@@ -613,6 +643,7 @@ void conn_worker_readd(conn *c)
         }
     }
     c->ev_flags = EV_READ | EV_PERSIST;
+
     event_set(&c->event, c->sfd, c->ev_flags, event_handler, (void *)c);
     event_base_set(c->thread->base, &c->event);
 
@@ -881,8 +912,9 @@ conn *conn_new(const int sfd, enum conn_states init_state,
         }
     }
 
+    event_set(&c->event, sfd, event_flags, NULL, (void *)c);
     event_set(&c->event, sfd, event_flags, event_handler, (void *)c);
-    event_base_set(base, &c->event);
+    event_base_set(main_base, &c->event);
     c->ev_flags = event_flags;
 
     if (event_add(&c->event, 0) == -1)
@@ -3427,6 +3459,7 @@ static void drive_machine(conn *c)
         switch (c->state)
         {
         case conn_listening:
+
             addrlen = sizeof(addr);
 #ifdef HAVE_ACCEPT4
             if (use_accept4)
@@ -3560,6 +3593,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_waiting:
+
             rbuf_release(c);
             if (!update_event(c, EV_READ | EV_PERSIST))
             {
@@ -3574,6 +3608,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_read:
+
             if (!IS_UDP(c->transport))
             {
                 // Assign a read buffer if necessary.
@@ -3594,12 +3629,15 @@ static void drive_machine(conn *c)
             switch (res)
             {
             case READ_NO_DATA_RECEIVED:
+
                 conn_set_state(c, conn_waiting);
                 break;
             case READ_DATA_RECEIVED:
+
                 conn_set_state(c, conn_parse_cmd);
                 break;
             case READ_ERROR:
+
                 conn_set_state(c, conn_closing);
                 break;
             case READ_MEMORY_ERROR: /* Failed to allocate more memory */
@@ -3609,6 +3647,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_parse_cmd:
+
             c->noreply = false;
             if (c->try_read_command(c) == 0)
             {
@@ -3627,6 +3666,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_new_cmd:
+
             /* Only process nreqs at a time to avoid starving other
                connections */
 
@@ -3666,6 +3706,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_nread:
+
             if (c->rlbytes == 0)
             {
                 complete_nread(c);
@@ -3769,6 +3810,7 @@ static void drive_machine(conn *c)
             break;
 
         case conn_swallow:
+
             /* we are reading sbytes and throwing them away */
             if (c->sbytes <= 0)
             {
@@ -3821,6 +3863,7 @@ static void drive_machine(conn *c)
 
         case conn_write:
         case conn_mwrite:
+
             /* have side IO's that must process before transmit() can run.
              * remove the connection from the worker thread and dispatch the
              * IO queue
@@ -4991,9 +5034,6 @@ struct _mc_meta_data
     uint32_t current_time;
 };
 
-
-
-
 int main(int argc, char **argv)
 {
 
@@ -5047,7 +5087,7 @@ int main(int argc, char **argv)
     settings_init();
     verify_default("hash_algorithm", hash_type == MURMUR3_HASH);
 #ifdef EXTSTORE
-printf("------------------- EXT STORE enabled------------\n");
+    printf("------------------- EXT STORE enabled------------\n");
     void *storage = NULL;
     void *storage_cf = storage_init_config(&settings);
     bool storage_enabled = false;
@@ -5059,7 +5099,7 @@ printf("------------------- EXT STORE enabled------------\n");
 #endif
 
     /* Run regardless of initializing it later */
-    init_lru_maintainer();
+    //init_lru_maintainer();
 
     /* set stderr non-buffering (for running under, say, daemontools) */
     setbuf(stderr, NULL);
@@ -5302,7 +5342,7 @@ printf("------------------- EXT STORE enabled------------\n");
     bool reuse_mem = false;
     void *mem_base = NULL;
     bool prefill = false;
-   
+
     // Initialize the hash table _after_ checking restart metadata.
     // We override the hash table start argument with what was live
     // previously, to avoid filling a huge set of items into a tiny hash
@@ -5318,7 +5358,6 @@ printf("------------------- EXT STORE enabled------------\n");
     slabs_init(settings.maxbytes, settings.factor, preallocate,
                use_slab_sizes ? slab_sizes : NULL, mem_base, reuse_mem);
 
-
     if (settings.drop_privileges)
     {
         setup_privilege_violations_handler();
@@ -5326,8 +5365,8 @@ printf("------------------- EXT STORE enabled------------\n");
 
     if (prefill)
         slabs_prefill_global();
-   
-    /* start up worker threads if MT mode */
+
+        /* start up worker threads if MT mode */
 #ifdef EXTSTORE
     slabs_set_storage(storage);
     memcached_thread_init(settings.num_threads, storage);
@@ -5374,8 +5413,6 @@ printf("------------------- EXT STORE enabled------------\n");
     {
         exit(EXIT_FAILURE);
     }
-
-    
 
     /* initialise clock event */
 #if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)

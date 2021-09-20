@@ -149,6 +149,7 @@ static void register_thread_initialized(void)
 /* Must not be called with any deeper locks held */
 void pause_threads(enum pause_thread_types type)
 {
+    log_routine(__func__);
     char buf[1];
     int i;
 
@@ -210,6 +211,7 @@ void pause_threads(enum pause_thread_types type)
 // loop in order to call this function.
 void stop_threads(void)
 {
+    log_routine(__func__);
     char buf[1];
     int i;
 
@@ -287,6 +289,7 @@ void stop_threads(void)
  */
 static void cq_init(CQ *cq)
 {
+    log_routine(__func__);
     pthread_mutex_init(&cq->lock, NULL);
     cq->head = NULL;
     cq->tail = NULL;
@@ -299,6 +302,7 @@ static void cq_init(CQ *cq)
  */
 static CQ_ITEM *cq_pop(CQ *cq)
 {
+    log_routine(__func__);
     CQ_ITEM *item;
 
     pthread_mutex_lock(&cq->lock);
@@ -319,6 +323,7 @@ static CQ_ITEM *cq_pop(CQ *cq)
  */
 static void cq_push(CQ *cq, CQ_ITEM *item)
 {
+    log_routine(__func__);
     item->next = NULL;
 
     pthread_mutex_lock(&cq->lock);
@@ -335,6 +340,7 @@ static void cq_push(CQ *cq, CQ_ITEM *item)
  */
 static CQ_ITEM *cqi_new(void)
 {
+    log_routine(__func__);
     CQ_ITEM *item = NULL;
     pthread_mutex_lock(&cqi_freelist_lock);
     if (cqi_freelist)
@@ -380,6 +386,7 @@ static CQ_ITEM *cqi_new(void)
  */
 static void cqi_free(CQ_ITEM *item)
 {
+    log_routine(__func__);
     pthread_mutex_lock(&cqi_freelist_lock);
     item->next = cqi_freelist;
     cqi_freelist = item;
@@ -391,6 +398,7 @@ static void cqi_free(CQ_ITEM *item)
  */
 static void create_worker(void *(*func)(void *), void *arg)
 {
+    log_routine(__func__);
     pthread_attr_t attr;
     int ret;
 
@@ -409,6 +417,7 @@ static void create_worker(void *(*func)(void *), void *arg)
  */
 void accept_new_conns(const bool do_accept)
 {
+    log_routine(__func__);
     pthread_mutex_lock(&conn_lock);
     do_accept_new_conns(do_accept);
     pthread_mutex_unlock(&conn_lock);
@@ -420,6 +429,7 @@ void accept_new_conns(const bool do_accept)
  */
 static void setup_thread(LIBEVENT_THREAD *me)
 {
+    log_routine(__func__);
 #if defined(LIBEVENT_VERSION_NUMBER) && LIBEVENT_VERSION_NUMBER >= 0x02000101
     struct event_config *ev_config;
     ev_config = event_config_new();
@@ -507,6 +517,7 @@ static void setup_thread(LIBEVENT_THREAD *me)
  */
 static void *worker_libevent(void *arg)
 {
+    log_routine(__func__);
     LIBEVENT_THREAD *me = arg;
 
     /* Any per-thread setup can happen here; memcached_thread_init() will block until
@@ -666,6 +677,7 @@ static LIBEVENT_THREAD *select_thread_round_robin(void)
 
 static void reset_threads_napi_id(void)
 {
+    log_routine(__func__);
     LIBEVENT_THREAD *thread;
     int i;
 
@@ -684,6 +696,7 @@ static void reset_threads_napi_id(void)
  */
 static LIBEVENT_THREAD *select_thread_by_napi_id(int sfd)
 {
+    log_routine(__func__);
     LIBEVENT_THREAD *thread;
     int napi_id, err, i;
     socklen_t len;
@@ -737,6 +750,7 @@ select:
 void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
                        int read_buffer_size, enum network_transport transport, void *ssl)
 {
+    log_routine(__func__);
     CQ_ITEM *item = cqi_new();
     char buf[1];
     if (item == NULL)
@@ -779,6 +793,7 @@ void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
 #define REDISPATCH_MSG_SIZE (1 + sizeof(int))
 void redispatch_conn(conn *c)
 {
+    log_routine(__func__);
     char buf[REDISPATCH_MSG_SIZE];
     LIBEVENT_THREAD *thread = c->thread;
 
@@ -793,6 +808,7 @@ void redispatch_conn(conn *c)
 /* This misses the allow_new_conns flag :( */
 void sidethread_conn_close(conn *c)
 {
+    log_routine(__func__);
     if (settings.verbose > 1)
         fprintf(stderr, "<%d connection closing from side thread.\n", c->sfd);
 
