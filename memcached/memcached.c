@@ -2856,7 +2856,7 @@ static bool update_event(conn *c, const int new_flags)
     log_routine(__func__);
     assert(c != NULL);
 
-    struct event_base *base = c->event.ev_base;
+    struct event_base *base = main_base;// = c->event.ev_base;
     if (c->ev_flags == new_flags)
         return true;
     if (event_del(&c->event) == -1)
