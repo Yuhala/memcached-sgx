@@ -764,7 +764,7 @@ void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
     //petman: this is more logical outside, so ocall and return
     //todo:cleanup
     return;
-    
+
     CQ_ITEM *item = cqi_new();
     char buf[1];
     if (item == NULL)
@@ -977,6 +977,8 @@ enum store_item_type store_item(item *item, int comm, conn *c)
     item_lock(hv);
     ret = do_store_item(item, comm, c, hv);
     item_unlock(hv);
+
+    printf("store item return: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n",ret);
     return ret;
 }
 

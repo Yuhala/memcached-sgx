@@ -251,10 +251,58 @@ ssize_t ocall_sendto(int sockfd, const void *buf, size_t len, int flags, const s
     log_ocall(__func__);
     return sendto(sockfd, buf, len, flags, dest_addr, addrlen);
 }
-ssize_t ocall_sendmsg(int sockfd, const struct msghdr *msg, int flags)
+
+/**
+ * pyuhala: prepares a msghdr variable outside
+ * which will be used by the enclave to write the message.
+ * using the enclave msg header w/could cause issues (eg ERROR 22)
+ * due to inability to write to the address. 
+ * 
+ */
+
+void *ocall_transmit_prepare()
 {
     log_ocall(__func__);
-    return sendmsg(sockfd, msg, flags);
+    ssize_t size = 128; //pyuhala: hope this will be enough to prevent segfaults
+    struct iovec iovs[1024];
+    struct msghdr *msg = (struct msghdr *)malloc(sizeof(struct msghdr));
+    // init the msg.
+    memset(msg, 0, sizeof(struct msghdr));
+    msg->msg_iov = iovs;
+
+    msg->msg_name = malloc(size);
+    msg->msg_control = malloc(size);
+
+    for (int i = 0; i < 1024; i++)
+    {
+        msg->msg_iov[i].iov_base = malloc(size);
+    }
+
+    return (void *)msg;
+}
+
+/**
+ * pyuhala: free msghdr struct allocated above: free all slots
+ */
+void free_msg(struct msghdr *msg)
+{
+    log_ocall(__func__);
+    free(msg->msg_name);
+    free(msg->msg_control);
+
+    for (int i = 0; i < 1024; i++)
+    {
+        free(msg->msg_iov[i].iov_base);
+    }
+}
+ssize_t ocall_sendmsg(int sockfd, struct msghdr *msg, int flags)
+{
+    log_ocall(__func__);
+
+    ssize_t ret = sendmsg(sockfd, msg, flags);
+    //pyuhala:free message header here
+    free(msg);
+    return ret;
 }
 
 uint32_t ocall_htonl(uint32_t hostlong)
