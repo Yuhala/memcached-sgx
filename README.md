@@ -43,11 +43,20 @@ make
 
 ```  
 
-- Run the memcached-sgx server 
+- Run the memcached-sgx server.
 ```
 ./app
 
 ```
+
+- NB: this version does not kill the process/threads correctly with `ctrl + c`. Try killing with `kill -9 PID_of_app` or run app in the sgx-debugger debugger and stop normally via ctrl + c. To run app in the sgx debugger, do:
+
+```
+source /opt/intel/sgxsdk/environment 
+sgx-gdb ./app
+
+```
+
 - Open a terminal and connect to the server
 
 ```
