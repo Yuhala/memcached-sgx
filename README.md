@@ -27,11 +27,11 @@ make
 make install
 
 ```
-- Clone this repo and move to branch `memcached-port`
+- Clone this repo and move to branch `test`
 
 ```
 git clone https://gitlab.com/Yuhala/memcached-sgx.git
-git checkout memcached-port
+git checkout test
 cd sgx
 
 ```
