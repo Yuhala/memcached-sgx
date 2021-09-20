@@ -49,7 +49,7 @@ make
 
 ```
 
-- NB: this version does not kill the process/threads correctly with `ctrl + c`. Try killing with `kill -9 PID_of_app` or run app in the sgx-debugger debugger and stop normally via ctrl + c. To run app in the sgx debugger, do:
+- NB: this version does not kill the process/threads correctly with `ctrl + c`. Try killing with `kill -9 PID_of_app` or run app in the sgx-gdb debugger and stop normally via ctrl + c. To run app in the sgx debugger, do:
 
 ```
 source /opt/intel/sgxsdk/environment 
