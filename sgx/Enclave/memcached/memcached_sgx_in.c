@@ -1681,7 +1681,7 @@ static void settings_init(void)
 #endif
     /* By default this string should be NULL for getaddrinfo() */
     settings.inter = NULL;
-    settings.maxbytes = 64 * 1024 * 1024; /* default is 64MB */
+    settings.maxbytes = 16 * 1024 * 1024; /* default is 64MB */
     settings.maxconns = 1024;             /* to limit connections-related memory to about 5MB */
     settings.verbose = 0;
     settings.oldest_live = 0;
@@ -1819,6 +1819,7 @@ static void conn_init(void)
 
     close(next_fd);
 
+    printf("Ecall conn init max fds: %d >>>>>>>>>>>>>>>>>>>>>>>\n", max_fds);
     if ((conns = calloc(max_fds, sizeof(conn *))) == NULL)
     {
         fprintf(stderr, "Failed to allocate connection structures\n");
@@ -1929,7 +1930,7 @@ static int new_socket(struct addrinfo *ai)
 
     if ((sfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1)
     {
-        printf("FAILED to create new socket in enclave >>>>>>>>>>>>>>>>>>>>>>>>>\n");
+
         return -1;
     }
 
@@ -2532,7 +2533,7 @@ conn *conn_new(const int sfd, enum conn_states init_state,
 
     log_routine(__func__);
     conn *c;
-
+    //printf("conn_new with sfd: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n",sfd);
     assert(sfd >= 0 && sfd < max_fds);
     c = conns[sfd];
 
@@ -2719,9 +2720,9 @@ conn *conn_new(const int sfd, enum conn_states init_state,
     /**
      * pyuhala: we do all these gymnastics to correctly set up the event structure for this connection outside
      */
-    int ret;
+    int ret = -1;
 
-    mcd_ocall_setup_conn_event(&ret, sfd, event_flags, base, (void *)c, sfd);
+    mcd_ocall_setup_conn_event(&ret, sfd, event_flags, base, (void *)c, c->conn_id);
     if (ret == -1)
     {
         //pyuhala:this happens if event_add fails
@@ -2730,7 +2731,7 @@ conn *conn_new(const int sfd, enum conn_states init_state,
     //c->event = *(struct event *)ev_ptr;
 
     c->ev_flags = event_flags;
-    c->conn_id = sfd;
+   
 
     STATS_LOCK();
     stats_state.curr_conns++;
@@ -3986,7 +3987,7 @@ static void drive_machine(conn *c)
                 conn_set_state(c, conn_parse_cmd);
                 break;
             case READ_ERROR:
-                printf("READ_ERROR >>>>>>>>>>>>>>>>>>>>\n");
+                printf("READ_ERROR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx >>>>>>>>>>>>>>>>>>>>>\n");
                 conn_set_state(c, conn_closing);
                 break;
             case READ_MEMORY_ERROR: /* Failed to allocate more memory */
@@ -4042,6 +4043,7 @@ static void drive_machine(conn *c)
                        hack we should just put in a request to write data,
                        because that should be possible ;-)
                     */
+
                     if (!update_event(c, EV_WRITE | EV_PERSIST))
                     {
                         printf("Failed to update event at conn_new_cmd >>>>>>>>>>>>>>>>>>>>\n");
@@ -4527,7 +4529,11 @@ void *ecall_conn_new(int sfd, enum conn_states init_state,
                      struct event_base *base, void *ssl)
 {
     log_routine(__func__);
-    return (void *)conn_new(sfd, init_state, event_flags, read_buffer_size, transport, base, ssl);
+    //pyuhala: not sure if this is very useful ?
+    const int fd = sfd;
+    const int flags = event_flags;
+    const int bufsz = read_buffer_size;
+    return (void *)conn_new(fd, init_state, flags, bufsz, transport, base, ssl);
 }
 
 void ecall_event_handler(const evutil_socket_t fd, const short which, void *arg)

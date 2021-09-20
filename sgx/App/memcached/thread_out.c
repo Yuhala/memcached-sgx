@@ -804,6 +804,7 @@ void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
     else
         thread = select_thread_by_napi_id(sfd);
 
+    printf("dispatching connection with sfd: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n",sfd);
     //pyuhala: set event thread
     setEventThread(thread, sfd);
 

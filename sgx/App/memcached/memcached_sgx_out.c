@@ -703,7 +703,7 @@ static void settings_init(void)
 #endif
     /* By default this string should be NULL for getaddrinfo() */
     settings.inter = NULL;
-    settings.maxbytes = 64 * 1024 * 1024; /* default is 64MB */
+    settings.maxbytes = 16 * 1024 * 1024; /* default is 64MB */
     settings.maxconns = 1024;             /* to limit connections-related memory to about 5MB */
     settings.verbose = 0;
     settings.oldest_live = 0;
@@ -1609,7 +1609,9 @@ int mcd_ocall_setup_conn_event(int fd, int flags, struct event_base *base, void 
         printf("mcd_ocall_setup_conn_event:: conn_ptr is NULL >>>>>>>>>>>>>>>>\n");
     }
 
+    event_set(ev, sfd, event_flags, NULL, (void *)c);
     event_set(ev, sfd, event_flags, event_handler, (void *)c);
+
     if (lth == NULL)
     {
         event_base_set(main_base, ev);
@@ -1640,7 +1642,7 @@ void mcd_ocall_update_conn_event(int fd, int new_flags, struct event_base *base,
 
     struct event *ev = getConnEvent(conn_id);
     event_set(ev, sfd, event_flags, event_handler, (void *)c);
-    event_base_set(main_base, ev);
+    event_base_set(base, ev);
 }
 
 int mcd_ocall_event_del(int conn_id)
@@ -1671,6 +1673,12 @@ void mcd_ocall_mutex_lock_lthread_stats(int conn_id)
 {
     log_routine(__func__);
     LIBEVENT_THREAD *lthread = getEventThread(conn_id);
+
+    if (lthread == NULL)
+    {
+        printf("mcd_ocall_mutex_lock_lthread: NULL libevent thread >>>>>>>>>>>>>>>\n");
+        return;
+    }
     pthread_mutex_lock(&lthread->stats.mutex);
 }
 
@@ -1678,6 +1686,11 @@ void mcd_ocall_mutex_unlock_lthread_stats(int conn_id)
 {
     log_routine(__func__);
     LIBEVENT_THREAD *lthread = getEventThread(conn_id);
+    if (lthread == NULL)
+    {
+        printf("mcd_ocall_mutex_unlock_lthread: NULL libevent thread >>>>>>>>>>>>>>>\n");
+        return;
+    }
     pthread_mutex_unlock(&lthread->stats.mutex);
 }
 

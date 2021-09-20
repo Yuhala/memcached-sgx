@@ -764,6 +764,7 @@ void dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags,
     //petman: this is more logical outside, so ocall and return
     //todo:cleanup
     return;
+    
     CQ_ITEM *item = cqi_new();
     char buf[1];
     if (item == NULL)
