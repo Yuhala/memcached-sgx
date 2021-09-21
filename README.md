@@ -13,10 +13,18 @@ A port of memcached into Intel SGX. Meant for benchmarking configless switchless
 - Install the following libraries
 
 ```
-sudo apt install libseccomp-dev
+sudo apt-get install libseccomp-dev
 sudo apt-get install libsasl2-dev
+
 ```
-- Download, build and install libevent [here](https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz)
+- Download libevent [here](https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz)
+- If in cmd-line mode: 
+
+```
+sudo apt-get install wget
+wget -o https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
+```
+- Build and install libevent
 
 ```
 tar -xvf libevent*
@@ -45,15 +53,15 @@ make
 
 - Run the memcached-sgx server.
 ```
-./app
+./memcached-sgx
 
 ```
 
-- NB: this version does not kill the process/threads correctly with `ctrl + c`. Try killing with `kill -9 PID_of_app` or run app in the sgx-gdb debugger and stop normally via ctrl + c. To run app in the sgx debugger, do:
+- NB: this version does not kill the process/threads correctly with `ctrl + c`. Kill the app with the kill script `./kill.sh` or run app in the sgx-gdb debugger and stop normally via ctrl + c. To run app in the sgx debugger, do:
 
 ```
 source /opt/intel/sgxsdk/environment 
-sgx-gdb ./app
+sgx-gdb ./memcached-sgx
 
 ```
 
