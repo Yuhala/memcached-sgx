@@ -70,8 +70,6 @@ typedef size_t z_size_t;
 typedef void DIR;
 //typedef int z_streamp;
 
-
-
 //extern char **environ;
 // This prevents "name mangling" by g++ ---> PYuhala
 #if defined(__cplusplus)

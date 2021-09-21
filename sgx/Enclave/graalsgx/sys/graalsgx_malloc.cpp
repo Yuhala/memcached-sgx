@@ -7,6 +7,9 @@
 #include "graalsgx_malloc.h"
 #include <assert.h>
 #include "Enclave.h"
+#include <sgx/sys/eventfd.h>
+
+extern int errno;
 
 /**
  * Map reserved memory
@@ -102,7 +105,7 @@ void *pg_aligned_malloc(size_t size)
     void *ptr = malloc(tempSize);
 
     void *base = ptr + (align - 1);
-    base = (void*)((uintptr_t)base & ~(align - 1));
+    base = (void *)((uintptr_t)base & ~(align - 1));
     return (void *)base;
 }
 
@@ -144,4 +147,55 @@ void *temp(size_t align, size_t size)
 
     printf("  Aligned addr: %x\n", ptr);
     return ptr;
+}
+
+/* This function should work with most dlmalloc-like chunk bookkeeping
+ * systems, but it's only guaranteed to work with the native implementation
+ * used in this library. 
+ * source: https://github.com/leahneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
+ * */
+
+int posix_memalign(void **res, size_t align, size_t len)
+{
+    unsigned char *mem, *nnew, *end;
+    size_t header, footer;
+
+    if ((align & -align) != align)
+        return EINVAL;
+    if (len > SIZE_MAX - align)
+        return ENOMEM;
+
+    if (align <= 4 * sizeof(size_t))
+    {
+        if (!(mem = malloc(len)))
+            return errno;
+        *res = mem;
+        return 0;
+    }
+
+    if (!(mem = malloc(len + align - 1)))
+        return errno;
+
+    header = ((size_t *)mem)[-1];
+    end = mem + (header & -8);
+    footer = ((size_t *)end)[-2];
+    nnew = (void *)((uintptr_t)mem + align - 1 & -align);
+
+    if (!(header & 7))
+    {
+        ((size_t *)nnew)[-2] = ((size_t *)mem)[-2] + (nnew - mem);
+        ((size_t *)nnew)[-1] = ((size_t *)mem)[-1] - (nnew - mem);
+        *res = nnew;
+        return 0;
+    }
+
+    ((size_t *)mem)[-1] = header & 7 | nnew - mem;
+    ((size_t *)nnew)[-2] = footer & 7 | nnew - mem;
+    ((size_t *)nnew)[-1] = header & 7 | end - nnew;
+    ((size_t *)end)[-2] = footer & 7 | end - nnew;
+
+    if (nnew != mem)
+        free(mem);
+    *res = nnew;
+    return 0;
 }

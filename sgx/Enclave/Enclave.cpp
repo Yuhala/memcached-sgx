@@ -45,6 +45,10 @@
 #include "graal_sgx_shim_switchless.h"
 
 #include "memcached/test.h"
+#include "memcached/memcached.h"
+
+
+
 
 /* Global variables */
 sgx_enclave_id_t global_eid;
@@ -58,6 +62,10 @@ volatile sig_atomic_t *number_of_sl_calls;
 volatile sig_atomic_t *number_of_fallbacked_calls;
 volatile sig_atomic_t *number_of_workers;
 static __thread pid_t global_tid = -1;
+
+SGX_FILE stdin = SGX_STDIN;
+SGX_FILE stdout = SGX_STDOUT;
+SGX_FILE stderr = SGX_STDERR;
 
 /**
  * For kissdb
@@ -78,7 +86,8 @@ void writeKissdb(int n, int storeId);
 void ecall_test()
 {
     printf("ecall test >>>>>>>>> \n");    
-    start_server();
+    //start_server();
+    //memcached_init();
    
 }
 

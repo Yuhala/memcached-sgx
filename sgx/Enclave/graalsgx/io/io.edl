@@ -93,6 +93,10 @@ enclave {
         int ocall_xstat64(int ver, [in,string]const char *path, [in,out]struct stat *stat_buf);
 
          //stat
+        int ocall_stat([in,string]const char *path, [in,out]struct stat *buf);
+        int ocall_fstat(int fd, [in,out]struct stat *buf);
+        int ocall_lstat([in,string]const char *path, [in,out]struct stat *buf);
+
         int ocall_fstat64(int fd, [out]struct stat *buf);
         int ocall_fxstat64(int ver, int fildes, [out]struct stat *stat_buf);
 
@@ -119,11 +123,14 @@ enclave {
 
         ssize_t ocall_sendfile64(int out_fd, int in_fd,[user_check]off_t *offset, size_t count);
         ulong ocall_adler32(ulong adler,[in,size=len] const Bytef *buf, size_t len);
-        int ocall_getenv([in,size=envlen]const char *env, int envlen, [out,size=ret_len]char *ret_str,int ret_len);
-        
+        //int ocall_getenv([in,size=envlen]const char *env, int envlen, [out,size=ret_len]char *ret_str,int ret_len);
+        char *ocall_getenv([in, string] const char *name);
         int ocall_fileno([in]SGX_FILE *stream); 
         int ocall_isatty(int fd);
         mode_t ocall_umask(mode_t mask);
+
+        int ocall_fputc(int c, SGX_FILE stream);
+        int ocall_putc(int c, SGX_FILE stream);
 
     };
 };

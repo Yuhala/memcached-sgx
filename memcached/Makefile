@@ -22,20 +22,27 @@ APP_C_FILES := $(wildcard ./*.c)
 APP_OBJS := $(APP_C_FILES:.c=.o)
 
 
-APP_NAME := memcached
+MCD_SERVER := memcached
+MCD_CLIENT := cli
+
+
 
 .PHONY: all clean
 
-all: $(APP_NAME)
+all: $(MCD_SERVER) $(MCD_CLIENT)
 
 $(SRC)/%.o: $(SRC)/%.c $(HEADERS)
 		$(CC) $(COMPILE_FLAGS) -c $< -o $@
 		@echo "CC <= $<" 
 
-$(APP_NAME): $(APP_OBJS)
+$(MCD_SERVER): $(APP_OBJS)
 		@$(CC) $^ -o $@ $(LD_FLAGS)
 		@echo "LINK =>  $@"
 
+$(MCD_CLIENT): client/client.c
+		@$(CC) $^ -o $@ $(LD_FLAGS) -lmemcached
+		@echo "LINK =>  $@"
+
 clean:
-	@rm $(APP_NAME) $(APP_OBJS) 
+	@rm memcached $(APP_OBJS) client.o cli
 	

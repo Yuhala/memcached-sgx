@@ -85,6 +85,13 @@ uid_t getuid()
     return (uid_t)ret;
 }
 
+uid_t geteuid(void)
+{
+    GRAAL_SGX_INFO();
+    int ret;
+    ocall_geteuid(&ret);
+    return (uid_t)ret;
+}
 char *getcwd(char *buf, size_t size)
 {
     GRAAL_SGX_INFO();
@@ -150,7 +157,15 @@ unsigned int sleep(unsigned int secs)
     if (should_be_switchless(FN_TOKEN_FSYNC))
         ret = sleep_switchless(secs);
     else
-	ocall_sleep(&ret, secs);
+        ocall_sleep(&ret, secs);
+    return ret;
+}
+
+int usleep(useconds_t usec)
+{
+    GRAAL_SGX_INFO();
+    int ret;
+    ocall_usleep(&ret, usec);
     return ret;
 }
 
@@ -216,6 +231,24 @@ void sig_handler(int param)
 {
     GRAAL_SGX_INFO();
 }
+
+int raise(int sig)
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    //TODO
+    //ocall_raise(&ret)
+    return ret;
+}
+
+int kill(pid_t pid, int sig)
+{
+    GRAAL_SGX_INFO();
+    int ret;
+    ocall_kill(&ret, pid, sig);
+    return ret;
+}
+
 /* Mem management */
 
 /**
@@ -240,7 +273,7 @@ int munmap(void *addr, size_t len)
  */
 void *mmap(void *hint, size_t length, int prot, int flags, int fd, off_t offset)
 {
-   
+
     uint64_t page_size, aligned_length;
     void *aligned_hint, *reserved_memory_ptr;
     int memory_protection_flags = 0;
@@ -331,6 +364,14 @@ int mprotect(void *addr, size_t len, int prot)
     return 0;
 }
 
+int madvise(void *addr, size_t length, int advice)
+{
+    GRAAL_SGX_INFO();
+    int ret = -1;
+    //TODO
+    return ret;
+}
+
 /* cpuid routines: for libchelper.a */
 unsigned int get_cpuid_max(unsigned int ext, unsigned int *sig)
 {
@@ -407,6 +448,8 @@ int execvp(const char *file, char *const argv[])
     //TODO
     return ret;
 }
+
+
 void _exit(int status)
 {
     sgx_exit();

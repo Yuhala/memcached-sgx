@@ -40,6 +40,9 @@
 #include <sgx/sys/wait.h>
 //#include <sgx/sys/statvfs.h>
 
+//libevent
+#include <sgx/event.h>
+
 //io
 #include <stdio.h>
 
@@ -61,7 +64,8 @@
 #include <sgx_thread.h>
 //#include <sgx_pthread.h>
 
-//TODO
+//>>>>> Begin typedefs >>>>>>>>>
+
 typedef unsigned char Byte;
 typedef unsigned char Bytef;
 typedef long off64_t;
@@ -72,6 +76,12 @@ struct statvfs
 {
     int todo;
 };
+
+//>>>>>> End typedefs >>>>>>>>
+
+//#define my_printf(...) printf(__VA_ARGS__)
+
+#define PERROR(...) printf("[PERROR]: " __VA_ARGS__ " \n")
 
 //extern char **environ;
 // This prevents "name mangling" by g++ ---> PYuhala
@@ -86,16 +96,10 @@ extern "C"
     void *dlsym(void *handle, const char *symbol);
     void *dlopen(const char *filename, int flag);
     long sysconf(int name);
-    int fstat64(int fd, struct stat *buf);
-    int __fxstat64(int ver, int fildes, struct stat *stat_buf);
-    int __xstat64(int ver, const char *path, struct stat *stat_buf);
-
-    int __xstat(int ver, const char *path, struct stat *stat_buf);
-    int __lxstat(int ver, const char *path, struct stat *stat_buf);
-    int __fxstat(int ver, int fildes, struct stat *stat_buf);
 
     ulong crc32(ulong crc, const Byte *buf, uint len);
     uid_t getuid(void);
+    uid_t geteuid(void);
 
     //cpuid: for libchelper.a
     unsigned int get_cpuid_max(unsigned int ext, unsigned int *sig);
@@ -105,6 +109,7 @@ extern "C"
     //mem management
     int munmap(void *addr, size_t length);
     void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+    int madvise(void *addr, size_t length, int advice);
 
     //clock
     int clock_gettime(clockid_t clk_id, struct timespec *tp);
@@ -118,19 +123,35 @@ extern "C"
     long syscall(long num, ...);
     int uname(struct utsname *buf);
     unsigned int sleep(unsigned int secs);
+    int usleep(useconds_t usec);
     int mprotect(void *addr, size_t len, int prot);
     char *realpath(const char *path, char *resolved_path);
     char *__xpg_strerror_r(int errnum, char *buf, size_t buflen);
 
-    //signals
+    //>>>>>>>>>>>>>>>>>>>>> start signal shim >>>>>>>>>>>>>>>>>>>>>>>>>>
     int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact); //TODO
     int sigemptyset(sigset_t *set);
     int sigaddset(sigset_t *set, int signum);
     int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
     sighandler_t signal(int signum, sighandler_t handler);
     void sig_handler(int param);
+    int raise(int sig);
+    int kill(pid_t pid, int sig);
+    //>>>>>>>>>>>>>>>>>>>>> end signal shim >>>>>>>>>>>>>>>>>>>>>>>>>>
 
-    //io
+    ///>>>>>>>>>>>>>>>>>>>>> start io shim >>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    int fstat64(int fd, struct stat *buf);
+    int __fxstat64(int ver, int fildes, struct stat *stat_buf);
+    int __xstat64(int ver, const char *path, struct stat *stat_buf);
+
+    int __xstat(int ver, const char *path, struct stat *stat_buf);
+    int __lxstat(int ver, const char *path, struct stat *stat_buf);
+    int __fxstat(int ver, int fildes, struct stat *stat_buf);
+
+    int stat(const char *path, struct stat *buf);
+    int fstat(int fd, struct stat *buf);
+    int lstat(const char *path, struct stat *buf);
     void empty(int repeats);
     int fsync(int fd);
     int dup2(int oldfd, int newfd);
@@ -146,6 +167,8 @@ extern "C"
     int vfprintf(SGX_FILE *stream, const char *format, va_list ap);
     char *fgets(char *str, int n, SGX_FILE stream);
     int puts(const char *str);
+    int fputc(int c, SGX_FILE stream);
+    int putc(int c, SGX_FILE stream);
 
     //io: added for graphchi
     int mkdir(const char *pathname, mode_t mode);
@@ -174,8 +197,6 @@ extern "C"
     int deflateInit2_(z_streamp stream, int level, int method, int windowBits, int memLevel, int strategy);
     int inflateReset(z_streamp stream);
 
-    //----------------------------------------------------------
-
     void *opendir(const char *name);
     //void *fdopendir(int fd);
     int closedir(void *dirp);
@@ -195,11 +216,14 @@ extern "C"
     ssize_t write(int fd, const void *buf, size_t count);
     int sprintf(char *str, const char *format, ...);
 
+    int sscanf(const char *str, const char *format, ...);
+
+    //>>>>>>>>>>>>>>>>>>>>> end io shim >>>>>>>>>>>>>>>>>>>>>>>>>>
+
     char *strcpy(char *dest, const char *src);
     char *strcat(char *dest, const char *src);
 
     int getchar(void);
-    
 
     //net
     int socket(int domain, int type, int protocol);
@@ -211,7 +235,7 @@ extern "C"
     uint32_t ntohl(uint32_t netlong);
     uint16_t ntohs(uint16_t netshort);
 
-    //thread
+    //>>>>>>>>>>>>>>>>>>>>> start pthread shim >>>>>>>>>>>>>>>>>>>>>>>>>>
     int pthread_create(pthread_t *thread, GRAAL_SGX_PTHREAD_ATTR attr, void *(*start_routine)(void *), void *arg);
     pthread_t pthread_self(void);
     int pthread_join(pthread_t thread, void **retval); //better join outside after pthread_create :-)
@@ -237,6 +261,12 @@ extern "C"
     int pthread_mutex_lock(pthread_mutex_t *mutex);
     int pthread_mutex_trylock(pthread_mutex_t *mutex);
     int pthread_mutex_unlock(pthread_mutex_t *mutex);
+
+    int pthread_key_create(pthread_key_t *key, void (*destructor)(void *));
+    void *pthread_getspecific(pthread_key_t key);
+    int pthread_setspecific(pthread_key_t key, const void *value);
+
+    //>>>>>>>>>>>>>>>>>>>>> end pthread shim >>>>>>>>>>>>>>>>>>>>>>>>>>
 
     int sched_yield(void);
 
@@ -272,6 +302,9 @@ extern "C"
     int inflateEnd(z_streamp stream);
     int dup(int oldfd);
     int access(const char *pathname, int mode);
+
+    //>>>>>>>>>>>>>>>>>>>>>> start network shim >>>>>>>>>>>>>>>>>>>>>>>
+
     int getnameinfo(const struct sockaddr *addr, socklen_t addrlen,
                     char *host, socklen_t hostlen,
                     char *serv, socklen_t servlen, int flags);
@@ -303,8 +336,24 @@ extern "C"
 
     int listen(int sockfd, int backlog);
     int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+    int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
     int poll(struct pollfd *fds, nfds_t nfds, int timeout);
     int epoll_create(int size);
+    const char *inet_ntop(int af, const void *src,char *dst, socklen_t size);
+
+    ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+    ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
+
+    ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+    ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+    ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
+    ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
+
+    int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+
+    time_t time(time_t *t);
+
+    //>>>>>>>>>>>>>>>>>>>>>>> end network shim >>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     //Added for halodb
     int environ(void);
@@ -321,14 +370,21 @@ extern "C"
     int chdir(const char *path);
     void _exit(int status);
 
-    //Added for jedis
-    ssize_t recv(int sockfd, void *buf, size_t len, int flags);
-    ssize_t send(int sockfd, const void *buf, size_t len, int flags);
-
     //Added for quickcached
     int fileno(SGX_FILE *stream); //in
     int isatty(int fd);
     mode_t umask(mode_t mask);
+
+    //>>>>>>>>>>>>>>>>>>>>>>> start libevent shim >>>>>>>>>>>>>>>>>>>>>>>>>>>
+    //int event_del(struct event *ev);
+    //void event_set(struct event *ev, evutil_socket_t socketfd, short flags, void (*handler)(evutil_socket_t, short, void *), void *c);
+    //int event_base_set(struct event_base *evb, struct event *ev);
+    //int event_add(struct event *ev, const struct timeval *timeout);
+
+    //>>>>>>>>>>>>>>>>>>>>>>> end libevent shim >>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    //
+    void perror(const char *m);
 
 #if defined(__cplusplus)
 }

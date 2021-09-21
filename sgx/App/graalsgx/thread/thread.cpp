@@ -15,6 +15,7 @@
 #include "struct/sgx_pthread_struct.h"
 #include "ocall_logger.h"
 #include <map>
+#include <event.h>
 
 #define GRAAL_SGX_STACK 0x40000UL //256kb
 
@@ -186,7 +187,7 @@ int ocall_pthread_getattr_np__bypass(pthread_t tid, void *attr, size_t len)
 {
     log_ocall(__func__);
     GRAAL_SGX_INFO();
-    
+
     return pthread_getattr_np(tid, (pthread_attr_t *)attr);
 }
 
@@ -209,4 +210,29 @@ int ocall_pthread_attr_destroy__bypass(void *attr, size_t attr_len)
     log_ocall(__func__);
     GRAAL_SGX_INFO();
     return pthread_attr_destroy((pthread_attr_t *)attr);
+}
+
+int ocall_event_del(struct event *ev)
+{
+    log_ocall(__func__);
+    GRAAL_SGX_INFO();
+    return event_del(ev);
+}
+/* void ocall_event_set(struct event *ev, evutil_socket_t socketfd, short flags, void (*handler)(evutil_socket_t, short, void *), void *c)
+{
+    log_ocall(__func__);
+    GRAAL_SGX_INFO();
+    event_set
+} */
+int ocall_event_base_set(struct event_base *evb, struct event *ev)
+{
+    log_ocall(__func__);
+    GRAAL_SGX_INFO();
+    return event_base_set(evb, ev);
+}
+int ocall_event_add(struct event *ev, const struct timeval *timeout)
+{
+    log_ocall(__func__);
+    GRAAL_SGX_INFO();
+    return event_add(ev, timeout);
 }

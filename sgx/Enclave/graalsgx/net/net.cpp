@@ -188,6 +188,14 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
     ocall_accept(&ret, sockfd, addr, addrlen);
     return ret;
 }
+
+int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags)
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    ocall_accept4(&ret, sockfd, addr, addrlen, flags);
+    return ret;
+}
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
     GRAAL_SGX_INFO();
@@ -234,6 +242,21 @@ ssize_t send(int sockfd, const void *buf, size_t len, int flags)
     return ret;
 }
 
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen)
+{
+    GRAAL_SGX_INFO();
+    ssize_t ret;
+    ocall_sendto(&ret, sockfd, buf, len, flags, dest_addr, addrlen);
+    return ret;
+}
+ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags)
+{
+    GRAAL_SGX_INFO();
+    ssize_t ret;
+    ocall_sendmsg(&ret, sockfd, msg, flags);
+    return ret;
+}
+
 uint32_t htonl(uint32_t hostlong)
 {
     GRAAL_SGX_INFO();
@@ -261,5 +284,44 @@ uint16_t ntohs(uint16_t netshort)
     GRAAL_SGX_INFO();
     uint16_t ret;
     ocall_ntohs(&ret, netshort);
+    return ret;
+}
+
+int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+    GRAAL_SGX_INFO();
+    int ret;
+    ocall_getpeername(&ret, sockfd, addr, addrlen);
+    return ret;
+}
+
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen)
+{
+    GRAAL_SGX_INFO();
+    ssize_t ret;
+    ocall_recvfrom(&ret, sockfd, buf, len, flags, src_addr, addrlen);
+    return ret;
+}
+ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags)
+{
+    GRAAL_SGX_INFO();
+    ssize_t ret;
+    ocall_recvmsg(&ret, sockfd, msg, flags);
+    return ret;
+}
+time_t time(time_t *t)
+{
+    GRAAL_SGX_INFO();
+    time_t ret;
+    ocall_time(&ret, t);
+    return ret;
+}
+
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
+{
+    GRAAL_SGX_INFO();
+    const char *ret;
+    ocall_inet_ntop(&ret, af, src, dst, size);
+    ret = dst;
     return ret;
 }

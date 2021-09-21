@@ -1,0 +1,66 @@
+/*
+ * Created on Mon Sep 06 2021
+ *
+ * Copyright (c) 2021 Peterson Yuhala, IIUN
+ */
+
+enclave {    
+
+    /* Import useful sgx sdk ocalls */
+
+    from "sgx_tstdc.edl" import *;
+    //from "sgx_pthread.edl" import *;
+    //include "struct/sgx_pthread_struct.h"
+    include "sgx/sys/types.h"
+    include "mcd_types.h"
+
+    trusted {
+
+        include "sgx/event2/util.h"
+    };
+
+   
+
+    trusted {     
+
+        //initialisation ecalls
+        public void ecall_init_settings();
+        public void ecall_init_hash();
+        public void ecall_stats_init();
+        public void ecall_init_hashtable();
+        public void ecall_start_assoc_maintenance();
+        public void ecall_start_item_crawler();
+        public void ecall_start_slab_rebalance();
+        public void ecall_assoc_start_expand();
+        public void ecall_init_server_sockets();
+        public void ecall_init_mainbase([user_check]void *mb);
+        public void ecall_drive_machine([user_check]void* conn);
+        public void ecall_uriencode_init();
+        public void ecall_conn_init();
+        public void ecall_item_lru_bump_buf_create();
+        public void ecall_thread_libevent_process(evutil_socket_t fd, short which, [user_check]void *arg);
+        public void ecall_event_handler(evutil_socket_t fd, short which, [user_check]void *arg);
+
+        public void* ecall_conn_new(int sfd,enum conn_states init_state,int flags,int rd_buff_sz, enum network_transport tport, [user_check]struct event_base *base, [user_check]void* ssl);
+        public void ecall_conn_io_queue_add([user_check]void *c, int type);
+        public void ecall_set_conn_thread([user_check]void *c, [user_check]void *libevent_thread);
+
+
+    };
+    
+    untrusted {
+        //fd and flags should be const but for some reason edger8 fails
+        int mcd_ocall_setup_conn_event(int fd, int event_flags, [user_check]struct event_base *base, [user_check]void *c, int conn_id) allow(ecall_drive_machine);
+        void mcd_ocall_update_conn_event(int fd, int event_flags, [user_check]struct event_base *base, [user_check]void *c, int conn_id) allow(ecall_drive_machine);
+        void mcd_ocall_event_base_loopexit();
+        int mcd_ocall_event_del(int conn_id);
+        int mcd_ocall_event_add(int conn_id);
+        void mcd_ocall_dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags, int read_buffer_size, enum network_transport transport, [user_check]void *ssl);
+        void *mcd_ocall_do_cache_alloc(int conn_id, int lvt_thread_id);
+        void mcd_ocall_do_cache_free(int conn_id, int lvt_thread_id,[user_check]void* bundle);
+        void mcd_ocall_mutex_lock_lthread_stats(int conn_id);
+        void mcd_ocall_mutex_unlock_lthread_stats(int conn_id);
+        void *ocall_transmit_prepare();
+        int ocall_getErrno();
+    };
+};

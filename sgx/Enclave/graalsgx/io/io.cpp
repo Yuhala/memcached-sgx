@@ -16,10 +16,6 @@
 #include "graal_sgx_shim_switchless.h"
 #include "ocall_manager.h"
 
-SGX_FILE stdin = SGX_STDIN;
-SGX_FILE stdout = SGX_STDOUT;
-SGX_FILE stderr = SGX_STDERR;
-
 void empty(int repeats)
 {
     log_ocall(FN_TOKEN_EMPTY);
@@ -225,6 +221,7 @@ ssize_t read(int fd, void *buf, size_t count)
     if (should_be_switchless(FN_TOKEN_READ))
         ret = read_switchless(fd, buf, count);
     else
+
         ocall_read(&ret, fd, buf, count);
     //printf("read fd: %d\n", fd);
     return ret;
@@ -285,7 +282,6 @@ void *opendir(const char *name)
 int closedir(void *dirp)
 {
     GRAAL_SGX_INFO();
-    //TODO
     int ret;
     ocall_closedir(&ret, dirp);
     return ret;
@@ -294,7 +290,6 @@ int closedir(void *dirp)
 int readdir64_r(void *dirp, struct dirent *entry, struct dirent **result)
 {
     GRAAL_SGX_INFO();
-    //TODO
     int ret;
     ocall_readdir64_r(&ret, dirp, entry, result);
     return ret;
@@ -341,7 +336,7 @@ int fstat64(int fd, struct stat *buf)
     GRAAL_SGX_INFO();
     int ret;
     ocall_fstat64(&ret, fd, buf);
-    return 0;
+    return ret;
 }
 int __fxstat64(int ver, int fd, struct stat *stat_buf)
 {
@@ -351,14 +346,34 @@ int __fxstat64(int ver, int fd, struct stat *stat_buf)
     return ret;
 }
 
-char *getenv(const char *name)
+int stat(const char *path, struct stat *buf)
 {
     GRAAL_SGX_INFO();
-    /* char *ret = nullptr;
-    ocall_getenv(name,);
-    return ret; */
-    printf("GraalSGX: getenv(%s): workaround\n", name);
-    return NULL;
+    int ret;
+    ocall_stat(&ret, path, buf);
+    return ret;
+}
+int fstat(int fd, struct stat *buf)
+{
+    GRAAL_SGX_INFO();
+    int ret;
+    ocall_fstat(&ret, fd, buf);
+    return ret;
+}
+int lstat(const char *path, struct stat *buf)
+{
+    GRAAL_SGX_INFO();
+    int ret;
+    ocall_lstat(&ret, path, buf);
+    return ret;
+}
+
+char *getenv(const char *name)
+{
+    char *retval;
+    sgx_status_t status = ocall_getenv(&retval, name);
+    //CHECK_STATUS(status);
+    return retval;
 }
 
 ulong crc32(ulong crc, const Byte *buf, uint len)
@@ -784,4 +799,31 @@ int getchar()
     int ret;
     ocall_getchar(&ret);
     return ret;
+}
+
+int sscanf(const char *str, const char *format, ...)
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    //TODO
+    return ret;
+}
+
+int fputc(int c, SGX_FILE stream)
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    ocall_fputc(&ret, c, stream);
+    return ret;
+}
+int putc(int c, SGX_FILE stream)
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    ocall_putc(&ret, c, stream);
+    return ret;
+}
+void perror(const char *m)
+{
+    PERROR("ERROR");
 }

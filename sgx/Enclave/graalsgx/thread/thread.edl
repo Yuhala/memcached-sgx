@@ -14,6 +14,8 @@ enclave {
     from "sgx_pthread.edl" import *;
     include "struct/sgx_pthread_struct.h"
 
+    include "sgx/event.h"
+
     trusted {
         public void ecall_execute_job(pthread_t pthread_self_id, unsigned long int job_id);
 
@@ -33,5 +35,11 @@ enclave {
         int ocall_pthread_attr_getstack__bypass([out,size=attr_len] void* attr, size_t attr_len, [out,size=len]void **stk_addr,size_t len,[out]size_t *stack_size);
         int ocall_pthread_getattr_np(pthread_t tid);
         int ocall_pthread_getattr_np__bypass(pthread_t tid, [out,size=len] void *attr, size_t len);
+
+        //libevent ocalls
+        int ocall_event_del([user_check]struct event *ev);
+        //void ocall_event_set([user_check]struct event *ev, evutil_socket_t socketfd, short flags,[user_check] void (*handler)(evutil_socket_t, short, void *), void *c);
+        int ocall_event_base_set([user_check]struct event_base *evb, [user_check]struct event *ev);
+        int ocall_event_add([user_check]struct event *ev, [user_check]const struct timeval *timeout);
     };
 };

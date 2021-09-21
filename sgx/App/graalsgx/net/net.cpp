@@ -159,6 +159,14 @@ int ocall_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
     ret = accept(sockfd, addr, addrlen);
     return ret;
 }
+
+int ocall_accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags)
+{
+    log_ocall(__func__);
+    int ret = 0;
+    ret = accept4(sockfd, addr, addrlen, flags);
+    return ret;
+}
 int ocall_poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
     log_ocall(__func__);
@@ -221,10 +229,80 @@ ssize_t ocall_recv(int sockfd, void *buf, size_t len, int flags)
     log_ocall(__func__);
     return recv(sockfd, buf, len, flags);
 }
+
+ssize_t ocall_recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen)
+{
+    log_ocall(__func__);
+    return recvfrom(sockfd, buf, len, flags, src_addr, addrlen);
+}
+ssize_t ocall_recvmsg(int sockfd, struct msghdr *msg, int flags)
+{
+    log_ocall(__func__);
+    return recvmsg(sockfd, msg, flags);
+}
 ssize_t ocall_send(int sockfd, const void *buf, size_t len, int flags)
 {
     log_ocall(__func__);
     return send(sockfd, buf, len, flags);
+}
+
+ssize_t ocall_sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen)
+{
+    log_ocall(__func__);
+    return sendto(sockfd, buf, len, flags, dest_addr, addrlen);
+}
+
+/**
+ * pyuhala: prepares a msghdr variable outside
+ * which will be used by the enclave to write the message.
+ * using the enclave msg header w/could cause issues (eg ERROR 22)
+ * due to inability to write to the address. 
+ * 
+ */
+
+void *ocall_transmit_prepare()
+{
+    log_ocall(__func__);
+    ssize_t size = 128; //pyuhala: hope this will be enough to prevent segfaults
+    struct iovec iovs[1024];
+    struct msghdr *msg = (struct msghdr *)malloc(sizeof(struct msghdr));
+    // init the msg.
+    memset(msg, 0, sizeof(struct msghdr));
+    msg->msg_iov = iovs;
+
+    msg->msg_name = malloc(size);
+    msg->msg_control = malloc(size);
+
+    for (int i = 0; i < 1024; i++)
+    {
+        msg->msg_iov[i].iov_base = malloc(size);
+    }
+
+    return (void *)msg;
+}
+
+/**
+ * pyuhala: free msghdr struct allocated above: free all slots
+ */
+void free_msg(struct msghdr *msg)
+{
+    log_ocall(__func__);
+    free(msg->msg_name);
+    free(msg->msg_control);
+
+    for (int i = 0; i < 1024; i++)
+    {
+        free(msg->msg_iov[i].iov_base);
+    }
+}
+ssize_t ocall_sendmsg(int sockfd, struct msghdr *msg, int flags)
+{
+    log_ocall(__func__);
+
+    ssize_t ret = sendmsg(sockfd, msg, flags);
+    //pyuhala:free message header here
+    free(msg);
+    return ret;
 }
 
 uint32_t ocall_htonl(uint32_t hostlong)
@@ -246,4 +324,23 @@ uint16_t ocall_ntohs(uint16_t netshort)
 {
     log_ocall(__func__);
     return ntohs(netshort);
+}
+
+int ocall_getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+    log_ocall(__func__);
+    return getpeername(sockfd, addr, addrlen);
+}
+
+time_t ocall_time(time_t *t)
+{
+    log_ocall(__func__);
+    return time(t);
+}
+
+char *ocall_inet_ntop(int af, const void *src, char *dst, socklen_t size)
+{
+    log_ocall(__func__);
+
+    return (char *)inet_ntop(af, src, dst, size);
 }
