@@ -18,6 +18,7 @@
 int main(int argc, char **argv)
 {
   //memcached_servers_parse (char *server_strings);
+
   memcached_server_st *servers = NULL;
   memcached_st *memc;
   memcached_return rc;
@@ -37,23 +38,32 @@ int main(int argc, char **argv)
   else
     fprintf(stderr, "Couldn't add server: %s\n", memcached_strerror(memc, rc));
 
-  int n = 10000;
+  int n = 1;
+  n = atoi(argv[1]);
   /**
    * pyuhala: set/get kv pair n times
    */
 
   for (int i = 0; i < n; i++)
   {
+    printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<< i is: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", i);
     rc = memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0);
 
     if (rc == MEMCACHED_SUCCESS)
+    {
       fprintf(stderr, "Key stored successfully\n");
+    }
+
     else
+    {
       fprintf(stderr, "Couldn't store key: %s\n", memcached_strerror(memc, rc));
+      break;
+    }
   }
 
   for (int i = 0; i < n; i++)
   {
+    printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<< i is: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", i);
     retrieved_value = memcached_get(memc, key, strlen(key), &value_length, &flags, &rc);
 
     if (rc == MEMCACHED_SUCCESS)
@@ -63,7 +73,10 @@ int main(int argc, char **argv)
       free(retrieved_value);
     }
     else
+    {
       fprintf(stderr, "Couldn't retrieve key: %s\n", memcached_strerror(memc, rc));
+      break;
+    }
   }
 
   return 0;

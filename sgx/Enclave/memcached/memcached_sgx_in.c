@@ -85,18 +85,6 @@ static ssize_t tcp_write(conn *arg, void *buf, size_t count);
 
 static void resp_free(conn *c, mc_resp *resp);
 
-//pyuhala: custom logging
-#define LOG_FUNC_IN 1
-
-void log_routine(const char *func)
-{
-#ifdef LOG_FUNC_IN
-    printf("Enclave memcached function: %s\n", func);
-#else
-//do nothing: important to avoid needless ocalls when integrating sgx
-#endif
-}
-
 enum try_read_result
 {
     READ_DATA_RECEIVED,
