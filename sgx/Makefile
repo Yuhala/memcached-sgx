@@ -175,7 +175,7 @@ App_Link_Flags := -L$(SGX_LIBRARY_PATH) -L$(Graal_Libs_Path) -Wl,--start-group $
 
 App_Cpp_Objects := $(App_Cpp_Files:.cpp=.o)
 
-App_Name := app
+App_Name := memcached-sgx
 
 ######## Enclave Settings ########
 
