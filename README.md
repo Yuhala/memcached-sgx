@@ -22,7 +22,7 @@ sudo apt-get install libsasl2-dev
 
 ```
 sudo apt-get install wget
-wget -o https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
+wget https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
 ```
 - Build and install libevent
 
@@ -32,14 +32,20 @@ cd libevent*
 ./autogen.sh
 ./configure
 make
-make install
+sudo make install
 
 ```
-- Clone this repo and move to branch `memcached-port`
+- Add libevent symbolic link. The below command works only for the above installed libevent version. Modify the command accordingly if you have a different version of libevent installed.
+
+```
+sudo ln -s /usr/local/lib/libevent-2.1.so.7 /usr/lib/libevent-2.1.so.7
+
+```
+- Clone this repo and move to branch `master`
 
 ```
 git clone https://gitlab.com/Yuhala/memcached-sgx.git
-git checkout memcached-port
+git checkout master
 cd sgx
 
 ```
