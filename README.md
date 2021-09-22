@@ -41,11 +41,11 @@ sudo make install
 sudo ln -s /usr/local/lib/libevent-2.1.so.7 /usr/lib/libevent-2.1.so.7
 
 ```
-- Clone this repo and move to branch `memcached-port`
+- Clone this repo and move to branch `test`
 
 ```
 git clone https://gitlab.com/Yuhala/memcached-sgx.git
-git checkout memcached-port
+git checkout test
 cd sgx
 
 ```
@@ -92,3 +92,35 @@ get test
 ```
 - To build normal memcached, cd into the `memcached` folder and run `make`. Run the server with `./memcached`. Connect to the server via telnet as explained above.
 
+## Benchmarking with YCSB workloads
+- Follow these instructions to test memcached with YCSB workloads.
+
+- Start by installing java and maven on your server if they are absent.
+
+```
+sudo apt update
+sudo apt install default-jre
+sudo apt install maven
+
+```
+- Setup YCSB.
+
+```
+cd YCSB
+mvn -pl site.ycsb:memcached-binding -am clean package
+
+```
+- Launch the memcached-server as explained above: either `memcached-sgx` or default `memcached`.
+
+- Load YCSB data (ie kv pairs) into the memcached server. We use workload A in this example. This will use 4 client threads; modify the option to change. The output of the run is sent to `outputRun.txt`
+
+```
+./bin/ycsb load memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 > outputLoad.txt
+
+```
+- Run operations (ie get/set/) on the loaded memcached server.
+
+```
+./bin/ycsb run memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 > outputLoad.txt
+
+```
