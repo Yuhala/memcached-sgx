@@ -35,6 +35,12 @@ make
 sudo make install
 
 ```
+- Add libevent symbolic link. The below command works only for the above installed libevent version. Modify the command accordingly if you have a different version of libevent installed.
+
+```
+sudo ln -s /usr/local/lib/libevent-2.1.so.7 /usr/lib/libevent-2.1.so.7
+
+```
 - Clone this repo and move to branch `memcached-port`
 
 ```
