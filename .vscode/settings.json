@@ -3,6 +3,8 @@
         "memcached.h": "c",
         "ctype.h": "c",
         "test-out.h": "c",
-        "my_logger.h": "c"
+        "my_logger.h": "c",
+        "memcached_sgx_out.h": "c",
+        "ocall_logger.h": "c"
     }
 }

@@ -79,10 +79,6 @@
 //paldb benchmarking
 #include "paldb/Paldb.h"
 
-
-
-
-
 /* Benchmarking */
 //#include "benchtools.h"
 #include <time.h>
@@ -176,8 +172,6 @@ void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
     printf("Caught signal: %d\n", sig);
 }
-
-
 
 void fill_array()
 {
@@ -556,7 +550,6 @@ void ocall_bench(void)
 
 int normal_run(int arg)
 {
-    
 
     setMainAttribs();
 
@@ -665,22 +658,17 @@ int main(int argc, char *argv[])
     int i;
     struct timeval tval_before, tval_after, tval_result;
 
-    //run_main(1, NULL);
-    //return 0;
-    //I use only 1 arg for now
-    int arg1 = 0;
+   
+    int num_mcd_workers = 4;
     if (argc > 1)
     {
         //works only for numeric arg1s
-        arg1 = atoi(argv[1]);
+        num_mcd_workers = atoi(argv[1]);
     }
 
     //int ret = normal_run(arg1);
     //return ret;
 
-    //const char* arg1 = argv[1];
-
-    //global_app_iso = isolate_generator();
 
     setMainAttribs();
 
@@ -699,10 +687,8 @@ int main(int argc, char *argv[])
 
     int id = global_eid;
 
-   
-    init_memcached();
+    init_memcached(num_mcd_workers);
     return 0;
-
 
     //ecall_create_enclave_isolate(global_eid);
     /**

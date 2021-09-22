@@ -1489,32 +1489,12 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
 {
     log_routine(__func__);
 
+    showOcallLog(10);
+
     evutil_socket_t sfd = fd;
     short wch = which;
 
     ecall_event_handler(global_eid, sfd, wch, arg);
-    return;
-
-    conn *c;
-
-    c = (conn *)arg;
-    assert(c != NULL);
-    c->which = which;
-
-    /* sanity */
-    if (fd != c->sfd)
-    {
-        if (settings.verbose > 0)
-            fprintf(stderr, "Catastrophic: event fd doesn't match conn fd!\n");
-        conn_close(c);
-        return;
-    }
-
-    //pyuhala: ecall into the enclave
-
-    ecall_drive_machine(global_eid, (void *)c);
-
-    /* wait for next event */
     return;
 }
 
@@ -1543,7 +1523,8 @@ static void sig_usrhandler(const int sig)
 void mcd_ocall_do_cache_free(int conn_id, int lvt_thread_id, void *ptr)
 {
 
-    log_routine(__func__);
+    //log_routine(__func__);
+    log_ocall(__func__);
 
     LIBEVENT_THREAD *lthread = getEventThread(conn_id);
     if (lthread == NULL)
@@ -1555,7 +1536,8 @@ void mcd_ocall_do_cache_free(int conn_id, int lvt_thread_id, void *ptr)
 }
 void *mcd_ocall_do_cache_alloc(int conn_id, int lvt_thread_id)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
+    log_ocall(__func__);
 
     LIBEVENT_THREAD *lthread = getEventThread(conn_id);
     if (lthread == NULL)
@@ -1580,7 +1562,8 @@ void *mcd_ocall_do_cache_alloc(int conn_id, int lvt_thread_id)
 
 void mcd_ocall_dispatch_conn_new(int sfd, enum conn_states init_state, int event_flags, int read_buffer_size, enum network_transport transport, void *ssl)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
+    log_ocall(__func__);
     dispatch_conn_new(sfd, init_state, event_flags, read_buffer_size, transport, ssl);
 }
 
@@ -1589,7 +1572,8 @@ void mcd_ocall_dispatch_conn_new(int sfd, enum conn_states init_state, int event
  */
 int mcd_ocall_setup_conn_event(int fd, int flags, struct event_base *base, void *conn_ptr, int conn_id)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
+    log_ocall(__func__);
     const int sfd = fd;
     const int event_flags = flags;
     struct event *ev = (struct event *)malloc(sizeof(struct event));
@@ -1635,7 +1619,8 @@ int mcd_ocall_setup_conn_event(int fd, int flags, struct event_base *base, void 
 
 void mcd_ocall_update_conn_event(int fd, int new_flags, struct event_base *base, void *conn_ptr, int conn_id)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
+    log_ocall(__func__);
     const int sfd = fd;
     const int event_flags = new_flags;
     conn *c = (conn *)conn_ptr;
@@ -1648,7 +1633,8 @@ void mcd_ocall_update_conn_event(int fd, int new_flags, struct event_base *base,
 
 int mcd_ocall_event_del(int conn_id)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
+    log_ocall(__func__);
     struct event *ev = getConnEvent(conn_id);
     if (event_del(ev) == -1)
         return -1;
@@ -1657,7 +1643,8 @@ int mcd_ocall_event_del(int conn_id)
 }
 int mcd_ocall_event_add(int conn_id)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
+    log_ocall(__func__);
     struct event *ev = getConnEvent(conn_id);
     if (event_add(ev, 0) == -1)
         return -1;
@@ -1666,13 +1653,15 @@ int mcd_ocall_event_add(int conn_id)
 
 void mcd_ocall_event_base_loopexit()
 {
-    log_routine(__func__);
+    //log_routine(__func__);
+    log_ocall(__func__);
     event_base_loopexit(main_base, NULL);
 }
 
 void mcd_ocall_mutex_lock_lthread_stats(int conn_id)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
+    //log_ocall(__func__);
     LIBEVENT_THREAD *lthread = getEventThread(conn_id);
 
     if (lthread == NULL)
@@ -1685,7 +1674,8 @@ void mcd_ocall_mutex_lock_lthread_stats(int conn_id)
 
 void mcd_ocall_mutex_unlock_lthread_stats(int conn_id)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
+    //log_ocall(__func__);
     LIBEVENT_THREAD *lthread = getEventThread(conn_id);
     if (lthread == NULL)
     {
@@ -1703,7 +1693,7 @@ void mcd_ocall_mutex_unlock_lthread_stats(int conn_id)
  * Outside: thread init, libevent, signal handlers, socket init
  */
 
-void init_memcached()
+void init_memcached(int numWorkers)
 {
     log_routine(__func__);
     printf(" =============== pyuhala: init_memcached_out ==================\n");
@@ -1754,7 +1744,8 @@ void init_memcached()
       * this struct in and out of the enclave.
       */
     settings_init();
-    ecall_init_settings(global_eid);
+    settings.num_threads = numWorkers;
+    ecall_init_settings(global_eid, numWorkers);
 
     /* set stderr non-buffering (for running under, say, daemontools) */
     setbuf(stderr, NULL);

@@ -10,6 +10,7 @@
 #include "Enclave_u.h"
 #include "sgx_urts.h"
 #include "my_logger.h"
+#include "ocall_logger.h"
 
 
 
