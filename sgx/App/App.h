@@ -61,7 +61,7 @@ extern "C"
 {
 #endif
 
-    void init_memcached(void);
+    void init_memcached(int);
 
 #if defined(__cplusplus)
 }

@@ -182,7 +182,7 @@ static void alloc_lthread_inside(conn *c)
     myLthread->rbuf_cache = cache_create("rbuf", READ_BUFFER_SIZE, sizeof(char *), NULL, NULL);
     if (myLthread->rbuf_cache == NULL)
     {
-        printf("Failed to alloc rbuf_cache inside >>>>>>>>>>>>>>>>>>\n");
+        //printf("Failed to alloc rbuf_cache inside >>>>>>>>>>>>>>>>>>\n");
         fprintf(stderr, "Failed to create read buffer cache\n");
         exit(EXIT_FAILURE);
     }
@@ -205,7 +205,7 @@ static void alloc_lthread_inside(conn *c)
     myLthread->io_cache = cache_create("io", sizeof(io_pending_t), sizeof(char *), NULL, NULL);
     if (myLthread->io_cache == NULL)
     {
-        printf("Failed to alloc io_cache inside >>>>>>>>>>>>>>>>>>\n");
+        //printf("Failed to alloc io_cache inside >>>>>>>>>>>>>>>>>>\n");
         fprintf(stderr, "Failed to create IO object cache\n");
         exit(EXIT_FAILURE);
     }
@@ -893,7 +893,7 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
     /* sanity */
     if (fd != c->sfd)
     {
-        printf("sanity check failed fd != c->sfd >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+        //printf("sanity check failed fd != c->sfd >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
         if (settings.verbose > 0)
             fprintf(stderr, "Catastrophic: event fd doesn't match conn fd!\n");
         conn_close(c);
@@ -1036,7 +1036,7 @@ static enum try_read_result try_read_network(conn *c)
             char *new_rbuf = realloc(c->rbuf, c->rsize * 2);
             if (!new_rbuf)
             {
-                printf("NOT new rbuf >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+                //printf("NOT new rbuf >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
                 STATS_LOCK();
                 stats.malloc_fails++;
                 STATS_UNLOCK();
@@ -1055,9 +1055,9 @@ static enum try_read_result try_read_network(conn *c)
 
         int avail = c->rsize - c->rbytes;
 
-        printf("try_read_network:: c->rbytes = %d avail = %d >>>>>>>>>>>>>>\n", c->rbytes, avail);
+        //printf("try_read_network:: c->rbytes = %d avail = %d >>>>>>>>>>>>>>\n", c->rbytes, avail);
         res = c->read(c, c->rbuf + c->rbytes, avail);
-        printf("try_read_network fd: %d avail: %d RES: \"%s\" size: %d >>>>>>>>>>>>>>>>\n", c->sfd, avail, (char *)c->rbuf, res);
+        //printf("try_read_network fd: %d avail: %d RES: \"%s\" size: %d >>>>>>>>>>>>>>>>\n", c->sfd, avail, (char *)c->rbuf, res);
 
         if (res > 0)
         {
@@ -1455,7 +1455,7 @@ static enum transmit_result transmit(conn *c)
         // Avoid the syscall if we're only handling a noreply.
         // Return the response object.
         _transmit_post(c, 0);
-        printf("after _transmit_post: TRANSMIT COMPLETE >>>>>>>>>>>>>>>>>>>>>>\n");
+        //printf("after _transmit_post: TRANSMIT COMPLETE >>>>>>>>>>>>>>>>>>>>>>\n");
         return TRANSMIT_COMPLETE;
     }
 
@@ -1468,10 +1468,10 @@ static enum transmit_result transmit(conn *c)
 
     res = c->sendmsg(c, msg_out, 0);
 
-    printf("ERRNO before call: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", errno);
+    //printf("ERRNO before call: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", errno);
     ocall_getErrno(&errno);
 
-    printf("Transmit sendmsg: res is: %d iovused: %d ERRNO: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", res, iovused, errno);
+    //printf("Transmit sendmsg: res is: %d iovused: %d ERRNO: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", res, iovused, errno);
     if (res >= 0)
     {
         mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
@@ -1487,7 +1487,7 @@ static enum transmit_result transmit(conn *c)
         }
         else
         {
-            printf("TRANSMIT COMPLETE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+            //printf("TRANSMIT COMPLETE >>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
             return TRANSMIT_COMPLETE;
         }
     }
@@ -1509,7 +1509,6 @@ static enum transmit_result transmit(conn *c)
     if (settings.verbose > 0)
         perror("Failed to write, and not due to blocking");
 
-    printf("Transmit closing connections >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
     conn_set_state(c, conn_closing);
     return TRANSMIT_HARD_ERROR;
 }
@@ -1776,11 +1775,12 @@ static void settings_init(void)
     settings.memory_file = NULL;
 }
 
-void ecall_init_settings()
+void ecall_init_settings(int numWorkers)
 {
     log_routine(__func__);
     /* init settings */
     settings_init();
+    settings.num_threads = numWorkers;
     //verify_default("hash_algorithm", hash_type == MURMUR3_HASH);
 #ifdef EXTSTORE
     void *storage = NULL;
@@ -1858,7 +1858,6 @@ static void conn_init(void)
 
     close(next_fd);
 
-    printf("Ecall conn init max fds: %d >>>>>>>>>>>>>>>>>>>>>>>\n", max_fds);
     if ((conns = calloc(max_fds, sizeof(conn *))) == NULL)
     {
         fprintf(stderr, "Failed to allocate connection structures\n");
@@ -2077,7 +2076,7 @@ static int server_socket(const char *interface,
         conn *listen_conn_add;
         if ((sfd = new_socket(next)) == -1)
         {
-            printf("FAILED to create new socket >>>>>>>>>>\n");
+            //printf("FAILED to create new socket >>>>>>>>>>\n");
 
             /* getaddrinfo can return "junk" addresses,
              * we make sure at least one works before erroring.
@@ -2138,7 +2137,7 @@ static int server_socket(const char *interface,
 
         if (bind(sfd, next->ai_addr, next->ai_addrlen) == -1)
         {
-            printf("FAILED to bind sockfd >>>>>>>>>>\n");
+
             if (errno != EADDRINUSE)
             {
                 perror("bind()");
@@ -2961,8 +2960,8 @@ static const char *state_text(enum conn_states state)
 void conn_set_state(conn *c, enum conn_states state)
 {
 
-    //log_routine(__func__);
-    printf("conn_set_state: %s\n", state_text(state));
+    log_routine(__func__);
+    //printf("conn_set_state: %s\n", state_text(state));
 
     assert(c != NULL);
     assert(state >= conn_listening && state < conn_max_state);
@@ -3119,7 +3118,6 @@ static void resp_free(conn *c, mc_resp *resp)
     mc_resp_bundle *b = resp->bundle;
 
     resp->free = true;
-    printf("resp_free:: b->refcount = %d >>>>>>>>>>\n", b->refcount);
     b->refcount--;
 
     if (b->refcount == 0)
@@ -4046,13 +4044,13 @@ static void drive_machine(conn *c)
                 /* wee need more data! */
                 if (c->resp_head)
                 {
-                    printf("we need more data >>>>>>>>>>>>>>\n");
+
                     // Buffered responses waiting, flush in the meantime.
                     conn_set_state(c, conn_mwrite);
                 }
                 else
                 {
-                    printf("in conn_parse_cmd, setting conn state to waiting >>>>>>>>>>>>>>\n");
+
                     conn_set_state(c, conn_waiting);
                 }
             }
@@ -4091,7 +4089,7 @@ static void drive_machine(conn *c)
                     if (!update_event(c, EV_WRITE | EV_PERSIST))
                     {
                         ocall_getErrno(&errno);
-                        printf("Failed to update event at conn_new_cmd >>>>>>>>>>>>>>>>>>>>\n");
+
                         if (settings.verbose > 0)
                             fprintf(stderr, "Couldn't update event\n");
                         conn_set_state(c, conn_closing);
@@ -4106,7 +4104,7 @@ static void drive_machine(conn *c)
 
             if (c->rlbytes == 0)
             {
-                printf("c->rlbytes == 0 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+
                 complete_nread(c);
                 ocall_getErrno(&errno);
                 break;
@@ -4115,7 +4113,7 @@ static void drive_machine(conn *c)
             /* Check if rbytes < 0, to prevent crash */
             if (c->rlbytes < 0)
             {
-                printf("closing conn: c->rlbytes < 0 >>>>>>>>>>>>>>>>>>>>\n");
+
                 if (settings.verbose)
                 {
                     fprintf(stderr, "Invalid rlbytes to read: len %d\n", c->rlbytes);
@@ -4129,7 +4127,7 @@ static void drive_machine(conn *c)
                 /* first check if we have leftovers in the conn_read buffer */
                 if (c->rbytes > 0)
                 {
-                    printf("we have leftovers >>>>>>>>>>>>>>>>>");
+
                     int tocopy = c->rbytes > c->rlbytes ? c->rlbytes : c->rbytes;
                     memmove(c->ritem, c->rcurr, tocopy);
                     c->ritem += tocopy;
@@ -4147,7 +4145,7 @@ static void drive_machine(conn *c)
 
                 ocall_getErrno(&errno);
 
-                printf("allocing item: tcp read rlbytes: %d read fd: %d res: %d ERRNO: %d >>>>>>>>>>>>>>>>>>>>>>>\n", c->rlbytes, c->sfd, res, errno);
+                //printf("allocing item: tcp read rlbytes: %d read fd: %d res: %d ERRNO: %d >>>>>>>>>>>>>>>>>>>>>>>\n", c->rlbytes, c->sfd, res, errno);
                 if (res > 0)
                 {
                     mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
@@ -4164,7 +4162,7 @@ static void drive_machine(conn *c)
             }
             else
             {
-                printf("reading into chunked item >>>>>>>>>>>>>>>>>>>>>>>\n");
+
                 res = read_into_chunked_item(c);
                 if (res > 0)
                     break;
@@ -4317,7 +4315,7 @@ static void drive_machine(conn *c)
                     conn_set_state(c, conn_new_cmd);
                     if (c->close_after_write)
                     {
-                        printf("close after write >>>>>>>>>>>>>>>>>>>>>>\n");
+
                         conn_set_state(c, conn_closing);
                     }
                 }

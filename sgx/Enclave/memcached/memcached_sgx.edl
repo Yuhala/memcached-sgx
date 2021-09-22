@@ -24,7 +24,7 @@ enclave {
     trusted {     
 
         //initialisation ecalls
-        public void ecall_init_settings();
+        public void ecall_init_settings(int numWorkers);
         public void ecall_init_hash();
         public void ecall_stats_init();
         public void ecall_init_hashtable();
