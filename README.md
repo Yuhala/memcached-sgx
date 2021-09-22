@@ -22,7 +22,7 @@ sudo apt-get install libsasl2-dev
 
 ```
 sudo apt-get install wget
-wget -o https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
+wget https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
 ```
 - Build and install libevent
 
