@@ -85,6 +85,10 @@ typedef struct ms_ecall_execute_job_t {
 	unsigned long int ms_job_id;
 } ms_ecall_execute_job_t;
 
+typedef struct ms_ecall_init_settings_t {
+	int ms_numWorkers;
+} ms_ecall_init_settings_t;
+
 typedef struct ms_ecall_init_mainbase_t {
 	void* ms_mb;
 } ms_ecall_init_mainbase_t;
@@ -2955,10 +2959,12 @@ sgx_status_t ecall_execute_job(sgx_enclave_id_t eid, pthread_t pthread_self_id, 
 	return status;
 }
 
-sgx_status_t ecall_init_settings(sgx_enclave_id_t eid)
+sgx_status_t ecall_init_settings(sgx_enclave_id_t eid, int numWorkers)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 13, &ocall_table_Enclave, NULL);
+	ms_ecall_init_settings_t ms;
+	ms.ms_numWorkers = numWorkers;
+	status = sgx_ecall(eid, 13, &ocall_table_Enclave, &ms);
 	return status;
 }
 

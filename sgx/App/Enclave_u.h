@@ -792,7 +792,7 @@ sgx_status_t ecall_readKissdb(sgx_enclave_id_t eid, int n, int storeId);
 sgx_status_t ecall_writeKissdb(sgx_enclave_id_t eid, int n, int storeId);
 sgx_status_t ecall_test(sgx_enclave_id_t eid);
 sgx_status_t ecall_execute_job(sgx_enclave_id_t eid, pthread_t pthread_self_id, unsigned long int job_id);
-sgx_status_t ecall_init_settings(sgx_enclave_id_t eid);
+sgx_status_t ecall_init_settings(sgx_enclave_id_t eid, int numWorkers);
 sgx_status_t ecall_init_hash(sgx_enclave_id_t eid);
 sgx_status_t ecall_stats_init(sgx_enclave_id_t eid);
 sgx_status_t ecall_init_hashtable(sgx_enclave_id_t eid);

@@ -111,6 +111,10 @@ typedef struct ms_ecall_execute_job_t {
 	unsigned long int ms_job_id;
 } ms_ecall_execute_job_t;
 
+typedef struct ms_ecall_init_settings_t {
+	int ms_numWorkers;
+} ms_ecall_init_settings_t;
+
 typedef struct ms_ecall_init_mainbase_t {
 	void* ms_mb;
 } ms_ecall_init_mainbase_t;
@@ -1489,9 +1493,19 @@ static sgx_status_t SGX_CDECL sgx_ecall_execute_job(void* pms)
 
 static sgx_status_t SGX_CDECL sgx_ecall_init_settings(void* pms)
 {
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_init_settings_t));
+	//
+	// fence after pointer checks
+	//
+	sgx_lfence();
+	ms_ecall_init_settings_t* ms = SGX_CAST(ms_ecall_init_settings_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	if (pms != NULL) return SGX_ERROR_INVALID_PARAMETER;
-	ecall_init_settings();
+
+
+
+	ecall_init_settings(ms->ms_numWorkers);
+
+
 	return status;
 }
 

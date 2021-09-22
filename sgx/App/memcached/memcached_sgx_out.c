@@ -181,11 +181,11 @@ conn *getConn(int conn_id)
 void setEventThread(LIBEVENT_THREAD *lt, int conn_id)
 {
     event_thread_array[conn_id] = lt;
-    printf("setEventThread: %d <==> Connection: %d\n", lt->libevent_tid, conn_id);
+    //printf("setEventThread: %d <==> Connection: %d\n", lt->libevent_tid, conn_id);
 }
 LIBEVENT_THREAD *getEventThread(int conn_id)
 {
-    printf("getEventThread for conn: %d\n", conn_id);
+    //printf("getEventThread for conn: %d\n", conn_id);
     return event_thread_array[conn_id];
 }
 
@@ -1489,7 +1489,7 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
 {
     log_routine(__func__);
 
-    showOcallLog(10);
+    //showOcallLog(10);
 
     evutil_socket_t sfd = fd;
     short wch = which;

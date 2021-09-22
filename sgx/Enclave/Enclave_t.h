@@ -100,7 +100,7 @@ void ecall_readKissdb(int n, int storeId);
 void ecall_writeKissdb(int n, int storeId);
 void ecall_test(void);
 void ecall_execute_job(pthread_t pthread_self_id, unsigned long int job_id);
-void ecall_init_settings(void);
+void ecall_init_settings(int numWorkers);
 void ecall_init_hash(void);
 void ecall_stats_init(void);
 void ecall_init_hashtable(void);

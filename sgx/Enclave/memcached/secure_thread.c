@@ -978,7 +978,7 @@ enum store_item_type store_item(item *item, int comm, conn *c)
     ret = do_store_item(item, comm, c, hv);
     item_unlock(hv);
 
-    printf("store item return: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n",ret);
+    //printf("store item return: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n",ret);
     return ret;
 }
 
