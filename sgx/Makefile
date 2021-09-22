@@ -101,7 +101,7 @@ Graal_Objects_In := $(wildcard Enclave/graalsgx/*.o)
 
 # Static graal libs
 Graal_Libs_Path := ./Common
-Graal_Libs := -lfdlibm -lffi -ljava -ljvm -llibchelper -lnet -lnio -lzip
+Graal_Libs := #-lfdlibm -lffi -ljava -ljvm -llibchelper -lnet -lnio -lzip
 
 # Untrusted objects from graal AoT compilation
 Graal_Objects_Out := $(wildcard App/graalsgx/*.o)

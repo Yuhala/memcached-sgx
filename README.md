@@ -32,7 +32,7 @@ cd libevent*
 ./autogen.sh
 ./configure
 make
-make install
+sudo make install
 
 ```
 - Clone this repo and move to branch `memcached-port`
