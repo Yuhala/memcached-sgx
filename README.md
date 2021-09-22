@@ -32,14 +32,20 @@ cd libevent*
 ./autogen.sh
 ./configure
 make
-make install
+sudo make install
 
 ```
-- Clone this repo and move to branch `test`
+- Add libevent symbolic link. The below command works only for the above installed libevent version. Modify the command accordingly if you have a different version of libevent installed.
+
+```
+sudo ln -s /usr/local/lib/libevent-2.1.so.7 /usr/lib/libevent-2.1.so.7
+
+```
+- Clone this repo and move to branch `memcached-port`
 
 ```
 git clone https://gitlab.com/Yuhala/memcached-sgx.git
-git checkout test
+git checkout memcached-port
 cd sgx
 
 ```
