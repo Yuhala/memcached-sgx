@@ -112,15 +112,15 @@ mvn -pl site.ycsb:memcached-binding -am clean package
 ```
 - Launch the memcached-server as explained above: either `memcached-sgx` or default `memcached`.
 
-- Load YCSB data (ie kv pairs) into the memcached server. We use workload A in this example. This will use 4 client threads; modify the option to change. The output of the run is sent to `outputRun.txt`
+- Load YCSB data (ie kv pairs) into the memcached server. We use workload A in this example. 
 
 ```
 ./bin/ycsb load memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 > outputLoad.txt
 
 ```
-- Run operations (ie get/set/) on the loaded memcached server.
+- Run operations (ie get/set/) on the loaded memcached server. This will use 4 client threads; modify the option to change. The output of the run is sent to `outputRun.txt`
 
 ```
-./bin/ycsb run memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 > outputLoad.txt
+./bin/ycsb run memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 > outputRun.txt
 
 ```
