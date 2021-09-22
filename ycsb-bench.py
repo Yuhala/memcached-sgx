@@ -58,7 +58,7 @@ def run_mcd_sgx():
     os.chdir(SGX_BASE)
     sgx_proc = subprocess.Popen([MCD_SGX_BIN, str(NUM_MCD_WORKER_THREADS)])
     print(
-        f'................. Waiting for memcached-sgx process to startup. Wait time: {SLEEP} ......................')
+        f'................. Waiting for memcached-sgx process to startup. Wait time: {SLEEP}s ......................')
     time.sleep(SLEEP)
     print(f'............... memcached-sgx surely up by now :) .................')
 
@@ -74,7 +74,7 @@ def load_ycsb():
     os.chdir(YCSB_BASE + "/bin")
     # command to load workload data into mcd
     ycsbLoad = " load memcached -s -P " + WORKLOAD + \
-        " -p \"memcached.hosts=127.0.0.1\" -threads " + NUM_CLIENT_THREADS
+        " -p \"memcached.hosts=127.0.0.1\" -threads " + str(NUM_CLIENT_THREADS)
 
     ###
     print(f'............... Loading YCSB workload ...............')
@@ -92,7 +92,8 @@ def run_ycsb(target_tput):
     # command to run ycsb workload
     ycsbRun = " run memcached -s -P " + WORKLOAD + \
         " -p \"memcached.hosts=127.0.0.1\" -threads " + \
-        NUM_CLIENT_THREADS + " -target " + target_tput + " > " + YCSB_OUTPUT
+        str(NUM_CLIENT_THREADS) + " -target " + \
+        str(target_tput) + " > " + YCSB_OUTPUT
 
     ###
     print(f'............... Loading YCSB workload ...............')
