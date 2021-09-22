@@ -9,7 +9,7 @@
 //pyuhala: custom logging
 #define LOG_FUNC_IN 1
 
-#undef LOG_FUNC_IN
+//#undef LOG_FUNC_IN
 
 void log_routine(const char *func)
 {

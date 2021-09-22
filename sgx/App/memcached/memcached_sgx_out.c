@@ -1487,7 +1487,7 @@ void conn_close_all(void)
 
 void event_handler(const evutil_socket_t fd, const short which, void *arg)
 {
-    log_routine(__func__);
+    //log_routine(__func__);
 
     //showOcallLog(10);
 
