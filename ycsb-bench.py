@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Author: Peterson Yuhala
@@ -15,13 +15,17 @@ import statistics
 import re  # for regular expressions
 from random import randint
 
+# Get the base directory using absolute path of this script
+# NB: this script should be in the memcached-sgx directory
+SCRIPT_ABS_PATH = os.path.abspath(__file__)
+BASE_DIR = os.path.dirname(SCRIPT_ABS_PATH)
 
-SGX_BASE = "./sgx"
-YCSB_BASE = "./YCSB"
+SGX_BASE = BASE_DIR + "/sgx"
+YCSB_BASE = BASE_DIR + "/YCSB"
 
 
 YCSB_OUTPUT = YCSB_BASE + "/output.txt"
-MAIN_RES = "./results/main.csv"
+MAIN_RES = BASE_DIR + "/results/main.csv"
 MCD_SGX_BIN = SGX_BASE + "/memcached-sgx"
 YCSB_BIN = YCSB_BASE + "/bin/ycsb"
 KILLER = SGX_BASE + "/kill.sh"
@@ -31,7 +35,7 @@ WORKLOAD = YCSB_BASE + " /workloads/workloada"
 # minimum target throughput
 MIN_TPUT = 500
 # maximum target throughput
-MAX_TPUT = 5000
+MAX_TPUT = 1000
 # throughput step
 STEP = 500
 
@@ -50,6 +54,8 @@ SLEEP = 90.0
 # this takes some time to start up so we will wait a little just to be sure
 def run_mcd_sgx():
     print(f'................ Launching memcached-sgx ..................')
+    # change directory to sgx bin base
+    os.chdir(SGX_BASE)
     sgx_proc = subprocess.Popen([MCD_SGX_BIN, str(NUM_MCD_WORKER_THREADS)])
     print(
         f'................. Waiting for memcached-sgx process to startup. Wait time: {SLEEP} ......................')
@@ -64,7 +70,9 @@ def kill_mcd_sgx():
 
 # load ycsb data into mcd
 def load_ycsb():
-     # command to load workload data into mcd
+    # change directory to sgx bin base
+    os.chdir(YCSB_BASE + "/bin")
+    # command to load workload data into mcd
     ycsbLoad = " load memcached -s -P " + WORKLOAD + \
         " -p \"memcached.hosts=127.0.0.1\" -threads " + NUM_CLIENT_THREADS
 
@@ -79,6 +87,8 @@ def load_ycsb():
 
 # run ycsb workload
 def run_ycsb(target_tput):
+    # change directory to ycsb bin base
+    os.chdir(YCSB_BASE + "/bin")
     # command to run ycsb workload
     ycsbRun = " run memcached -s -P " + WORKLOAD + \
         " -p \"memcached.hosts=127.0.0.1\" -threads " + \
@@ -135,3 +145,7 @@ def run_bench_tput_lat():
         register_results(target)
         # update target
         target += STEP
+
+
+run_bench_tput_lat()
+#print(f'script abs path is: {SCRIPT_ABS_PATH} and dir path is: {SCRIPT_DIR}')
