@@ -41,7 +41,7 @@ YCSB_BIN = YCSB_BASE + "/bin/ycsb"
 KILLER = SGX_BASE + "/kill.sh"
 YCSB_PROPS = YCSB_BASE + "/memcached/conf/memcached.properties"
 
-WORKLOAD = YCSB_BASE + "/workloads/workloadc"
+WORKLOAD = YCSB_BASE + "/workloads/workloada"
 BASH_PATH = "/bin/bash"
 
 # minimum target throughput
@@ -51,19 +51,22 @@ MAX_TPUT = 50000
 # throughput step
 STEP = 2000
 
-NUM_CLIENT_THREADS = 2
+NUM_CLIENT_THREADS = 4
 NUM_MCD_WORKER_THREADS = 4
 
 # wait time (in seconds) for sgx process to start up; the delay here is based on experience
 SLEEP = 90.0
 
-# line number in output files for specific workload avg latencies
-# todo: find a better way to do this
-READ_ONLY_AVG_LAT = 13
+# line prefixes for given output, based on ycsb output files
+READ_ONLY_AVG_LAT = "[READ], AverageLatency(us)"
+UPDATE_ONLY_AVG_LAT = "[UPDATE], AverageLatency(us)"
+OVERALL_TPUT = "[UPDATE], AverageLatency(us)"
+OVERALL_RUNTIME = "[OVERALL], RunTime(ms)"
+
 
 # sample ycsb commands
-# ./bin/ycsb load memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" > output.txt
-# ./bin/ycsb run memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 -target 1000 > output.txt
+# ./bin/ycsb load memcached -s -P workloads/workloadc -p memcached.hosts=127.0.0.1 > output.txt
+# ./bin/ycsb run memcached -s -P workloads/workloadc -p memcached.hosts=127.0.0.1 -threads 4 -target 1000 > output.txt
 
 
 # run memcached sgx
@@ -112,7 +115,7 @@ def load_ycsb():
 
     # command to load ycsb data
     loadCmd = YCSB_BIN + \
-        f' load memcached -s -P workloads/workloadc -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS}'
+        f' load memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS}'
     # --------------------------------------------------
     print(f'............... Loading YCSB workload ...............')
     # start ycsb load process
@@ -129,7 +132,7 @@ def run_ycsb(target_tput):
     os.chdir(YCSB_BASE)
     # ycsb run command
     runCmd = YCSB_BIN + \
-        f' run memcached -s -P workloads/workloadc -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS} -target {target_tput} > {YCSB_OUTPUT}'
+        f' run memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS} -target {target_tput} > {YCSB_OUTPUT}'
     # --------------------------------------------------
     print(f'............... Running YCSB workload ...............')
     # start ycsb run process
@@ -139,8 +142,17 @@ def run_ycsb(target_tput):
     print(f'............... YCSB run complete ................')
 
 
+# returns line containing specific text
+def get_output_line(text, output_lines):
+    for line in output_lines:
+        if text in line:
+            return line
+
+    return "0"
 # parses ycsb output file and writes results to results file
 # todo: this routine would/may be wrong once the output structure changes; find a better way to parse
+
+
 def register_results(target_tput, latency_line):
     print(f'............... Registering results ...................')
 
@@ -148,18 +160,25 @@ def register_results(target_tput, latency_line):
         # read lines from output file
         output_lines = file.readlines()
 
-    latLine = re.findall('[0-9]+', output_lines[latency_line-1])
-    avg_lat = float(latLine[0])  # in us
-    avg_lat_ms = avg_lat / 1000  # in s
+    # get read only avg latency
+    read_lat_line = get_output_line(READ_ONLY_AVG_LAT, output_lines)
+    read_vals = re.findall('[0-9]+', read_lat_line)
+    read_avg = float(read_vals[0])/1000  # in ms
 
-    # ycsb writes overall tput on second line
-    tputLine = re.findall('[0-9]+', output_lines[1])
-    avg_tput = float(tputLine[0])
+    # get update only avg latency
+    upd_lat_line = get_output_line(UPDATE_ONLY_AVG_LAT, output_lines)
+    upd_vals = re.findall('[0-9]+', upd_lat_line)
+    upd_avg = float(upd_vals[0])/1000  # in ms
+
+    # get overall tput
+    tput_line = get_output_line(OVERALL_TPUT, output_lines)
+    tput_vals = re.findall('[0-9]+', tput_line)
+    tput_avg = float(tput_vals[0])/1000  # in ms
 
     # write final results
     with open(MAIN_RES, "a", newline='') as res_file:
         writer = csv.writer(res_file, delimiter=',')
-        writer.writerow([target_tput, avg_lat_ms, avg_tput])
+        writer.writerow([target_tput, read_avg, upd_avg, tput_avg])
 
     print(f'............... Results registered ...................')
 
