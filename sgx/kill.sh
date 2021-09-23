@@ -8,3 +8,4 @@
 # This script kills all memcached-sgx threads.
 
 killall -9 "memcached-sgx"
+killall -9 "memcached"

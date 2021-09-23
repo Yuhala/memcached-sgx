@@ -29,10 +29,14 @@ BASE_DIR = os.path.dirname(SCRIPT_ABS_PATH)
 SGX_BASE = BASE_DIR + "/sgx"
 YCSB_BASE = BASE_DIR + "/YCSB"
 
+MCD_BASE = BASE_DIR + "/memcached"
 
 YCSB_OUTPUT = YCSB_BASE + "/output.txt"
 MAIN_RES = BASE_DIR + "/results/main.csv"
 MCD_SGX_BIN = SGX_BASE + "/memcached-sgx"
+
+MCD_BIN = MCD_BASE + "/memcached"
+
 YCSB_BIN = YCSB_BASE + "/bin/ycsb"
 KILLER = SGX_BASE + "/kill.sh"
 YCSB_PROPS = YCSB_BASE + "/memcached/conf/memcached.properties"
@@ -72,9 +76,24 @@ def run_mcd_sgx():
     time.sleep(SLEEP)
     print(f'............... memcached-sgx surely up by now :) .................')
 
+# run default memcached w/o sgx
 
-def kill_mcd_sgx():
-    print(f'.............. Killing memcached sgx process .....................')
+
+def run_mcd():
+    print(f'................ Launching memcached ..................')
+    # change directory to sgx bin base
+    os.chdir(MCD_BASE)
+    # command to run memcached-sgx server; take note of the whitespace b4 the num of worker threads variable
+    runCmd = MCD_BIN
+    sgx_proc = subprocess.Popen(runCmd, shell=True, executable=BASH_PATH)
+    print(
+        f'................. Waiting for memcached process to startup. Wait time: 5s ......................')
+    time.sleep(5)
+    print(f'............... memcached-sgx surely up by now :) .................')
+
+
+def kill_mcd():
+    print(f'.............. Killing memcached process .....................')
     subprocess.call(KILLER)
 
 
@@ -158,13 +177,14 @@ def run_bench_tput_lat():
         # clean previous ycsb output file JIC
         clean(YCSB_OUTPUT)
         # launch the memcached-sgx server
-        run_mcd_sgx()
+        # run_mcd_sgx()
+        run_mcd()
         # load kv pairs into mcd-sgx
         load_ycsb()
         # run ycsb workload
         run_ycsb(target)
         # stop mcd server
-        kill_mcd_sgx()
+        kill_mcd()
         # register run result
         register_results(target)
         # update target
