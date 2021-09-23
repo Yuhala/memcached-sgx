@@ -6,6 +6,12 @@
 # YCSB benchmarking script for zc switchless
 #
 
+#
+# pyuhala: Opening bash subprocesses with arguments can be tricky sometimes
+# have a look at this thread for inspiration and guidance in case you have weird issues
+# https://stackoverflow.com/a/50553425
+#
+
 import os
 import subprocess
 import time
@@ -29,15 +35,17 @@ MAIN_RES = BASE_DIR + "/results/main.csv"
 MCD_SGX_BIN = SGX_BASE + "/memcached-sgx"
 YCSB_BIN = YCSB_BASE + "/bin/ycsb"
 KILLER = SGX_BASE + "/kill.sh"
+YCSB_PROPS = YCSB_BASE + "/memcached/conf/memcached.properties"
 
-WORKLOAD = YCSB_BASE + " /workloads/workloada"
+WORKLOAD = YCSB_BASE + "/workloads/workloada"
+BASH_PATH = "/bin/bash"
 
 # minimum target throughput
-MIN_TPUT = 500
+MIN_TPUT = 200
 # maximum target throughput
-MAX_TPUT = 1000
+MAX_TPUT = 5000
 # throughput step
-STEP = 500
+STEP = 200
 
 NUM_CLIENT_THREADS = 4
 NUM_MCD_WORKER_THREADS = 4
@@ -46,8 +54,8 @@ NUM_MCD_WORKER_THREADS = 4
 SLEEP = 90.0
 
 # sample ycsb commands
-# ./bin/ycsb run memcached - s - P workloads/workloada - p "memcached.hosts=127.0.0.1" - threads 4 > output.txt
-# ./bin/ycsb run memcached - s - P workloads/workloada - p "memcached.hosts=127.0.0.1" - threads 4 -target 1000 > output.txt
+# ./bin/ycsb load memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" > output.txt
+# ./bin/ycsb run memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 -target 1000 > output.txt
 
 
 # run memcached sgx
@@ -56,7 +64,9 @@ def run_mcd_sgx():
     print(f'................ Launching memcached-sgx ..................')
     # change directory to sgx bin base
     os.chdir(SGX_BASE)
-    sgx_proc = subprocess.Popen([MCD_SGX_BIN, str(NUM_MCD_WORKER_THREADS)])
+    # command to run memcached-sgx server; take note of the whitespace b4 the num of worker threads variable
+    runCmd = MCD_SGX_BIN + f' {NUM_MCD_WORKER_THREADS}'
+    sgx_proc = subprocess.Popen(runCmd, shell=True, executable=BASH_PATH)
     print(
         f'................. Waiting for memcached-sgx process to startup. Wait time: {SLEEP}s ......................')
     time.sleep(SLEEP)
@@ -69,36 +79,38 @@ def kill_mcd_sgx():
 
 
 # load ycsb data into mcd
+# ./bin/ycsb.sh load memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" > outputLoad.txt
 def load_ycsb():
     # change directory to sgx bin base
-    os.chdir(YCSB_BASE + "/bin")
-    # command to load workload data into mcd
-    ycsbLoad = " load memcached -s -P " + WORKLOAD + \
-        " -p \"memcached.hosts=127.0.0.1\" -threads " + str(NUM_CLIENT_THREADS)
+    os.chdir(YCSB_BASE)
+    # carefully add all arguments in a list, including the binary path
+    # loadArgs = [YCSB_BIN, "load", "memcached", "-s",
+    #           "-P", WORKLOAD, "-p", "memcached.hosts=127.0.0.1"]
 
-    ###
+    # command to load ycsb data
+    loadCmd = YCSB_BIN + \
+        f' load memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS}'
+    # --------------------------------------------------
     print(f'............... Loading YCSB workload ...............')
     # start ycsb load process
-    load_proc = subprocess.Popen([YCSB_BIN, str(ycsbLoad)])
+    load_proc = subprocess.Popen(loadCmd, shell=True, executable=BASH_PATH)
     # wait for load to complete
     load_proc.wait()
     print(f'............... YCSB load complete ................')
 
 
 # run ycsb workload
+# ./bin/ycsb run memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 -target 1000 > output.txt
 def run_ycsb(target_tput):
     # change directory to ycsb bin base
-    os.chdir(YCSB_BASE + "/bin")
-    # command to run ycsb workload
-    ycsbRun = " run memcached -s -P " + WORKLOAD + \
-        " -p \"memcached.hosts=127.0.0.1\" -threads " + \
-        str(NUM_CLIENT_THREADS) + " -target " + \
-        str(target_tput) + " > " + YCSB_OUTPUT
-
-    ###
-    print(f'............... Loading YCSB workload ...............')
+    os.chdir(YCSB_BASE)
+    # ycsb run command
+    runCmd = YCSB_BIN + \
+        f' run memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS} -target {target_tput} > {YCSB_OUTPUT}'
+    # --------------------------------------------------
+    print(f'............... Running YCSB workload ...............')
     # start ycsb run process
-    run_proc = subprocess.Popen([YCSB_BIN, str(ycsbRun)])
+    run_proc = subprocess.Popen(runCmd, shell=True, executable=BASH_PATH)
     # wait for run to complete
     run_proc.wait()
     print(f'............... YCSB run complete ................')
@@ -124,9 +136,18 @@ def register_results(target_tput):
     # write final results
     with open(MAIN_RES, "a", newline='') as res_file:
         writer = csv.writer(res_file, delimiter=',')
-        writer.writerow(target_tput, total_runtime_secs, avg_tput)
+        writer.writerow([target_tput, total_runtime_secs, avg_tput])
 
     print(f'............... Results registered ...................')
+
+# delete file
+
+
+def clean(filename):
+    if os.path.exists(filename):
+        os.remove(filename)
+    else:
+        print(f'{filename} does not exist..')
 
 
 # run ycsb throughput latency bench
@@ -134,6 +155,8 @@ def run_bench_tput_lat():
     target = MIN_TPUT
 
     while(target <= MAX_TPUT):
+        # clean previous ycsb output file JIC
+        clean(YCSB_OUTPUT)
         # launch the memcached-sgx server
         run_mcd_sgx()
         # load kv pairs into mcd-sgx
@@ -150,3 +173,9 @@ def run_bench_tput_lat():
 
 run_bench_tput_lat()
 #print(f'script abs path is: {SCRIPT_ABS_PATH} and dir path is: {SCRIPT_DIR}')
+
+# Test routines
+# run_mcd_sgx()
+# load_ycsb()
+# run_ycsb(5000)
+# register_results(5000)
