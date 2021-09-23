@@ -41,7 +41,7 @@ YCSB_BIN = YCSB_BASE + "/bin/ycsb"
 KILLER = SGX_BASE + "/kill.sh"
 YCSB_PROPS = YCSB_BASE + "/memcached/conf/memcached.properties"
 
-WORKLOAD = YCSB_BASE + "/workloads/workloada"
+WORKLOAD = YCSB_BASE + "/workloads/workloadc"
 BASH_PATH = "/bin/bash"
 
 # minimum target throughput
@@ -51,11 +51,15 @@ MAX_TPUT = 5000
 # throughput step
 STEP = 200
 
-NUM_CLIENT_THREADS = 4
+NUM_CLIENT_THREADS = 2
 NUM_MCD_WORKER_THREADS = 4
 
 # wait time (in seconds) for sgx process to start up; the delay here is based on experience
 SLEEP = 90.0
+
+# line number in output files for specific workload avg latencies
+# todo: find a better way to do this
+READ_ONLY_AVG_LAT = 13
 
 # sample ycsb commands
 # ./bin/ycsb load memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" > output.txt
@@ -136,26 +140,26 @@ def run_ycsb(target_tput):
 
 
 # parses ycsb output file and writes results to results file
-def register_results(target_tput):
+# todo: this routine would/may be wrong once the output structure changes; find a better way to parse
+def register_results(target_tput, latency_line):
     print(f'............... Registering results ...................')
 
     with open(YCSB_OUTPUT) as file:
         # read lines from output file
         output_lines = file.readlines()
 
-    # ycsb writes overall runtime on first line
-    line0Vals = re.findall('[0-9]+', output_lines[0])
-    total_runtime = int(line0Vals[0])  # in ms
-    total_runtime_secs = total_runtime / 1000  # in s
+    latLine = re.findall('[0-9]+', output_lines[latency_line-1])
+    avg_lat = float(latLine[0])  # in us
+    avg_lat_ms = avg_lat / 1000  # in s
 
     # ycsb writes overall tput on second line
-    line1Vals = re.findall('[0-9]+', output_lines[1])
-    avg_tput = float(line1Vals[0])
+    tputLine = re.findall('[0-9]+', output_lines[1])
+    avg_tput = float(tputLine[0])
 
     # write final results
     with open(MAIN_RES, "a", newline='') as res_file:
         writer = csv.writer(res_file, delimiter=',')
-        writer.writerow([target_tput, total_runtime_secs, avg_tput])
+        writer.writerow([target_tput, avg_lat_ms, avg_tput])
 
     print(f'............... Results registered ...................')
 
@@ -186,7 +190,7 @@ def run_bench_tput_lat():
         # stop mcd server
         kill_mcd()
         # register run result
-        register_results(target)
+        register_results(target, READ_ONLY_AVG_LAT)
         # update target
         target += STEP
 
