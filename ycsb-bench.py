@@ -112,7 +112,7 @@ def load_ycsb():
 
     # command to load ycsb data
     loadCmd = YCSB_BIN + \
-        f' load memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS}'
+        f' load memcached -s -P workloads/workloadc -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS}'
     # --------------------------------------------------
     print(f'............... Loading YCSB workload ...............')
     # start ycsb load process
@@ -129,7 +129,7 @@ def run_ycsb(target_tput):
     os.chdir(YCSB_BASE)
     # ycsb run command
     runCmd = YCSB_BIN + \
-        f' run memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS} -target {target_tput} > {YCSB_OUTPUT}'
+        f' run memcached -s -P workloads/workloadc -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS} -target {target_tput} > {YCSB_OUTPUT}'
     # --------------------------------------------------
     print(f'............... Running YCSB workload ...............')
     # start ycsb run process
