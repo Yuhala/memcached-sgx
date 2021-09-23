@@ -45,11 +45,11 @@ WORKLOAD = YCSB_BASE + "/workloads/workloadc"
 BASH_PATH = "/bin/bash"
 
 # minimum target throughput
-MIN_TPUT = 5000
+MIN_TPUT = 1000
 # maximum target throughput
-MAX_TPUT = 100000
+MAX_TPUT = 20000
 # throughput step
-STEP = 5000
+STEP = 1000
 
 NUM_CLIENT_THREADS = 2
 NUM_MCD_WORKER_THREADS = 4
