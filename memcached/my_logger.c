@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #define LOG_FUNC 1
+#undef LOG_FUNC
 
 void log_routine(const char *func)
 {
