@@ -60,7 +60,7 @@ SLEEP = 90.0
 # line prefixes for given output, based on ycsb output files
 READ_ONLY_AVG_LAT = "[READ], AverageLatency(us)"
 UPDATE_ONLY_AVG_LAT = "[UPDATE], AverageLatency(us)"
-OVERALL_TPUT = "[UPDATE], AverageLatency(us)"
+OVERALL_TPUT = "[OVERALL], Throughput(ops/sec)"
 OVERALL_RUNTIME = "[OVERALL], RunTime(ms)"
 
 
