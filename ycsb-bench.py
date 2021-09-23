@@ -173,7 +173,7 @@ def register_results(target_tput, latency_line):
     # get overall tput
     tput_line = get_output_line(OVERALL_TPUT, output_lines)
     tput_vals = re.findall('[0-9]+', tput_line)
-    tput_avg = float(tput_vals[0])/1000  # in ms
+    tput_avg = float(tput_vals[0])
 
     # write final results
     with open(MAIN_RES, "a", newline='') as res_file:
