@@ -48,11 +48,11 @@ MCD_HOST_IP = "127.0.0.1"
 MCD_HOST_IP = "172.28.30.136" # eiger-10.maas ip
 
 # minimum target throughput
-MIN_TPUT = 2000
+MIN_TPUT = 10000
 # maximum target throughput
-MAX_TPUT = 50000
+MAX_TPUT = 600000
 # throughput step
-STEP = 2000
+STEP = 10000
 
 NUM_CLIENT_THREADS = 4
 NUM_MCD_WORKER_THREADS = 4
