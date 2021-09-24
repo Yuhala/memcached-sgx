@@ -63,6 +63,8 @@ IS_SWITCHLESS = 0
 SLEEP = 90.0
 
 # line prefixes for given output, based on ycsb output files
+# pyuhala: NB: DO NOT CHANGE ANYTHING IN THESE STRINGS; spaces, commas, NOTHING!!!
+
 READ_ONLY_AVG_LAT = "[READ], AverageLatency(us)"
 UPDATE_ONLY_AVG_LAT = "[UPDATE], AverageLatency(us)"
 OVERALL_TPUT = "[OVERALL], Throughput(ops/sec)"
