@@ -12,13 +12,13 @@ set grid y
 
 set xtics font ",16"
 set ytics font ",16"
-set ylabel "Avg read latency (ms)" font ",16" offset 0,0
+set ylabel "Avg. read latency (ms)" font ",16" offset 0,0
 
 #set logscale y 10
 #set ytics ("10^{-6}" 0.0000010,"10^{-5}" 0.00001,"10^{-4}" 0.0001,"10^{-3}" 0.001,"10^{-2}" 0.01,"10^{-1}" 0.1,"10^{0}" 1,"10^{1}" 10)
-set xlabel "Target throughput (x1000 ops/s)" font ",16"
+set xlabel "Throughput (k.ops/s)" font ",16"
 #set xtics("4" 4000,"8" 8000, "12" 12000, "16" 16000, "20" 20000, "24" 24000, "28" 28000, "32" 32000, "36" 36000, "40" 40000, "44" 44000, "48" 48000, "52" 52000)
-set xtics("4" 4000,"8" 8000, "12" 12000, "16" 16000, "20" 20000, "24" 24000, "28" 28000, "32" 32000, "36" 36000, "40" 40000, "44" 44000, "48" 48000, "52" 52000)
+set xtics("100" 100000,"200" 200000, "300" 300000, "400" 400000, "500" 500000, "600" 600000)
 
 set xtics offset 0,0.5,0
 set xlabel offset 0,1,0
