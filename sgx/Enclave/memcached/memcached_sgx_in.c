@@ -1204,7 +1204,7 @@ static bool rbuf_alloc(conn *c)
     log_routine(__func__);
     if (c->rbuf == NULL)
     {
-        c->rbuf = do_cache_alloc(c->thread_in->rbuf_cache);
+        /*c->rbuf = do_cache_alloc(c->thread_in->rbuf_cache);
         if (!c->rbuf)
         {
             THR_STATS_LOCK(c);
@@ -1213,7 +1213,11 @@ static bool rbuf_alloc(conn *c)
             return false;
         }
         c->rsize = READ_BUFFER_SIZE;
+        c->rcurr = c->rbuf;*/
+        c->rbuf = malloc(READ_BUFFER_SIZE);
+        c->rsize = READ_BUFFER_SIZE;
         c->rcurr = c->rbuf;
+        c->rbuf_malloced = true;
     }
     return true;
 }
@@ -1437,7 +1441,7 @@ static enum transmit_result transmit(conn *c)
 
     // init the msg inside
     //pyuhala: modified abit but the same thing/better than previous
-    struct msghdr *msg_in = (struct msghdr *)malloc(sizeof(struct msghdr));
+    struct msghdr *msg_in = malloc(sizeof(struct msghdr));
 
     memset(msg_in, 0, sizeof(struct msghdr));
     msg_in->msg_iov = iovs;
