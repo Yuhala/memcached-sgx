@@ -30,7 +30,7 @@ set title "Tput vs lat: workloada, 20k ops" font "Helvetica-bold,16" offset 0,0.
 set datafile separator ","
 set key maxrows 1 samplen 1 width -1 invert center at graph 0.35,1.1 font ",12"
 #set key vertical samplen 1.1 width 1 spacing -2 invert reverse Left outside maxrows 1  width -3 center at graph 0.62,1.11
-set yrange [0:2]
+set yrange [0:3]
 plot\
 	f(x) w lp ls 2003 title "sgx-hw",\
 	f(x) w lp ls 2005 title "mcd-native",\

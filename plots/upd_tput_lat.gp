@@ -12,13 +12,13 @@ set grid y
 
 set xtics font ",16"
 set ytics font ",16"
-set ylabel "Avg read latency (ms)" font ",16" offset 0,0
+set ylabel "Avg. update latency (ms)" font ",16" offset 0,0
 
 #set logscale y 10
 #set ytics ("10^{-6}" 0.0000010,"10^{-5}" 0.00001,"10^{-4}" 0.0001,"10^{-3}" 0.001,"10^{-2}" 0.01,"10^{-1}" 0.1,"10^{0}" 1,"10^{1}" 10)
-set xlabel "Target throughput (x1000 ops/s)" font ",16"
-set xtics("4" 4000,"8" 8000, "12" 12000, "16" 16000, "20" 20000, "24" 24000, "28" 28000, "32" 32000, "36" 36000, "40" 40000, "44" 44000, "48" 48000, "52" 52000)
-#set xtics("2" 2000, "4" 4000, "6" 6000, "8" 8000, "10" 10000, "12" 12000, ""
+set xlabel "Throughput (k.ops/s)" font ",16"
+#set xtics("4" 4000,"8" 8000, "12" 12000, "16" 16000, "20" 20000, "24" 24000, "28" 28000, "32" 32000, "36" 36000, "40" 40000, "44" 44000, "48" 48000, "52" 52000)
+set xtics("100" 100000,"200" 200000, "300" 300000, "400" 400000, "500" 500000, "600" 600000)
 
 set xtics offset 0,0.5,0
 set xlabel offset 0,1,0
@@ -30,7 +30,7 @@ set title "Tput vs lat: workloada, 20k ops" font "Helvetica-bold,16" offset 0,0.
 set datafile separator ","
 set key maxrows 1 samplen 1 width -1 invert center at graph 0.35,1.1 font ",12"
 #set key vertical samplen 1.1 width 1 spacing -2 invert reverse Left outside maxrows 1  width -3 center at graph 0.62,1.11
-set yrange [0:2]
+set yrange [0:3]
 plot\
 	f(x) w lp ls 2003 title "sgx-hw",\
 	f(x) w lp ls 2005 title "mcd-native",\

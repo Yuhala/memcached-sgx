@@ -516,7 +516,7 @@ enum delta_result_type do_add_delta(conn *c, const char *key, const size_t nkey,
         MEMCACHED_COMMAND_DECR(c->sfd, ITEM_key(it), it->nkey, value);
     }
 
-    mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+   /*  mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
     if (incr)
     {
         c->thread->stats.slab_stats[ITEM_clsid(it)].incr_hits++;
@@ -525,7 +525,7 @@ enum delta_result_type do_add_delta(conn *c, const char *key, const size_t nkey,
     {
         c->thread->stats.slab_stats[ITEM_clsid(it)].decr_hits++;
     }
-    mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+    mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
 
     itoa_u64(value, buf);
     res = strlen(buf);
@@ -717,9 +717,9 @@ mc_resp *resp_finish(conn *c, mc_resp *resp)
         c->resp = NULL;
     }
     resp_free(c, resp);
-    THR_STATS_LOCK(c);
+    /* THR_STATS_LOCK(c);
     c->thread->stats.response_obj_count--;
-    THR_STATS_UNLOCK(c);
+    THR_STATS_UNLOCK(c); */
     return next;
 }
 
@@ -844,9 +844,9 @@ static int read_into_chunked_item(conn *c)
                           (unused > c->rlbytes ? c->rlbytes : unused));
             if (res > 0)
             {
-                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+               /*  mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.bytes_read += res;
-                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
                 ch->used += res;
                 total += res;
                 c->rlbytes -= res;
@@ -971,9 +971,9 @@ static enum try_read_result try_read_udp(conn *c)
     if (res > 8)
     {
         unsigned char *buf = (unsigned char *)c->rbuf;
-        mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+       /*  mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
         c->thread->stats.bytes_read += res;
-        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
 
         /* Beginning of UDP packet is the request ID; save it. */
         c->request_id = buf[0] * 256 + buf[1];
@@ -1062,10 +1062,10 @@ static enum try_read_result try_read_network(conn *c)
         if (res > 0)
         {
             //pyuhala:
-
+/* 
             mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
             c->thread->stats.bytes_read += res;
-            mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+            mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
 
             gotdata = READ_DATA_RECEIVED;
             c->rbytes += res;
@@ -1403,6 +1403,7 @@ static msg_deep_cpy(struct msghdr *msg_out, struct msghdr *msg_in)
 {
 
     log_routine(__func__);
+    
 
     //pyuhala: deep copy message name
     memcpy(msg_out->msg_name, msg_in->msg_name, msg_in->msg_namelen);
@@ -1478,9 +1479,9 @@ static enum transmit_result transmit(conn *c)
     //printf("Transmit sendmsg: res is: %d iovused: %d ERRNO: %d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", res, iovused, errno);
     if (res >= 0)
     {
-        mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+       /*  mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
         c->thread->stats.bytes_written += res;
-        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
 
         // Decrement any partial IOV's and complete any finished resp's.
         _transmit_post(c, res);
@@ -1635,9 +1636,9 @@ static enum transmit_result transmit_udp(conn *c)
     ocall_getErrno(&errno);
     if (res >= 0)
     {
-        mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+        /* mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
         c->thread->stats.bytes_written += res;
-        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+        mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
 
         // Ignore the header size from forwarding the IOV's
         res -= UDP_HEADER_SIZE;
@@ -2461,10 +2462,10 @@ void conn_close_idle(conn *c)
         if (settings.verbose > 1)
             fprintf(stderr, "Closing idle fd %d\n", c->sfd);
 
-        mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+        /* mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
         c->thread->stats.idle_kicks++;
         mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
-
+ */
         conn_set_state(c, conn_closing);
         drive_machine(c);
     }
@@ -3090,9 +3091,9 @@ static mc_resp *resp_allocate(conn *c)
 
         if (b)
         {
-            THR_STATS_LOCK(c);
+           /*  THR_STATS_LOCK(c);
             c->thread->stats.response_obj_bytes += READ_BUFFER_SIZE;
-            THR_STATS_UNLOCK(c);
+            THR_STATS_UNLOCK(c); */
             b->next_check = 1;
             b->refcount = 1;
             for (int i = 0; i < MAX_RESP_PER_BUNDLE; i++)
@@ -3153,9 +3154,9 @@ static void resp_free(conn *c, mc_resp *resp)
             do_cache_free(th->rbuf_cache, b);
             //mcd_ocall_do_cache_free(c->conn_id, th->libevent_tid, (void *)b);
 
-            THR_STATS_LOCK(c);
+           /*  THR_STATS_LOCK(c);
             c->thread->stats.response_obj_bytes -= READ_BUFFER_SIZE;
-            THR_STATS_UNLOCK(c);
+            THR_STATS_UNLOCK(c); */
         }
     }
     else
@@ -3184,15 +3185,15 @@ bool resp_start(conn *c)
     mc_resp *resp = resp_allocate(c);
     if (!resp)
     {
-        THR_STATS_LOCK(c);
+       /*  THR_STATS_LOCK(c);
         c->thread->stats.response_obj_oom++;
-        THR_STATS_UNLOCK(c);
+        THR_STATS_UNLOCK(c); */
         return false;
     }
     // handling the stats counters here to simplify testing
-    THR_STATS_LOCK(c);
+   /*  THR_STATS_LOCK(c);
     c->thread->stats.response_obj_count++;
-    THR_STATS_UNLOCK(c);
+    THR_STATS_UNLOCK(c); */
     // Skip zeroing the bundle pointer at the start.
     // TODO: this line is here temporarily to make the code easy to disable.
     // when it's more mature, move the memset into resp_allocate() and have it
@@ -3652,9 +3653,9 @@ enum store_item_type do_store_item(item *it, int comm, conn *c, const uint32_t h
                 // cas validates
                 // it and old_it may belong to different classes.
                 // I'm updating the stats for the one that's getting pushed out
-                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+               /*  mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.slab_stats[ITEM_clsid(old_it)].cas_hits++;
-                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
                 do_store = true;
             }
             else if (cas_res == CAS_STALE)
@@ -3670,17 +3671,17 @@ enum store_item_type do_store_item(item *it, int comm, conn *c, const uint32_t h
                     it->it_flags |= ITEM_TOKEN_SENT;
                 }
 
-                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+                /* mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.slab_stats[ITEM_clsid(old_it)].cas_hits++;
-                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
                 do_store = true;
             }
             else
             {
                 // NONE or BADVAL are the same for CAS cmd
-                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+               /*  mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.slab_stats[ITEM_clsid(old_it)].cas_badval++;
-                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
 
                 if (settings.verbose > 1)
                 {
@@ -3765,9 +3766,9 @@ enum store_item_type do_store_item(item *it, int comm, conn *c, const uint32_t h
         case NREAD_CAS:
             // LRU expired
             stored = NOT_FOUND;
-            mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+           /*  mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
             c->thread->stats.cas_misses++;
-            mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+            mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
             break;
         case NREAD_REPLACE:
         case NREAD_APPEND:
@@ -4078,9 +4079,9 @@ static void drive_machine(conn *c)
             }
             else
             {
-                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+               /*  mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.conn_yields++;
-                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
                 if (c->rbytes > 0)
                 {
                     /* We have already read in data into the input buffer,
@@ -4152,9 +4153,9 @@ static void drive_machine(conn *c)
                 //printf("allocing item: tcp read rlbytes: %d read fd: %d res: %d ERRNO: %d >>>>>>>>>>>>>>>>>>>>>>>\n", c->rlbytes, c->sfd, res, errno);
                 if (res > 0)
                 {
-                    mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+                    /* mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                     c->thread->stats.bytes_read += res;
-                    mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+                    mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
                     if (c->rcurr == c->ritem)
                     {
                         c->rcurr += res;
@@ -4249,9 +4250,9 @@ static void drive_machine(conn *c)
 
             if (res > 0)
             {
-                mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
+               /*  mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
                 c->thread->stats.bytes_read += res;
-                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id);
+                mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
                 c->sbytes -= res;
                 break;
             }
@@ -4351,7 +4352,7 @@ static void drive_machine(conn *c)
 
         case conn_closed:
             /* This only happens if dormando is an idiot. */
-            abort();
+            //abort();
             break;
 
         case conn_watch:
