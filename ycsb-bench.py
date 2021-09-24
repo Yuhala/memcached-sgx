@@ -45,7 +45,7 @@ WORKLOAD = YCSB_BASE + "/workloads/workloada"
 BASH_PATH = "/bin/bash"
 
 MCD_HOST_IP = "127.0.0.1"
-MCD_HOST_IP = "172.28.30.136"
+MCD_HOST_IP = "172.28.30.136" # eiger-10.maas ip
 
 # minimum target throughput
 MIN_TPUT = 2000
