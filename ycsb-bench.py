@@ -53,6 +53,8 @@ STEP = 2000
 
 NUM_CLIENT_THREADS = 4
 NUM_MCD_WORKER_THREADS = 4
+IS_SWITCHLESS = 1
+IS_SWITCHLESS = 0
 
 # wait time (in seconds) for sgx process to start up; the delay here is based on experience
 SLEEP = 90.0
@@ -65,8 +67,8 @@ OVERALL_RUNTIME = "[OVERALL], RunTime(ms)"
 
 
 # sample ycsb commands
-# ./bin/ycsb load memcached -s -P workloads/workloadc -p memcached.hosts=127.0.0.1 > output.txt
-# ./bin/ycsb run memcached -s -P workloads/workloadc -p memcached.hosts=127.0.0.1 -threads 4 -target 1000 > output.txt
+# ./bin/ycsb load memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1
+# ./bin/ycsb run memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads 4 -target 1000 > output.txt
 
 
 # run memcached sgx
@@ -76,7 +78,7 @@ def run_mcd_sgx():
     # change directory to sgx bin base
     os.chdir(SGX_BASE)
     # command to run memcached-sgx server; take note of the whitespace b4 the num of worker threads variable
-    runCmd = MCD_SGX_BIN + f' {NUM_MCD_WORKER_THREADS}'
+    runCmd = MCD_SGX_BIN + f' {NUM_MCD_WORKER_THREADS} {IS_SWITCHLESS}'
     sgx_proc = subprocess.Popen(runCmd, shell=True, executable=BASH_PATH)
     print(
         f'................. Waiting for memcached-sgx process to startup. Wait time: {SLEEP}s ......................')
