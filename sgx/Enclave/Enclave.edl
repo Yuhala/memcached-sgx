@@ -22,6 +22,9 @@ enclave {
     //from "graalsgx/edl/graalsgx_ecalls.edl" import *;
     //from "graalsgx/edl/graalsgx_ocalls.edl" import *;
 
+    from "sgx_tstdc.edl" import *;
+    from "sgx_tswitchless.edl" import *;
+
     enum buffer_status
     {
 	BUFFER_UNUSED,

@@ -79,6 +79,9 @@
 //paldb benchmarking
 #include "paldb/Paldb.h"
 
+//intel sdk switchless lib
+#include <sgx_uswitchless.h>
+
 /* Benchmarking */
 //#include "benchtools.h"
 #include <time.h>
@@ -208,7 +211,7 @@ void setMainAttribs()
 /* Initialize the enclave:
  *   Call sgx_create_enclave to initialize an enclave instance
  */
-int initialize_enclave(void)
+int initialize_enclave_no_switchless(void)
 {
     sgx_status_t ret = SGX_ERROR_UNEXPECTED;
 
@@ -216,6 +219,30 @@ int initialize_enclave(void)
     /* Debug Support: set 2nd parameter to 1 */
 
     ret = sgx_create_enclave(ENCLAVE_FILENAME, SGX_DEBUG_FLAG, NULL, NULL, &global_eid, NULL);
+    if (ret != SGX_SUCCESS)
+    {
+        print_error_message(ret);
+        return -1;
+    }
+
+    return 0;
+}
+
+/* Initialize the enclave:
+ *   Call sgx_create_enclave to initialize an enclave instance
+ */
+int initialize_enclave(const sgx_uswitchless_config_t *us_config)
+{
+    sgx_status_t ret = SGX_ERROR_UNEXPECTED;
+
+    /* Call sgx_create_enclave to initialize an enclave instance */
+    /* Debug Support: set 2nd parameter to 1 */
+
+    const void *enclave_ex_p[32] = {0};
+
+    enclave_ex_p[SGX_CREATE_ENCLAVE_EX_SWITCHLESS_BIT_IDX] = (const void *)us_config;
+
+    ret = sgx_create_enclave_ex(ENCLAVE_FILENAME, SGX_DEBUG_FLAG, NULL, NULL, &global_eid, NULL, SGX_CREATE_ENCLAVE_EX_SWITCHLESS, enclave_ex_p);
     if (ret != SGX_SUCCESS)
     {
         print_error_message(ret);
@@ -556,7 +583,7 @@ int normal_run(int arg)
     attr_map.insert(pair<pthread_t, pthread_attr_t *>(0, NULL));
     /* Initialize the enclave */
 
-    if (initialize_enclave() < 0)
+    if (initialize_enclave_no_switchless() < 0)
     {
         printf("Enter a character before exit ...\n");
         getchar();
@@ -658,31 +685,59 @@ int main(int argc, char *argv[])
     int i;
     struct timeval tval_before, tval_after, tval_result;
 
-   
-    int num_mcd_workers = 4;
-    if (argc > 1)
+    int num_mcd_workers = 2;
+    int switchless = 0;
+    if (argc == 3)
     {
-        //works only for numeric arg1s
+
         num_mcd_workers = atoi(argv[1]);
+        switchless = atoi(argv[2]);
     }
 
     //int ret = normal_run(arg1);
     //return ret;
 
-
     setMainAttribs();
 
     attr_map.insert(pair<pthread_t, pthread_attr_t *>(0, NULL));
 
+    /**
+     * Intel SDK switchless configuration
+     */
+
+    sgx_uswitchless_config_t us_config = SGX_USWITCHLESS_CONFIG_INITIALIZER;
+
+    /**
+     * ZC-switchless configuration
+     */
+
     //init_switchless();
 
     /* Initialize the enclave */
-    if (initialize_enclave() < 0)
+
+    if (!switchless)
     {
-        printf("Enter a character before exit ...\n");
-        getchar();
-        return -1;
+        //do not use switchless
+        if (initialize_enclave_no_switchless() < 0)
+        {
+            printf("Enter a character before exit ...\n");
+            getchar();
+            return -1;
+        }
     }
+    else
+    {
+        //use intel sdk switchless
+        us_config.num_uworkers = 2;
+        us_config.num_tworkers = 2;
+        if (initialize_enclave(&us_config) < 0)
+        {
+            printf("Enter a character before exit ...\n");
+            getchar();
+            return -1;
+        }
+    }
+
     printf("Enclave initialized\n");
 
     int id = global_eid;
