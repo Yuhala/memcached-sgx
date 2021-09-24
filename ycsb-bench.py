@@ -44,6 +44,9 @@ YCSB_PROPS = YCSB_BASE + "/memcached/conf/memcached.properties"
 WORKLOAD = YCSB_BASE + "/workloads/workloada"
 BASH_PATH = "/bin/bash"
 
+MCD_HOST_IP = "127.0.0.1"
+MCD_HOST_IP = "172.28.30.136"
+
 # minimum target throughput
 MIN_TPUT = 2000
 # maximum target throughput
@@ -117,7 +120,7 @@ def load_ycsb():
 
     # command to load ycsb data
     loadCmd = YCSB_BIN + \
-        f' load memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS}'
+        f' load memcached -s -P workloads/workloada -p memcached.hosts={MCD_HOST_IP} -threads {NUM_CLIENT_THREADS}'
     # --------------------------------------------------
     print(f'............... Loading YCSB workload ...............')
     # start ycsb load process
@@ -134,7 +137,7 @@ def run_ycsb(target_tput):
     os.chdir(YCSB_BASE)
     # ycsb run command
     runCmd = YCSB_BIN + \
-        f' run memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads {NUM_CLIENT_THREADS} -target {target_tput} > {YCSB_OUTPUT}'
+        f' run memcached -s -P workloads/workloada -p memcached.hosts={MCD_HOST_IP} -threads {NUM_CLIENT_THREADS} -target {target_tput} > {YCSB_OUTPUT}'
     # --------------------------------------------------
     print(f'............... Running YCSB workload ...............')
     # start ycsb run process
@@ -197,19 +200,19 @@ def clean(filename):
 # run ycsb throughput latency bench
 def run_bench_tput_lat():
     target = MIN_TPUT
-
+    load_ycsb()
     while(target <= MAX_TPUT):
         # clean previous ycsb output file JIC
         clean(YCSB_OUTPUT)
         # launch the memcached-sgx server
         # run_mcd_sgx()
-        run_mcd()
+        # run_mcd()
         # load kv pairs into mcd-sgx
-        load_ycsb()
+        # load_ycsb()
         # run ycsb workload
         run_ycsb(target)
         # stop mcd server
-        kill_mcd()
+        # kill_mcd()
         # register run result
         register_results(target, READ_ONLY_AVG_LAT)
         # update target
