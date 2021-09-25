@@ -37,6 +37,9 @@
 #include <sys/time.h>
 #define MAX_PATH FILENAME_MAX
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -140,6 +143,7 @@ void *shim_switchless_functions[] =
         (void *)ocall_read_switchless,                      /* FN_TOKEN_READ  */
         (void *)ocall_write_switchless,                     /* FN_TOKEN_WRITE */
         (void *)ocall_lseek64_switchless,                   /* FN_TOKEN_LSEEK64 */
+        (void *)ocall_sendmsg_switchless,                   /* FN_TOKEN_SENDMSG */
 };
 
 void empty(void) {}
@@ -159,6 +163,7 @@ void *shim_functions[] =
         (void *)read,    /* FN_TOKEN_READ          */
         (void *)write,   /* FN_TOKEN_WRITE         */
         (void *)lseek64, /* FN_TOKEN_LSEEK64       */
+        (void *)sendmsg, /* FN_TOKEN_SENDMSG       */
 };
 
 /* Main app isolate */
@@ -435,8 +440,9 @@ void *scheduling_thread_fn(void *arg)
     param.sched_priority = 99;
     if (sched_setscheduler(0, SCHED_FIFO, &param) == -1)
     {
-        perror("Unable to change the policy of a worker thread to SCHED_FIFO");
-        exit(1);
+        //perror("Unable to change the policy of the scheduling thread to SCHED_FIFO");
+        //exit(1);
+	fprintf(stderr, "Unable to change the policy of the scheduling thread to SCHED_FIFO\n");
     }
     act.sa_handler = sig_ign;
     act.sa_flags = 0;
@@ -711,7 +717,7 @@ int main(int argc, char *argv[])
      * ZC-switchless configuration
      */
 
-    //init_switchless();
+    init_switchless();
 
     /* Initialize the enclave */
 

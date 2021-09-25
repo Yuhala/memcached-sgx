@@ -6,6 +6,7 @@
 #include "../../checks.h" //for pointer checks
 #include "../../Enclave.h"
 #include "inet_pton.h"
+#include "ocall_manager.h"
 
 long timezone = 0; //TODO
 
@@ -253,7 +254,10 @@ ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags)
 {
     GRAAL_SGX_INFO();
     ssize_t ret;
-    ocall_sendmsg(&ret, sockfd, msg, flags);
+    if (should_be_switchless(FN_TOKEN_SENDMSG))
+        ret = sendmsg_switchless(sockfd, msg, flags);
+    else
+	ocall_sendmsg(&ret, sockfd, msg, flags);
     return ret;
 }
 

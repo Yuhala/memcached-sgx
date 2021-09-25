@@ -185,3 +185,24 @@ off64_t lseek64_switchless(int fd, off64_t offset, int whence)
 
     return ret;
 }
+
+ssize_t sendmsg_switchless(int sockfd, const struct msghdr *msg, int flags)
+{
+    off64_t ret;
+
+    GRAAL_SGX_INFO();
+
+    resize_buffer_args(switchless_buffer, 2*sizeof(int) + sizeof(const struct msghdr*));
+    resize_buffer_ret(switchless_buffer, sizeof(ssize_t));
+
+    ((int*) switchless_buffer->args)[0] = sockfd;
+    ((const struct msghdr**) (switchless_buffer->args + sizeof(int)))[0] = msg;
+    ((int*) (switchless_buffer->args + sizeof(int) + sizeof(const struct msghdr*)))[0] = flags;
+    switchless_buffer->ocall_handler_switchless = shim_switchless_functions[FN_TOKEN_SENDMSG];
+    switchless_buffer->ocall_handler = shim_functions[FN_TOKEN_SENDMSG];
+    ocall_switchless(switchless_buffer);
+    ret = *((ssize_t*) switchless_buffer->ret);
+    switchless_buffer->status = BUFFER_UNUSED;
+
+    return ret;
+}

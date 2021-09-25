@@ -28,6 +28,7 @@ extern "C"
     void ocall_read_switchless(struct buffer* switchless_buffer);
     void ocall_write_switchless(struct buffer* switchless_buffer);
     void ocall_lseek64_switchless(struct buffer* switchless_buffer);
+    void ocall_sendmsg_switchless(struct buffer* switchless_buffer);
 
 
 #if defined(__cplusplus)

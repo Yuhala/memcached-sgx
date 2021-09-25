@@ -17,6 +17,7 @@
 #include "struct/sgx_stdio_struct.h"
 #include "Enclave_u.h"
 #include <errno.h>
+#include <sys/socket.h>
 
 #include "graal_sgx_shim_switchless_u.h"
 
@@ -93,4 +94,17 @@ void ocall_lseek64_switchless(struct buffer* switchless_buffer)
     whence = ((int*) (switchless_buffer->args + sizeof(int) + sizeof(off64_t)))[0];
     ret = ((off64_t (*) (int,off64_t,int)) switchless_buffer->ocall_handler)(fd, offset, whence);
     *((off64_t*) switchless_buffer->ret) = ret;
+}
+
+void ocall_sendmsg_switchless(struct buffer* switchless_buffer)
+{
+    ssize_t ret;
+    int sockfd, flags;
+    const struct msghdr *msg;
+
+    sockfd = ((int*) switchless_buffer->args)[0];
+    msg = ((const struct msghdr**) (switchless_buffer->args + sizeof(int)))[0];
+    flags = ((int*) (switchless_buffer->args + sizeof(int) + sizeof(const struct msghdr*)))[0];
+    ret = ((ssize_t (*) (int,const struct msghdr *msg,int)) switchless_buffer->ocall_handler)(sockfd, msg, flags);
+    *((ssize_t*) switchless_buffer->ret) = ret;
 }

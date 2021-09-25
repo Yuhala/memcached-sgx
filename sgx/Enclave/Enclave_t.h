@@ -84,6 +84,7 @@ typedef enum fn_token {
 	FN_TOKEN_READ,
 	FN_TOKEN_WRITE,
 	FN_TOKEN_LSEEK64,
+	FN_TOKEN_SENDMSG,
 	FN_TOKEN_TOTAL_SIZE,
 } fn_token;
 
