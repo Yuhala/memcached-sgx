@@ -343,6 +343,7 @@ extern "C"
 
     ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
     ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
+    void* transmit_prepare(void);
 
     ssize_t send(int sockfd, const void *buf, size_t len, int flags);
     ssize_t recv(int sockfd, void *buf, size_t len, int flags);

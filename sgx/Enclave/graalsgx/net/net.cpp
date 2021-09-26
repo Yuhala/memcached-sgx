@@ -261,6 +261,17 @@ ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags)
     return ret;
 }
 
+void* transmit_prepare(void)
+{
+    GRAAL_SGX_INFO();
+    void* ret;
+    if (should_be_switchless(FN_TOKEN_TRANSMIT_PREPARE))
+	ret = transmit_prepare_switchless();
+    else
+	ocall_transmit_prepare(&ret);
+    return ret;
+}
+
 uint32_t htonl(uint32_t hostlong)
 {
     GRAAL_SGX_INFO();

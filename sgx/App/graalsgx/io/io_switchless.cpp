@@ -108,3 +108,11 @@ void ocall_sendmsg_switchless(struct buffer* switchless_buffer)
     ret = ((ssize_t (*) (int,const struct msghdr *msg,int)) switchless_buffer->ocall_handler)(sockfd, msg, flags);
     *((ssize_t*) switchless_buffer->ret) = ret;
 }
+
+void ocall_transmit_prepare_switchless(struct buffer* switchless_buffer)
+{
+    void* ret;
+
+    ret = ((void* (*) (void)) switchless_buffer->ocall_handler)();
+    *((void**) switchless_buffer->ret) = ret;
+}

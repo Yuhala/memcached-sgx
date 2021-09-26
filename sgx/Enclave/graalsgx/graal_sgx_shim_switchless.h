@@ -94,6 +94,7 @@ extern "C"
     ssize_t write_switchless(int fd, const void *buf, size_t count);
     off64_t lseek64_switchless(int fd, off64_t offset, int whence);
     ssize_t sendmsg_switchless(int sockfd, const struct msghdr *msg, int flags);
+    void* transmit_prepare_switchless(void);
 
 
 #if defined(__cplusplus)

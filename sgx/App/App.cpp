@@ -40,6 +40,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "graalsgx/net/graal_net.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -144,26 +146,28 @@ void *shim_switchless_functions[] =
         (void *)ocall_write_switchless,                     /* FN_TOKEN_WRITE */
         (void *)ocall_lseek64_switchless,                   /* FN_TOKEN_LSEEK64 */
         (void *)ocall_sendmsg_switchless,                   /* FN_TOKEN_SENDMSG */
+        (void *)ocall_transmit_prepare_switchless,          /* FN_TOKEN_TRANSMIT_PREPARE */
 };
 
 void empty(void) {}
 
 void *shim_functions[] =
     {
-        (void *)empty,   /* FN_TOKEN_EMPTY */
-        (void *)sleep,   /* FN_TOKEN_SLEEP         */
-        (void *)fsync,   /* FN_TOKEN_FSYNC         */
-        (void *)dup2,    /* FN_TOKEN_DUP2          */
-        (void *)close,   /* FN_TOKEN_CLOSE         */
-        (void *)fwrite,  /* FN_TOKEN_CLOSE         */
-        (void *)puts,    /* FN_TOKEN_PUTS          */
-        (void *)unlink,  /* FN_TOKEN_UNLINK        */
-        (void *)rmdir,   /* FN_TOKEN_RMDIR         */
-        (void *)remove,  /* FN_TOKEN_REMOVE        */
-        (void *)read,    /* FN_TOKEN_READ          */
-        (void *)write,   /* FN_TOKEN_WRITE         */
-        (void *)lseek64, /* FN_TOKEN_LSEEK64       */
-        (void *)sendmsg, /* FN_TOKEN_SENDMSG       */
+        (void *)empty,            /* FN_TOKEN_EMPTY            */
+        (void *)sleep,            /* FN_TOKEN_SLEEP            */
+        (void *)fsync,            /* FN_TOKEN_FSYNC            */
+        (void *)dup2,             /* FN_TOKEN_DUP2             */
+        (void *)close,            /* FN_TOKEN_CLOSE            */
+        (void *)fwrite,           /* FN_TOKEN_CLOSE            */
+        (void *)puts,             /* FN_TOKEN_PUTS             */
+        (void *)unlink,           /* FN_TOKEN_UNLINK           */
+        (void *)rmdir,            /* FN_TOKEN_RMDIR            */
+        (void *)remove,           /* FN_TOKEN_REMOVE           */
+        (void *)read,             /* FN_TOKEN_READ             */
+        (void *)write,            /* FN_TOKEN_WRITE            */
+        (void *)lseek64,          /* FN_TOKEN_LSEEK64          */
+        (void *)sendmsg,          /* FN_TOKEN_SENDMSG          */
+        (void *)transmit_prepare, /* FN_TOKEN_TRANSMIT_PREPARE */
 };
 
 /* Main app isolate */
@@ -442,7 +446,7 @@ void *scheduling_thread_fn(void *arg)
     {
         //perror("Unable to change the policy of the scheduling thread to SCHED_FIFO");
         //exit(1);
-	fprintf(stderr, "Unable to change the policy of the scheduling thread to SCHED_FIFO\n");
+	fprintf(stderr, "[\e[0;33mWarning\e[0m] Unable to change the policy of the scheduling thread to SCHED_FIFO\n");
     }
     act.sa_handler = sig_ign;
     act.sa_flags = 0;

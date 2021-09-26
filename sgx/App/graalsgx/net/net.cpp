@@ -18,6 +18,7 @@
 #include <time.h>
 #include "ocall_logger.h"
 #include <netinet/in.h>
+#include "graal_net.h"
 
 #include "Enclave_u.h"
 
@@ -260,9 +261,8 @@ ssize_t ocall_sendto(int sockfd, const void *buf, size_t len, int flags, const s
  * 
  */
 
-void *ocall_transmit_prepare()
+void *transmit_prepare()
 {
-    log_ocall(__func__);
     ssize_t size = 128; //pyuhala: hope this will be enough to prevent segfaults
     struct iovec iovs[1024];
     struct msghdr *msg = (struct msghdr *)malloc(sizeof(struct msghdr));
@@ -279,6 +279,12 @@ void *ocall_transmit_prepare()
     }
 
     return (void *)msg;
+}
+
+void *ocall_transmit_prepare()
+{
+    log_ocall(__func__);
+    return transmit_prepare();
 }
 
 /**

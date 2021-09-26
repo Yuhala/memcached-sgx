@@ -206,3 +206,21 @@ ssize_t sendmsg_switchless(int sockfd, const struct msghdr *msg, int flags)
 
     return ret;
 }
+
+void* transmit_prepare_switchless(void)
+{
+    void* ret;
+
+    GRAAL_SGX_INFO();
+
+    resize_buffer_args(switchless_buffer, 0);
+    resize_buffer_ret(switchless_buffer, sizeof(void*));
+
+    switchless_buffer->ocall_handler_switchless = shim_switchless_functions[FN_TOKEN_TRANSMIT_PREPARE];
+    switchless_buffer->ocall_handler = shim_functions[FN_TOKEN_TRANSMIT_PREPARE];
+    ocall_switchless(switchless_buffer);
+    ret = *((void**) switchless_buffer->ret);
+    switchless_buffer->status = BUFFER_UNUSED;
+
+    return ret;
+}

@@ -15,6 +15,7 @@
 #include "storage.h"
 #include "proto_text.h"
 #include "proto_bin.h"
+#include "graal_sgx_shim.h"
 
 //std headers
 #include <unistd.h>
@@ -1449,7 +1450,7 @@ static enum transmit_result transmit(conn *c)
 
     //init msg outside
     void *ptr;
-    ocall_transmit_prepare(&ptr);
+    ptr = transmit_prepare();
     struct msghdr *msg_out = (struct msghdr *)ptr;
 
     iovused = _transmit_pre(c, iovs, iovused, TRANSMIT_ALL_RESP);
