@@ -45,7 +45,7 @@ WORKLOAD = YCSB_BASE + "/workloads/workloada"
 BASH_PATH = "/bin/bash"
 
 MCD_HOST_IP = "127.0.0.1"
-MCD_HOST_IP = "172.28.30.136" # eiger-10.maas ip
+MCD_HOST_IP = "172.28.30.136"  # eiger-10.maas ip
 
 # minimum target throughput
 MIN_TPUT = 20000
@@ -54,7 +54,12 @@ MAX_TPUT = 600000
 # throughput step
 STEP = 20000
 
-NUM_CLIENT_THREADS = 16
+MIN_NUM_CLIENT_THREADS = 4
+MAX_NUM_CLIENT_THREADS = 64
+
+# client step
+CLIENT_STEP = 4
+
 NUM_MCD_WORKER_THREADS = 4
 IS_SWITCHLESS = 1
 IS_SWITCHLESS = 0
@@ -132,14 +137,30 @@ def load_ycsb():
     print(f'............... YCSB load complete ................')
 
 
-# run ycsb workload
+# run ycsb workload with varying target throughput
 # ./bin/ycsb run memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 -target 1000 > output.txt
-def run_ycsb(target_tput):
+def run_ycsb_var_tput(target_tput):
     # change directory to ycsb bin base
     os.chdir(YCSB_BASE)
     # ycsb run command
     runCmd = YCSB_BIN + \
-        f' run memcached -s -P workloads/workloada -p memcached.hosts={MCD_HOST_IP} -threads {NUM_CLIENT_THREADS} -target {target_tput} > {YCSB_OUTPUT}'
+        f' run memcached -s -P workloads/workloada -p memcached.hosts={MCD_HOST_IP} -threads {MIN_NUM_CLIENT_THREADS} -target {target_tput} > {YCSB_OUTPUT}'
+    # --------------------------------------------------
+    print(f'............... Running YCSB workload ...............')
+    # start ycsb run process
+    run_proc = subprocess.Popen(runCmd, shell=True, executable=BASH_PATH)
+    # wait for run to complete
+    run_proc.wait()
+    print(f'............... YCSB run complete ................')
+
+
+# run ycsb workload with varying num clients
+def run_ycsb_var_clients(num_clients):
+    # change directory to ycsb bin base
+    os.chdir(YCSB_BASE)
+    # ycsb run command
+    runCmd = YCSB_BIN + \
+        f' run memcached -s -P workloads/workloada -p memcached.hosts={MCD_HOST_IP} -threads {num_clients} > {YCSB_OUTPUT}'
     # --------------------------------------------------
     print(f'............... Running YCSB workload ...............')
     # start ycsb run process
@@ -160,7 +181,7 @@ def get_output_line(text, output_lines):
 # todo: this routine would/may be wrong once the output structure changes; find a better way to parse
 
 
-def register_results(target_tput, latency_line):
+def register_results(target_tput, num_clients):
     print(f'............... Registering results ...................')
 
     with open(YCSB_OUTPUT) as file:
@@ -182,10 +203,13 @@ def register_results(target_tput, latency_line):
     tput_vals = re.findall('[0-9]+', tput_line)
     tput_avg = float(tput_vals[0])
 
+    # get number of clients
+
     # write final results
     with open(MAIN_RES, "a", newline='') as res_file:
         writer = csv.writer(res_file, delimiter=',')
-        writer.writerow([target_tput, read_avg, upd_avg, tput_avg])
+        writer.writerow(
+            [target_tput, read_avg, upd_avg, tput_avg, num_clients])
 
     print(f'............... Results registered ...................')
 
@@ -212,16 +236,41 @@ def run_bench_tput_lat():
         # load kv pairs into mcd-sgx
         # load_ycsb()
         # run ycsb workload
-        run_ycsb(target)
+        run_ycsb_var_tput(target)
         # stop mcd server
         # kill_mcd()
         # register run result
-        register_results(target, READ_ONLY_AVG_LAT)
+        register_results(target, MIN_NUM_CLIENT_THREADS)
         # update target
         target += STEP
 
 
-run_bench_tput_lat()
+# run ycsb num clients vs avg tput bench
+def run_bench_client_tput():
+    num_clients = MIN_NUM_CLIENT_THREADS
+    load_ycsb()
+    while(num_clients <= MAX_NUM_CLIENT_THREADS):
+        # clean previous ycsb output file JIC
+        clean(YCSB_OUTPUT)
+        # launch the memcached-sgx server
+        # run_mcd_sgx()
+        # run_mcd()
+        # load kv pairs into mcd-sgx
+        # load_ycsb()
+        # run ycsb workload
+        run_ycsb_var_clients(num_clients)
+        # stop mcd server
+        # kill_mcd()
+        # register run result
+        register_results(0, num_clients)
+        # update target
+        num_clients += CLIENT_STEP
+
+
+# run_bench_tput_lat()
+run_bench_client_tput()
+
+
 #print(f'script abs path is: {SCRIPT_ABS_PATH} and dir path is: {SCRIPT_DIR}')
 
 # Test routines
