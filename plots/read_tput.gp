@@ -1,7 +1,7 @@
 set term postscript color eps enhanced 22
 set encoding utf8
 load "styles.inc"
-set output "read_tput_lat.eps"
+set output "read_tput.eps"
 set size 0.8,0.65
 f(x)=1000000
 
@@ -37,17 +37,17 @@ plot\
 	f(x) w lp ls 2006 title "sgx-sim",\
 	f(x) w lp ls 2004 title "intel-swtcless",\
 	f(x) w lp ls 2002 title "zc-swtcless",\
-	'data/workloada/tput_lat_hw_no_switchless.csv' using 1:2 notitle 'sgx-hw' with lines ls 2003,\
+	'data/workloada/hw_no_switchless.csv' using 1:2 notitle 'sgx-hw' with lines ls 2003,\
 	'' every 1 using 1:2  notitle '' with points ls 2003, \
-  	'data/workloada/tput_lat_mcd_native.csv' using 1:2 notitle 'mcd-native' with lines ls 2005, \
+  	'data/workloada/mcd_native.csv' using 1:2 notitle 'mcd-native' with lines ls 2005, \
 	'' every 1 using 1:2  notitle '' with points ls 2005, \
-	'data/workloada/tput_lat_sim.csv' using 1:2 notitle 'sgx-sim' with lines ls 2006, \
+	'data/workloada/mcd_sgx_sim.csv' using 1:2 notitle 'sgx-sim' with lines ls 2006, \
 	'' every 1 using 1:2 notitle '' with points ls 2006
 	#'' using 1:($5*NANO) notitle 'concrete-in' with lines ls 2004, \
 	#'' every 1 using 1:($5*NANO) notitle '' with points ls 2004	
 
 
 
-!epstopdf "read_tput_lat.eps"
-!rm "read_tput_lat.eps"
+!epstopdf "read_tput.eps"
+!rm "read_tput.eps"
 quit
