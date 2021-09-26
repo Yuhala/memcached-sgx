@@ -7,5 +7,5 @@
 #
 #
 
-gnuplot read_tput_lat.gp 
-gnuplot upd_tput_lat.gp 
+gnuplot read_tput.gp 
+gnuplot upd_tput.gp 
