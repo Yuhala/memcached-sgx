@@ -311,6 +311,18 @@ void ecall_reader(int n, int id, struct buffer *bs, struct buffer *b, void **sl_
     readKissdb(n, id);
 }
 
+void ecall_set_global_variables(struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, sig_atomic_t *sl_count, sig_atomic_t *f_count, int *workers)
+{
+    /* initializing global values */
+    switchless_buffers = bs;
+    switchless_buffer = NULL;
+    shim_switchless_functions = sl_fn;
+    shim_functions = fn;
+    number_of_sl_calls = sl_count;
+    number_of_fallbacked_calls = f_count;
+    number_of_workers = workers;
+}
+
 /**
  * Will call graal entry point to write n kv pairs in paldb
  * A graal isolate is created to serve as execution context for the thread.

@@ -52,6 +52,16 @@ typedef struct ms_ecall_writer_t {
 	int* ms_number_of_workers;
 } ms_ecall_writer_t;
 
+typedef struct ms_ecall_set_global_variables_t {
+	struct buffer* ms_switchless_buffers;
+	struct buffer* ms_switchless_buffer;
+	void** ms_sl_fn;
+	void** ms_fn;
+	int* ms_sl_count;
+	int* ms_f_count;
+	int* ms_number_of_workers;
+} ms_ecall_set_global_variables_t;
+
 typedef struct ms_ecall_bench_thread_t {
 	struct buffer* ms_bs;
 	struct buffer* ms_b;
@@ -2891,6 +2901,21 @@ sgx_status_t ecall_writer(sgx_enclave_id_t eid, int n, int id, struct buffer* sw
 	return status;
 }
 
+sgx_status_t ecall_set_global_variables(sgx_enclave_id_t eid, struct buffer* switchless_buffers, struct buffer* switchless_buffer, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers)
+{
+	sgx_status_t status;
+	ms_ecall_set_global_variables_t ms;
+	ms.ms_switchless_buffers = switchless_buffers;
+	ms.ms_switchless_buffer = switchless_buffer;
+	ms.ms_sl_fn = sl_fn;
+	ms.ms_fn = fn;
+	ms.ms_sl_count = sl_count;
+	ms.ms_f_count = f_count;
+	ms.ms_number_of_workers = number_of_workers;
+	status = sgx_ecall(eid, 5, &ocall_table_Enclave, &ms);
+	return status;
+}
+
 sgx_status_t ecall_bench_thread(sgx_enclave_id_t eid, struct buffer* bs, struct buffer* b, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers)
 {
 	sgx_status_t status;
@@ -2902,7 +2927,7 @@ sgx_status_t ecall_bench_thread(sgx_enclave_id_t eid, struct buffer* bs, struct 
 	ms.ms_sl_count = sl_count;
 	ms.ms_f_count = f_count;
 	ms.ms_number_of_workers = number_of_workers;
-	status = sgx_ecall(eid, 5, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 6, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -2911,7 +2936,7 @@ sgx_status_t ecall_readN(sgx_enclave_id_t eid, int n)
 	sgx_status_t status;
 	ms_ecall_readN_t ms;
 	ms.ms_n = n;
-	status = sgx_ecall(eid, 6, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 7, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -2920,14 +2945,14 @@ sgx_status_t ecall_writeN(sgx_enclave_id_t eid, int n)
 	sgx_status_t status;
 	ms_ecall_writeN_t ms;
 	ms.ms_n = n;
-	status = sgx_ecall(eid, 7, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 8, &ocall_table_Enclave, &ms);
 	return status;
 }
 
 sgx_status_t ecall_kissdb_test(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 8, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 9, &ocall_table_Enclave, NULL);
 	return status;
 }
 
@@ -2937,7 +2962,7 @@ sgx_status_t ecall_readKissdb(sgx_enclave_id_t eid, int n, int storeId)
 	ms_ecall_readKissdb_t ms;
 	ms.ms_n = n;
 	ms.ms_storeId = storeId;
-	status = sgx_ecall(eid, 9, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 10, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -2947,14 +2972,14 @@ sgx_status_t ecall_writeKissdb(sgx_enclave_id_t eid, int n, int storeId)
 	ms_ecall_writeKissdb_t ms;
 	ms.ms_n = n;
 	ms.ms_storeId = storeId;
-	status = sgx_ecall(eid, 10, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 11, &ocall_table_Enclave, &ms);
 	return status;
 }
 
 sgx_status_t ecall_test(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 11, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 12, &ocall_table_Enclave, NULL);
 	return status;
 }
 
@@ -2964,7 +2989,7 @@ sgx_status_t ecall_execute_job(sgx_enclave_id_t eid, pthread_t pthread_self_id, 
 	ms_ecall_execute_job_t ms;
 	ms.ms_pthread_self_id = pthread_self_id;
 	ms.ms_job_id = job_id;
-	status = sgx_ecall(eid, 12, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 13, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -2973,63 +2998,63 @@ sgx_status_t ecall_init_settings(sgx_enclave_id_t eid, int numWorkers)
 	sgx_status_t status;
 	ms_ecall_init_settings_t ms;
 	ms.ms_numWorkers = numWorkers;
-	status = sgx_ecall(eid, 13, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 14, &ocall_table_Enclave, &ms);
 	return status;
 }
 
 sgx_status_t ecall_init_hash(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 14, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 15, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ecall_stats_init(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 15, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 16, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ecall_init_hashtable(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 16, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 17, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ecall_start_assoc_maintenance(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 17, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 18, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ecall_start_item_crawler(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 18, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 19, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ecall_start_slab_rebalance(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 19, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 20, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ecall_assoc_start_expand(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 20, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 21, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ecall_init_server_sockets(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 21, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 22, &ocall_table_Enclave, NULL);
 	return status;
 }
 
@@ -3038,7 +3063,7 @@ sgx_status_t ecall_init_mainbase(sgx_enclave_id_t eid, void* mb)
 	sgx_status_t status;
 	ms_ecall_init_mainbase_t ms;
 	ms.ms_mb = mb;
-	status = sgx_ecall(eid, 22, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 23, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -3047,28 +3072,28 @@ sgx_status_t ecall_drive_machine(sgx_enclave_id_t eid, void* conn)
 	sgx_status_t status;
 	ms_ecall_drive_machine_t ms;
 	ms.ms_conn = conn;
-	status = sgx_ecall(eid, 23, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 24, &ocall_table_Enclave, &ms);
 	return status;
 }
 
 sgx_status_t ecall_uriencode_init(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 24, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 25, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ecall_conn_init(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 25, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 26, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ecall_item_lru_bump_buf_create(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 26, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 27, &ocall_table_Enclave, NULL);
 	return status;
 }
 
@@ -3079,7 +3104,7 @@ sgx_status_t ecall_thread_libevent_process(sgx_enclave_id_t eid, evutil_socket_t
 	ms.ms_fd = fd;
 	ms.ms_which = which;
 	ms.ms_arg = arg;
-	status = sgx_ecall(eid, 27, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 28, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -3090,7 +3115,7 @@ sgx_status_t ecall_event_handler(sgx_enclave_id_t eid, evutil_socket_t fd, short
 	ms.ms_fd = fd;
 	ms.ms_which = which;
 	ms.ms_arg = arg;
-	status = sgx_ecall(eid, 28, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 29, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -3105,7 +3130,7 @@ sgx_status_t ecall_conn_new(sgx_enclave_id_t eid, void** retval, int sfd, enum c
 	ms.ms_tport = tport;
 	ms.ms_base = base;
 	ms.ms_ssl = ssl;
-	status = sgx_ecall(eid, 29, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 30, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -3116,7 +3141,7 @@ sgx_status_t ecall_conn_io_queue_add(sgx_enclave_id_t eid, void* c, int type)
 	ms_ecall_conn_io_queue_add_t ms;
 	ms.ms_c = c;
 	ms.ms_type = type;
-	status = sgx_ecall(eid, 30, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 31, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -3126,7 +3151,7 @@ sgx_status_t ecall_set_conn_thread(sgx_enclave_id_t eid, void* c, void* libevent
 	ms_ecall_set_conn_thread_t ms;
 	ms.ms_c = c;
 	ms.ms_libevent_thread = libevent_thread;
-	status = sgx_ecall(eid, 31, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 32, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -3135,7 +3160,7 @@ sgx_status_t sl_init_switchless(sgx_enclave_id_t eid, sgx_status_t* retval, void
 	sgx_status_t status;
 	ms_sl_init_switchless_t ms;
 	ms.ms_sl_data = sl_data;
-	status = sgx_ecall(eid, 32, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 33, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -3144,7 +3169,7 @@ sgx_status_t sl_run_switchless_tworker(sgx_enclave_id_t eid, sgx_status_t* retva
 {
 	sgx_status_t status;
 	ms_sl_run_switchless_tworker_t ms;
-	status = sgx_ecall(eid, 33, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 34, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }

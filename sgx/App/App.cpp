@@ -621,6 +621,7 @@ void init_switchless(void)
     int i;
     struct worker_args wa[CORES_NUM / 2];
 
+
     int ncores = CORES_NUM;
     //ncores = getCpus();
 
@@ -750,6 +751,14 @@ int main(int argc, char *argv[])
 
     printf("Enclave initialized\n");
 
+    if (ecall_set_global_variables(global_eid, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int*) &number_of_sl_calls, (int*) &number_of_fallbacked_calls, (int*) &number_of_workers) != SGX_SUCCESS)
+    {
+	fprintf(stderr, "unable to set global untrusted variables inside the enclave\n");
+	exit(1);
+    }
+    printf("global untrusted variables set inside the enclave\n");
+
+    
     int id = global_eid;
 
     init_memcached(num_mcd_workers);

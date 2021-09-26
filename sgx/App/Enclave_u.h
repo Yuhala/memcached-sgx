@@ -786,6 +786,7 @@ sgx_status_t ecall_graal_main(sgx_enclave_id_t eid, int id, struct buffer* switc
 sgx_status_t ecall_run_main(sgx_enclave_id_t eid, int id);
 sgx_status_t ecall_reader(sgx_enclave_id_t eid, int n, int id, struct buffer* switchless_buffers, struct buffer* switchless_buffer, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers);
 sgx_status_t ecall_writer(sgx_enclave_id_t eid, int n, int id, struct buffer* switchless_buffers, struct buffer* switchless_buffer, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers);
+sgx_status_t ecall_set_global_variables(sgx_enclave_id_t eid, struct buffer* switchless_buffers, struct buffer* switchless_buffer, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers);
 sgx_status_t ecall_bench_thread(sgx_enclave_id_t eid, struct buffer* bs, struct buffer* b, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers);
 sgx_status_t ecall_readN(sgx_enclave_id_t eid, int n);
 sgx_status_t ecall_writeN(sgx_enclave_id_t eid, int n);

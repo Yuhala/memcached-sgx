@@ -94,6 +94,7 @@ void ecall_graal_main(int id, struct buffer* switchless_buffers, struct buffer* 
 void ecall_run_main(int id);
 void ecall_reader(int n, int id, struct buffer* switchless_buffers, struct buffer* switchless_buffer, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers);
 void ecall_writer(int n, int id, struct buffer* switchless_buffers, struct buffer* switchless_buffer, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers);
+void ecall_set_global_variables(struct buffer* switchless_buffers, struct buffer* switchless_buffer, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers);
 void ecall_bench_thread(struct buffer* bs, struct buffer* b, void** sl_fn, void** fn, int* sl_count, int* f_count, int* number_of_workers);
 void ecall_readN(int n);
 void ecall_writeN(int n);
