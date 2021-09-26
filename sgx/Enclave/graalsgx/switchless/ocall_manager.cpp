@@ -60,7 +60,7 @@ int is_in_top_n_calls(unsigned int n, enum fn_token t)
 
 int should_be_switchless(enum fn_token t)
 {
-	return 0;
+    //return 0;
 	//    return is_in_top_n_calls(2, t);
 	static int oldi = 0;
 	int i, j;
