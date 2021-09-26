@@ -1849,13 +1849,13 @@ void init_memcached(int numWorkers)
     {
         if (username == 0 || *username == '\0')
         {
-            fprintf(stderr, "can't run as root without the -u switch\n");
-            exit(EX_USAGE);
+            //fprintf(stderr, "can't run as root without the -u switch\n");
+            //exit(EX_USAGE);
         }
         if ((pw = getpwnam(username)) == 0)
         {
-            fprintf(stderr, "can't find the user %s to switch to\n", username);
-            exit(EX_NOUSER);
+            //fprintf(stderr, "can't find the user %s to switch to\n", username);
+            //exit(EX_NOUSER);
         }
         if (setgroups(0, NULL) < 0)
         {
