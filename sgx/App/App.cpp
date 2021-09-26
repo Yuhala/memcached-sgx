@@ -721,7 +721,7 @@ int main(int argc, char *argv[])
      * ZC-switchless configuration
      */
 
-    init_switchless();
+    //init_switchless();
 
     /* Initialize the enclave */
 
