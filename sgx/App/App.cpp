@@ -446,7 +446,7 @@ void *scheduling_thread_fn(void *arg)
     {
         //perror("Unable to change the policy of the scheduling thread to SCHED_FIFO");
         //exit(1);
-	fprintf(stderr, "[\e[0;33mWarning\e[0m] Unable to change the policy of the scheduling thread to SCHED_FIFO\n");
+        fprintf(stderr, "[\e[0;33mWarning\e[0m] Unable to change the policy of the scheduling thread to SCHED_FIFO\n");
     }
     act.sa_handler = sig_ign;
     act.sa_flags = 0;
@@ -738,8 +738,9 @@ int main(int argc, char *argv[])
     else
     {
         //use intel sdk switchless
-        us_config.num_uworkers = 2;
-        us_config.num_tworkers = 2;
+        us_config.num_uworkers = 1;
+        us_config.num_tworkers = 1;
+        printf("<<<<<<<<<<<<<<< initializing enclave with switchless config >>>>>>>>>>>>>>>>>>>>>\n");
         if (initialize_enclave(&us_config) < 0)
         {
             printf("Enter a character before exit ...\n");
