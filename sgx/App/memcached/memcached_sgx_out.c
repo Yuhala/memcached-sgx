@@ -2090,7 +2090,7 @@ void init_memcached(int numWorkers)
     /* Drop privileges no longer needed */
     if (settings.drop_privileges)
     {
-        drop_privileges();
+        //drop_privileges();
     }
 
     /* Initialize the uriencode lookup table. */
