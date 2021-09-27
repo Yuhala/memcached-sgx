@@ -87,6 +87,9 @@
 //intel sdk switchless lib
 #include <sgx_uswitchless.h>
 
+//for get_nprocs()
+#include <sys/sysinfo.h>
+
 /* Benchmarking */
 //#include "benchtools.h"
 #include <time.h>
@@ -98,8 +101,12 @@ extern std::map<pthread_t, pthread_attr_t *> attr_map;
 /* Macro for this value which is in the config file of the enclave because I
  * don't know how to do better
  */
+// pyuhala: these should be fixed b/c they are machine dependent; try using
+// global variables instead, which you can set to the right values at the start of the program
+// for example: num of cores can be obtained with get_nprocs()
+
 #define SGX_TCS_NUM 8
-#define CORES_NUM 8
+#define CORES_NUM 4
 #define TIME_ENCLAVE_SWITCH 13500
 #define TIME_MICRO_QUANTUM 100000 // 1000000 = 1ms
 #define MICRO_INVERSE 100
@@ -619,7 +626,12 @@ void init_switchless(void)
 {
     int pthread_ret;
     int i;
+    //get the number of logical cpus on the machine
+    //int ncores = get_nprocs();
+    //int half_cpu = ncores / 2;
     struct worker_args wa[CORES_NUM / 2];
+    //struct worker_args *wa = malloc(sizeof(worker_args) * half_cpu);
+    //pyuhala: above should be free somewhere..causes memory leak
 
     int ncores = CORES_NUM;
     //ncores = getCpus();
@@ -658,7 +670,7 @@ void init_switchless(void)
 void destroy_switchless(void)
 {
     int i;
-    int ncores = CORES_NUM;
+    int ncores = get_nprocs();
     //ncores = getCpus();
 
     /* joining the workers */
