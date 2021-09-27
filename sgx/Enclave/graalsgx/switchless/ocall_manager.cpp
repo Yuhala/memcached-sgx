@@ -64,6 +64,7 @@ int should_be_switchless(enum fn_token t)
 {
 	if (return_zero)
 	{
+		printf("<<<<<<<<<< returning zero in should_be_switchless >>>>>>>>>>>>>>>>\n");
 		return 0;
 	}
 	//    return is_in_top_n_calls(2, t);
