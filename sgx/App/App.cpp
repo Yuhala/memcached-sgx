@@ -149,26 +149,26 @@ void *shim_switchless_functions[] =
         (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_UNLINK */
         (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_RMDIR */
         //(void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_REMOVE */
-        (void *)ocall_read_switchless,                      /* FN_TOKEN_READ  */
-        (void *)ocall_write_switchless,                     /* FN_TOKEN_WRITE */
-        (void *)ocall_lseek64_switchless,                   /* FN_TOKEN_LSEEK64 */
-        (void *)ocall_sendmsg_switchless,                   /* FN_TOKEN_SENDMSG */
-        (void *)ocall_transmit_prepare_switchless,          /* FN_TOKEN_TRANSMIT_PREPARE */
+        (void *)ocall_read_switchless,             /* FN_TOKEN_READ  */
+        (void *)ocall_write_switchless,            /* FN_TOKEN_WRITE */
+        (void *)ocall_lseek64_switchless,          /* FN_TOKEN_LSEEK64 */
+        (void *)ocall_sendmsg_switchless,          /* FN_TOKEN_SENDMSG */
+        (void *)ocall_transmit_prepare_switchless, /* FN_TOKEN_TRANSMIT_PREPARE */
 };
 
 void empty(void) {}
 
 void *shim_functions[] =
     {
-        (void *)empty,            /* FN_TOKEN_EMPTY            */
-        (void *)sleep,            /* FN_TOKEN_SLEEP            */
-        (void *)fsync,            /* FN_TOKEN_FSYNC            */
-        (void *)dup2,             /* FN_TOKEN_DUP2             */
-        (void *)close,            /* FN_TOKEN_CLOSE            */
-        (void *)fwrite,           /* FN_TOKEN_CLOSE            */
-        (void *)puts,             /* FN_TOKEN_PUTS             */
-        (void *)unlink,           /* FN_TOKEN_UNLINK           */
-        (void *)rmdir,            /* FN_TOKEN_RMDIR            */
+        (void *)empty,  /* FN_TOKEN_EMPTY            */
+        (void *)sleep,  /* FN_TOKEN_SLEEP            */
+        (void *)fsync,  /* FN_TOKEN_FSYNC            */
+        (void *)dup2,   /* FN_TOKEN_DUP2             */
+        (void *)close,  /* FN_TOKEN_CLOSE            */
+        (void *)fwrite, /* FN_TOKEN_CLOSE            */
+        (void *)puts,   /* FN_TOKEN_PUTS             */
+        (void *)unlink, /* FN_TOKEN_UNLINK           */
+        (void *)rmdir,  /* FN_TOKEN_RMDIR            */
         //(void *)remove,           /* FN_TOKEN_REMOVE           */
         (void *)read,             /* FN_TOKEN_READ             */
         (void *)write,            /* FN_TOKEN_WRITE            */
@@ -718,6 +718,7 @@ void runKissdbBench()
 
     for (int i = min_keys; i < max_keys; i += step)
     {
+        printf("<--------------------- running kissdb bench for: %d keys ----------------------->\n", i);
         start_clock();
         write_keys(i, numWriters);
         read_keys(i, numReaders);
