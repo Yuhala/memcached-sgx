@@ -34,7 +34,7 @@ set key maxrows 1 samplen 1 width -1 invert center at graph 0.35,1.1 font ",12"
 set yrange [0:15]
 plot\
 	f(x) w lp ls 2003 title "sgx-hw",\
-	f(x) w lp ls 2005 title "mcd-native",\
+	f(x) w lp ls 2005 title "kiss-native",\
 	f(x) w lp ls 2006 title "sgx-sim",\
 	f(x) w lp ls 2004 title "intel-swtcless",\
 	f(x) w lp ls 2002 title "zc-swtcless",\
