@@ -10,6 +10,8 @@ extern struct buffer *switchless_buffers;
 extern __thread struct buffer *switchless_buffer;
 extern volatile int *number_of_workers;
 
+extern int return_zero;
+
 /* Every time a shim library function is called, it should call this function to
  * influence the future results of `should_be_switchless`
  */
@@ -60,7 +62,10 @@ int is_in_top_n_calls(unsigned int n, enum fn_token t)
 
 int should_be_switchless(enum fn_token t)
 {
-    //return 0;
+	if (return_zero)
+	{
+		return 0;
+	}
 	//    return is_in_top_n_calls(2, t);
 	static int oldi = 0;
 	int i, j;

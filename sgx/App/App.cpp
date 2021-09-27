@@ -446,7 +446,7 @@ void *scheduling_thread_fn(void *arg)
     {
         //perror("Unable to change the policy of the scheduling thread to SCHED_FIFO");
         //exit(1);
-	fprintf(stderr, "[\e[0;33mWarning\e[0m] Unable to change the policy of the scheduling thread to SCHED_FIFO\n");
+        fprintf(stderr, "[\e[0;33mWarning\e[0m] Unable to change the policy of the scheduling thread to SCHED_FIFO\n");
     }
     act.sa_handler = sig_ign;
     act.sa_flags = 0;
@@ -621,7 +621,6 @@ void init_switchless(void)
     int i;
     struct worker_args wa[CORES_NUM / 2];
 
-
     int ncores = CORES_NUM;
     //ncores = getCpus();
 
@@ -697,12 +696,14 @@ int main(int argc, char *argv[])
     struct timeval tval_before, tval_after, tval_result;
 
     int num_mcd_workers = 2;
-    int switchless = 0;
+    int sdk_switchless = 0;
+    int zc_switchless = 0;
+    int ret_zero = 1;
     if (argc == 3)
     {
 
-        num_mcd_workers = atoi(argv[1]);
-        switchless = atoi(argv[2]);
+        zc_switchless = atoi(argv[1]);
+        sdk_switchless = atoi(argv[2]);
     }
 
     //int ret = normal_run(arg1);
@@ -718,15 +719,25 @@ int main(int argc, char *argv[])
 
     sgx_uswitchless_config_t us_config = SGX_USWITCHLESS_CONFIG_INITIALIZER;
 
+    if (zc_switchless && sdk_switchless)
+    {
+        printf("xxxxxxxxxxxxxxx cannot activate both SDK and ZC switchless at the same time xxxxxxxxxxxxxxxxxx\n");
+        printf("usage: ./memcached-sgx [zc_switchless] [sdk_switchless]\n");
+    }
+
     /**
      * ZC-switchless configuration
      */
 
-    init_switchless();
+    if (zc_switchless)
+    {
+        ret_zero = 0;
+        init_switchless();
+    }
 
     /* Initialize the enclave */
 
-    if (!switchless)
+    if (!sdk_switchless)
     {
         //do not use switchless
         if (initialize_enclave_no_switchless() < 0)
@@ -750,15 +761,18 @@ int main(int argc, char *argv[])
     }
 
     printf("Enclave initialized\n");
-
-    if (ecall_set_global_variables(global_eid, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int*) &number_of_sl_calls, (int*) &number_of_fallbacked_calls, (int*) &number_of_workers) != SGX_SUCCESS)
+    if (zc_switchless)
     {
-	fprintf(stderr, "unable to set global untrusted variables inside the enclave\n");
-	exit(1);
-    }
-    printf("global untrusted variables set inside the enclave\n");
 
-    
+        if (ecall_set_global_variables(global_eid, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers, ret_zero) != SGX_SUCCESS)
+        {
+            fprintf(stderr, "unable to set global untrusted variables inside the enclave\n");
+            exit(1);
+        }
+
+        printf("global untrusted variables set inside the enclave\n");
+    }
+
     int id = global_eid;
 
     init_memcached(num_mcd_workers);
@@ -812,7 +826,10 @@ int main(int argc, char *argv[])
 
     //run_main(argc, argv);
 
-    destroy_switchless();
+    if (zc_switchless)
+    {
+        destroy_switchless();
+    }
 
     printf("Number of ocalls: %d\n", ocall_count);
     showOcallLog(10);

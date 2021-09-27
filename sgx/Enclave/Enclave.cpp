@@ -47,9 +47,6 @@
 #include "memcached/test.h"
 #include "memcached/memcached.h"
 
-
-
-
 /* Global variables */
 sgx_enclave_id_t global_eid;
 bool enclave_initiated;
@@ -66,6 +63,10 @@ static __thread pid_t global_tid = -1;
 SGX_FILE stdin = SGX_STDIN;
 SGX_FILE stdout = SGX_STDOUT;
 SGX_FILE stderr = SGX_STDERR;
+
+//pyuhala: should we return 0 or not in the should_be_switchless routine
+// by default do not use zc switchless, ie return_zero = 1
+int return_zero = 1;
 
 /**
  * For kissdb
@@ -85,10 +86,9 @@ void writeKissdb(int n, int storeId);
 
 void ecall_test()
 {
-    printf("ecall test >>>>>>>>> \n");    
+    printf("ecall test >>>>>>>>> \n");
     //start_server();
     //memcached_init();
-   
 }
 
 pid_t gettid(void)
@@ -311,7 +311,7 @@ void ecall_reader(int n, int id, struct buffer *bs, struct buffer *b, void **sl_
     readKissdb(n, id);
 }
 
-void ecall_set_global_variables(struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, sig_atomic_t *sl_count, sig_atomic_t *f_count, int *workers)
+void ecall_set_global_variables(struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, sig_atomic_t *sl_count, sig_atomic_t *f_count, int *workers, int ret_zero)
 {
     /* initializing global values */
     switchless_buffers = bs;
@@ -321,6 +321,7 @@ void ecall_set_global_variables(struct buffer *bs, struct buffer *b, void **sl_f
     number_of_sl_calls = sl_count;
     number_of_fallbacked_calls = f_count;
     number_of_workers = workers;
+    return_zero = ret_zero;
 }
 
 /**
