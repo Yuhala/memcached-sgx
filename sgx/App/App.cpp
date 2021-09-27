@@ -701,6 +701,11 @@ void destroy_switchless(void)
     }
 }
 
+void removeKissDbs()
+{
+    printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
+    system("rm kissdb*");
+}
 void runKissdbBench()
 {
     int min_keys = 2000;
@@ -725,6 +730,7 @@ void runKissdbBench()
         stop_clock();
         double runTime = time_diff(&start, &stop, SEC);
         registerKissResults(i, runTime);
+        removeKissDbs();
     }
 }
 
