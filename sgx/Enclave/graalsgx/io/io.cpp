@@ -171,11 +171,12 @@ int puts(const char *str)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    log_ocall(FN_TOKEN_CLOSE);
-    if (should_be_switchless(FN_TOKEN_CLOSE))
-        ret = puts_switchless(str);
-    else
-        ocall_puts(&ret, str);
+    //log_ocall(FN_TOKEN_CLOSE);
+    //if (should_be_switchless(FN_TOKEN_CLOSE))
+    //   ret = puts_switchless(str);
+    //else
+    //    ocall_puts(&ret, str);
+    ocall_puts(&ret, str);
     return ret;
 }
 int fscanf(SGX_FILE stream, const char *fmt, ...)
