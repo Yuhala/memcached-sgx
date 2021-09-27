@@ -45,7 +45,9 @@ plot\
 	'data/kissdb/mcd_sgx_sim.csv' using 1:2 notitle 'sgx-sim' with lines ls 2006, \
 	'' every 1 using 1:2 notitle '' with points ls 2006, \
 	'data/kissdb/hw_intel_switchless.csv' using 1:2 notitle 'intel-swtcless' with lines ls 2004, \
-	'' every 1 using 1:2 notitle '' with points ls 2004	
+	'' every 1 using 1:2 notitle '' with points ls 2004, \
+	'data/kissdb/zc_switchless.csv' using 1:2 notitle 'zc-swtcless' with lines ls 2002, \
+	'' every 1 using 1:2 notitle '' with points ls 2002
 
 
 

@@ -58,6 +58,7 @@ void *reader_thread(void *input)
 
     if (use_zc_switchless)
     {
+        printf("using zc switchless reader thread\n");
         ecall_reader(global_eid, n, id, switchless_buffers, switchless_buffers, shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
     }
     else
@@ -77,6 +78,7 @@ void *writer_thread(void *input)
 
     if (use_zc_switchless)
     {
+        printf("using zc switchless writer thread\n");
         ecall_writer(global_eid, n, id, switchless_buffers, switchless_buffers, shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
     }
     else
