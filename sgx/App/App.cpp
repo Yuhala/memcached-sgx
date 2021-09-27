@@ -91,7 +91,7 @@
 #include <sys/sysinfo.h>
 
 /* Benchmarking */
-//#include "benchtools.h"
+#include "bench/benchtools.h"
 #include <time.h>
 struct timespec start, stop;
 double diff;
@@ -148,7 +148,7 @@ void *shim_switchless_functions[] =
         (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_PUTS */
         (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_UNLINK */
         (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_RMDIR */
-        (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_REMOVE */
+        //(void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_REMOVE */
         (void *)ocall_read_switchless,                      /* FN_TOKEN_READ  */
         (void *)ocall_write_switchless,                     /* FN_TOKEN_WRITE */
         (void *)ocall_lseek64_switchless,                   /* FN_TOKEN_LSEEK64 */
@@ -169,7 +169,7 @@ void *shim_functions[] =
         (void *)puts,             /* FN_TOKEN_PUTS             */
         (void *)unlink,           /* FN_TOKEN_UNLINK           */
         (void *)rmdir,            /* FN_TOKEN_RMDIR            */
-        (void *)remove,           /* FN_TOKEN_REMOVE           */
+        //(void *)remove,           /* FN_TOKEN_REMOVE           */
         (void *)read,             /* FN_TOKEN_READ             */
         (void *)write,            /* FN_TOKEN_WRITE            */
         (void *)lseek64,          /* FN_TOKEN_LSEEK64          */
@@ -701,6 +701,32 @@ void destroy_switchless(void)
     }
 }
 
+void runKissdbBench()
+{
+    int min_keys = 2000;
+    int max_keys = 100000;
+    int step = 2000;
+    int numWriters = 2;
+    int numReaders = 2;
+    //write_keys(numKeys, numWriters);
+    bool test = (numReaders == numWriters) || ((numReaders != numWriters) && (numWriters == 1));
+    if (!test)
+    {
+        printf("xxxxxxxxxxxxxxxx check num of writer and reader threads xxxxxxxxxxxxxxxxxxxx");
+        return;
+    }
+
+    for (int i = min_keys; i < max_keys; i += step)
+    {
+        start_clock();
+        write_keys(i, numWriters);
+        read_keys(i, numReaders);
+        stop_clock();
+        double runTime = time_diff(&start, &stop, SEC);
+        registerKissResults(i, runTime);
+    }
+}
+
 /* Application entry */
 int main(int argc, char *argv[])
 {
@@ -794,8 +820,8 @@ int main(int argc, char *argv[])
 
     int id = global_eid;
 
-    init_memcached(num_mcd_workers);
-    return 0;
+    //init_memcached(num_mcd_workers);
+    //return 0;
 
     //ecall_create_enclave_isolate(global_eid);
     /**
@@ -803,19 +829,15 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    int numKeys = 10000;
-    int numWriters = 1;
-    int numReaders = 1;
-    write_keys(numKeys, numWriters);
-    bool test = (numReaders == numWriters) || ((numReaders != numWriters) && (numWriters == 1));
+    runKissdbBench();
 
     return 0;
     /**
      * pyuhala: this prevents read errors in kissdb (eg readers reading from a non-existent file).
      *  Still to fix the issue
      */
-    assertm(test, "num of reader threads should be = num of writer threads or have only 1 writer thread ");
-    read_keys(numKeys, numReaders);
+    //assertm(test, "num of reader threads should be = num of writer threads or have only 1 writer thread ");
+    //read_keys(numKeys, numReaders);
 
     //ecall_kissdb_test(global_eid);
 
