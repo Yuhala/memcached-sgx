@@ -373,31 +373,34 @@ void readKissdb(int n, int storeId)
     const char storeFile[16];
     snprintf(storeFile, 16, "kissdb%d.db", storeId);
 
-    printf("ecall_readKissdb::Opening database %s...\n", storeFile);
+    //printf("ecall_readKissdb::Opening database %s...\n", storeFile);
 
     if (KISSDB_open(&db, storeFile, KISSDB_OPEN_MODE_RDONLY, 1024, 8, sizeof(v)))
     {
         printf("KISSDB_open failed\n");
+        return;
     }
 
-    printf("Getting %d 64-byte values in kissdb...\n", n);
+    //printf("Getting %d 64-byte values in kissdb...\n", n);
 
     for (i = 0; i < n; ++i)
     {
         if ((q = KISSDB_get(&db, &i, v)))
         {
             printf("KISSDB_get (2) failed (%" PRIu64 ") (%d)\n", i, q);
+            return;
         }
         for (j = 0; j < 8; ++j)
         {
             if (v[j] != i)
             {
                 printf("KISSDB_get (2) failed, bad data (%" PRIu64 ")\n", i);
+                return;
             }
         }
     }
 
-    printf("Closing database...\n");
+    //printf("Closing database...\n");
 
     KISSDB_close(&db);
 }
@@ -419,7 +422,7 @@ void writeKissdb(int n, int storeId)
      */
 
     //sgx_spin_lock(&writer_lock);
-    printf("ecall_writeKissdb::Opening new empty database %s...\n", storeFile);
+    //printf("ecall_writeKissdb::Opening new empty database %s...\n", storeFile);
 
     int retOpen = KISSDB_open(&writes_db, storeFile, KISSDB_OPEN_MODE_RWREPLACE, 1024, 8, sizeof(v));
 
@@ -428,7 +431,7 @@ void writeKissdb(int n, int storeId)
         printf("KISSDB_open failed\n");
     }
 
-    printf("Adding %d 64-byte kv pairs in kissdb...\n", n);
+    //printf("Adding %d 64-byte kv pairs in kissdb...\n", n);
 
     for (i = 0; i < n; ++i)
     {
@@ -437,22 +440,25 @@ void writeKissdb(int n, int storeId)
         if (KISSDB_put(&writes_db, &i, v))
         {
             printf("KISSDB_put failed (%" PRIu64 ")\n", i);
+            return;
         }
         memset(v, 0, sizeof(v));
         if ((q = KISSDB_get(&writes_db, &i, v)))
         {
             printf("KISSDB_get (1) failed (%" PRIu64 ") (%d)\n", i, q);
+            return;
         }
         for (j = 0; j < 8; ++j)
         {
             if (v[j] != i)
             {
                 printf("KISSDB_get (1) failed, bad data (%" PRIu64 ")\n", i);
+                return;
             }
         }
     }
 
-    printf("Closing database...\n");
+    //printf("Closing database...\n");
 
     KISSDB_close(&writes_db);
 
