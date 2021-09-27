@@ -221,7 +221,7 @@ ssize_t read(int fd, void *buf, size_t count)
     log_ocall(FN_TOKEN_READ);
     if (should_be_switchless(FN_TOKEN_READ))
     {
-        printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< using read switchless >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+        //printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< using read switchless >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
         ret = read_switchless(fd, buf, count);
     }
 

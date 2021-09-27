@@ -8,4 +8,4 @@
 #
 
 gnuplot read_tput.gp 
-gnuplot upd_tput.gp 
+#gnuplot upd_tput.gp 
