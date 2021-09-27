@@ -763,8 +763,8 @@ int main(int argc, char *argv[])
     else
     {
         //use intel sdk switchless
-        us_config.num_uworkers = 2;
-        us_config.num_tworkers = 2;
+        us_config.num_uworkers = 1;
+        us_config.num_tworkers = 1;
         if (initialize_enclave(&us_config) < 0)
         {
             printf("Enter a character before exit ...\n");
