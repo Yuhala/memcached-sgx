@@ -187,6 +187,9 @@ pthread_t main_thread_id;
 unsigned int ocall_count = 0;
 std::map<std::string, int> ocall_map;
 
+//pyuhala: for intel sdk switchless calls
+#define SL_DEFAULT_FALLBACK_RETRIES 20000
+
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
     printf("Caught signal: %d\n", sig);
@@ -764,7 +767,7 @@ int main(int argc, char *argv[])
     {
         //use intel sdk switchless
         printf("########################## running in INTEL-SDK-SWITCHLESS mode ##########################")
-        us_config.num_uworkers = 1;
+            us_config.num_uworkers = 1;
         //pyuhala: we are not concerned with switchless ecalls so no trusted workers
         us_config.num_tworkers = 0;
         if (initialize_enclave(&us_config) < 0)
@@ -777,9 +780,10 @@ int main(int argc, char *argv[])
 
     printf("Enclave initialized\n");
     if (zc_switchless)
-    {   printf("########################## running in ZC-SWITCHLESS mode ##########################")
+    {
+        printf("########################## running in ZC-SWITCHLESS mode ##########################")
 
-        if (ecall_set_global_variables(global_eid, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers, ret_zero) != SGX_SUCCESS)
+            if (ecall_set_global_variables(global_eid, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers, ret_zero) != SGX_SUCCESS)
         {
             fprintf(stderr, "unable to set global untrusted variables inside the enclave\n");
             exit(1);
