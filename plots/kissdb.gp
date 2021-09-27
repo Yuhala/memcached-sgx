@@ -18,7 +18,8 @@ set ylabel "Total runtime (s)" font ",16" offset 0,0
 #set ytics ("10^{-6}" 0.0000010,"10^{-5}" 0.00001,"10^{-4}" 0.0001,"10^{-3}" 0.001,"10^{-2}" 0.01,"10^{-1}" 0.1,"10^{0}" 1,"10^{1}" 10)
 set xlabel "Num. of keys (x1000)" font ",16"
 #set xtics("4" 4000,"8" 8000, "12" 12000, "16" 16000, "20" 20000, "24" 24000, "28" 28000, "32" 32000, "36" 36000, "40" 40000, "44" 44000, "48" 48000, "52" 52000)
-set xtics("10" 10000,"20" 20000, "3" 30000, "40" 40000, "50" 50000, "60" 60000, "70" 70000, "80" 80000, "90" 90000, "100" 100000)
+#set xtics("10" 10000,"20" 20000, "3" 30000, "40" 40000, "50" 50000, "60" 60000, "70" 70000, "80" 80000, "90" 90000, "100" 100000)
+set xtics("10" 10000,"20" 20000, "30" 30000, "40" 40000, "50" 50000, "60" 60000)
 
 set xtics offset 0,0.5,0
 set xlabel offset 0,1,0
@@ -30,7 +31,7 @@ set title "Run time for writing+reading kv pairs in kissdb" font "Helvetica-bold
 set datafile separator ","
 set key maxrows 1 samplen 1 width -1 invert center at graph 0.35,1.1 font ",12"
 #set key vertical samplen 1.1 width 1 spacing -2 invert reverse Left outside maxrows 1  width -3 center at graph 0.62,1.11
-set yrange [0:60000]
+set yrange [0:15]
 plot\
 	f(x) w lp ls 2003 title "sgx-hw",\
 	f(x) w lp ls 2005 title "mcd-native",\

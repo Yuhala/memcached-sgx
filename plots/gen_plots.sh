@@ -7,5 +7,6 @@
 #
 #
 
-gnuplot read_tput.gp 
+#gnuplot read_tput.gp 
+gnuplot kissdb.gp
 #gnuplot upd_tput.gp 

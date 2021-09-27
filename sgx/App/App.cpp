@@ -721,7 +721,7 @@ void runKissdbBench()
         return;
     }
 
-    for (int i = min_keys; i < max_keys; i += step)
+    for (int i = min_keys; i <= max_keys; i += step)
     {
         printf("<--------------------- running kissdb bench for: %d keys ----------------------->\n", i);
         start_clock();
