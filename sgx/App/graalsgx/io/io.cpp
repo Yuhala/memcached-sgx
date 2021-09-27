@@ -237,8 +237,8 @@ ssize_t ocall_read(int fd, void *buf, size_t count)
 
     ssize_t ret = read(fd, buf, count);
 
-    ssize_t debug_ret = read(fd, 0, 0);
-    printf("ocall read return value: %d Error num: %d >>>>>>>>>>>>>>>>>>>>>>\n", debug_ret, errno);
+    //ssize_t debug_ret = read(fd, 0, 0);
+    //printf("ocall read return value: %d Error num: %d >>>>>>>>>>>>>>>>>>>>>>\n", debug_ret, errno);
     //printf("Read error: %s\n", explain_read(fd, buf, count));
     //install libexplain-dev: sudo apt install libexplain-dev
     //exit(EXIT_FAILURE);
