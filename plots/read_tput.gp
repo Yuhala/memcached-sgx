@@ -42,9 +42,9 @@ plot\
   	'data/workloada/mcd_native.csv' using 5:4 notitle 'mcd-native' with lines ls 2005, \
 	'' every 1 using 5:4  notitle '' with points ls 2005, \
 	'data/workloada/mcd_sgx_sim.csv' using 5:4 notitle 'sgx-sim' with lines ls 2006, \
-	'' every 1 using 5:4 notitle '' with points ls 2006
-	#'' using 1:($5*NANO) notitle 'concrete-in' with lines ls 2004, \
-	#'' every 1 using 1:($5*NANO) notitle '' with points ls 2004	
+	'' every 1 using 5:4 notitle '' with points ls 2006, \
+	'data/workloada/hw_intel_switchless.csv' using 5:4 notitle 'intel-swtcless' with lines ls 2004, \
+	'' every 1 using 5:4 notitle '' with points ls 2004	
 
 
 
