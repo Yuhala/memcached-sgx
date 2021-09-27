@@ -732,6 +732,7 @@ void runKissdbBench()
         stop_clock();
         double runTime = time_diff(&start, &stop, SEC);
         registerKissResults(i, runTime);
+        showOcallLog(10);
         removeKissDbs();
     }
 }

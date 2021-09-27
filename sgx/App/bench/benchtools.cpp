@@ -1,7 +1,7 @@
 /*
  * Created on Fri Mar 06 2020
  *
- * Copyright (c) 2020 xxx xxxx, xxxx
+ * Copyright (c) 2020 Peterson Yuhala
  */
 #include "benchtools.h"
 #include <unistd.h>
