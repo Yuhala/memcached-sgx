@@ -767,7 +767,7 @@ int main(int argc, char *argv[])
     {
         //use intel sdk switchless
         printf("########################## running in INTEL-SDK-SWITCHLESS mode ##########################");
-        us_config.num_uworkers = 1;
+        us_config.num_uworkers = 2;
         //pyuhala: we are not concerned with switchless ecalls so no trusted workers
         us_config.num_tworkers = 0;
         if (initialize_enclave(&us_config) < 0)
