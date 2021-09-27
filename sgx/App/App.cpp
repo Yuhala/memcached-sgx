@@ -709,7 +709,7 @@ void removeKissDbs()
 void runKissdbBench()
 {
     int min_keys = 2000;
-    int max_keys = 100000;
+    int max_keys = 50000;
     int step = 2000;
     int numWriters = 2;
     int numReaders = 2;
