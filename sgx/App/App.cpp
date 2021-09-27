@@ -723,6 +723,7 @@ int main(int argc, char *argv[])
     {
         printf("xxxxxxxxxxxxxxx cannot activate both SDK and ZC switchless at the same time xxxxxxxxxxxxxxxxxx\n");
         printf("usage: ./memcached-sgx [zc_switchless] [sdk_switchless]\n");
+        return 0;
     }
 
     /**
