@@ -190,7 +190,9 @@ unsigned int ocall_count = 0;
 std::map<std::string, int> ocall_map;
 
 //pyuhala: for intel sdk switchless calls
-#define SL_DEFAULT_FALLBACK_RETRIES 20000
+//#define SL_DEFAULT_FALLBACK_RETRIES 20000
+
+bool use_zc_switchless = false;
 
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
@@ -816,15 +818,18 @@ int main(int argc, char *argv[])
     printf("Enclave initialized\n");
     if (zc_switchless)
     {
+        use_zc_switchless = true;
+
         printf("########################## running in ZC-SWITCHLESS mode ##########################");
 
-        if (ecall_set_global_variables(global_eid, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers, ret_zero) != SGX_SUCCESS)
+        /* if (ecall_set_global_variables(global_eid, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers, ret_zero) != SGX_SUCCESS)
         {
             fprintf(stderr, "unable to set global untrusted variables inside the enclave\n");
             exit(1);
         }
 
         printf("global untrusted variables set inside the enclave\n");
+        */
     }
 
     int id = global_eid;
