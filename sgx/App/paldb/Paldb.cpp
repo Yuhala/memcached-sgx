@@ -26,6 +26,8 @@ extern volatile sig_atomic_t number_of_workers;
 extern void *shim_switchless_functions[];
 extern void *shim_functions[];
 
+extern bool use_zc_switchless;
+
 /**
  * Used by the writers. We need to make sure any 2 writers don't use the same 
  * storeId ==> storeFile
@@ -54,8 +56,15 @@ void *reader_thread(void *input)
 
     int id = (store_counter > 0) ? store_counter - 1 : 0;
 
-    //ecall_reader(global_eid, n, id, switchless_buffers, switchless_buffers, shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
-    ecall_readKissdb(global_eid, n, id);
+    if (use_zc_switchless)
+    {
+        //printf("using zc switchless reader thread\n");
+        ecall_reader(global_eid, n, id, switchless_buffers, switchless_buffers, shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
+    }
+    else
+    {
+        ecall_readKissdb(global_eid, n, id);
+    }
 }
 
 void *writer_thread(void *input)
@@ -67,8 +76,15 @@ void *writer_thread(void *input)
     id = store_counter++;
     pthread_mutex_unlock(&lock);
 
-    //ecall_writer(global_eid, n, id, switchless_buffers, switchless_buffers, shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
-    ecall_writeKissdb(global_eid, n, id);
+    if (use_zc_switchless)
+    {
+        //printf("using zc switchless writer thread\n");
+        ecall_writer(global_eid, n, id, switchless_buffers, switchless_buffers, shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
+    }
+    else
+    {
+        ecall_writeKissdb(global_eid, n, id);
+    }
 }
 
 /**
