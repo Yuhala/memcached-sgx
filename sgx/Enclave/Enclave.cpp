@@ -109,11 +109,13 @@ void test_routine(int);
  */
 void ocall_switchless(struct buffer *switchless_buffer)
 {
+    //printf("caller \e[0;33m%d\e[0m \e[0;31mstarted\e[0m waiting\n", gettid());
     switchless_buffer->caller_tid = gettid();
     switchless_buffer->status = BUFFER_WAITING;
     while (switchless_buffer->status != BUFFER_PROCESSED)
     {
     }
+    //printf("caller \e[0;33m%d\e[0m \e[0;32mstopped\e[0m waiting\n", gettid());
 }
 
 /* 
@@ -314,6 +316,7 @@ void ecall_reader(int n, int id, struct buffer *bs, struct buffer *b, void **sl_
 void ecall_set_global_variables(struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, sig_atomic_t *sl_count, sig_atomic_t *f_count, int *workers, int ret_zero)
 {
     /* initializing global values */
+    printf("\e[1;31mDEBUT DE L'INITIALISATION\e[0m\n");
     switchless_buffers = bs;
     switchless_buffer = NULL;
     shim_switchless_functions = sl_fn;
@@ -322,6 +325,7 @@ void ecall_set_global_variables(struct buffer *bs, struct buffer *b, void **sl_f
     number_of_fallbacked_calls = f_count;
     number_of_workers = workers;
     return_zero = ret_zero;
+    printf("\e[1;31mFIN DE L'INITIALISATION\e[0m\n");
 }
 
 /**

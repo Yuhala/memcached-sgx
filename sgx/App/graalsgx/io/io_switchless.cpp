@@ -49,7 +49,26 @@ void ocall_fwrite_switchless(struct buffer* switchless_buffer)
     stream_sgx = *((SGX_FILE*) (switchless_buffer->args + 2 * sizeof(size_t)));
     stream = getFile(stream_sgx);
     ptr = switchless_buffer->args + 2 * sizeof(size_t) + sizeof(SGX_FILE);
-    ret = ((ssize_t (*) (const void*, size_t, size_t, FILE*)) switchless_buffer->ocall_handler)(ptr, size, nmemb, stream);
+    ret = ((size_t (*) (const void*, size_t, size_t, FILE*)) switchless_buffer->ocall_handler)(ptr, size, nmemb, stream);
+    *((size_t*) switchless_buffer->ret) = ret;
+}
+
+/* size_t fread(void *ptr, size_t size, size_t nmemb, FILE* stream) */
+void ocall_fread_switchless(struct buffer* switchless_buffer)
+{
+    size_t ret;
+    size_t size;
+    size_t nmemb;
+    SGX_FILE stream_sgx;
+    FILE* stream;
+    void* ptr;
+
+    size = ((size_t*) switchless_buffer->args)[0];
+    nmemb = ((size_t*) switchless_buffer->args)[1];
+    stream_sgx = *((SGX_FILE*) (switchless_buffer->args + 2 * sizeof(size_t)));
+    stream = getFile(stream_sgx);
+    ptr = switchless_buffer->ret + sizeof(size_t);
+    ret = ((size_t (*) (void*, size_t, size_t, FILE*)) switchless_buffer->ocall_handler)(ptr, size, nmemb, stream);
     *((size_t*) switchless_buffer->ret) = ret;
 }
 

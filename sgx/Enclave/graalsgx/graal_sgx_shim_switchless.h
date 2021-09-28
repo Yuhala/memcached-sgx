@@ -86,6 +86,7 @@ extern "C"
     //int open(const char *path, int oflag, ...);
     int close_switchless(int fd);
     size_t fwrite_switchless(const void* ptr, size_t size, size_t nmemb, SGX_FILE stream);
+    size_t fread_switchless(void* ptr, size_t size, size_t nmemb, SGX_FILE stream);
     int puts_switchless(const char* s);
     int unlink_switchless(const char* pathname);
     int rmdir_switchless(const char* pathname);

@@ -25,6 +25,7 @@ extern "C"
     void ocall_ret_int_args_int_int_switchless(struct buffer* switchless_buffer);
     void ocall_ret_int_args_const_string_switchless(struct buffer* switchless_buffer);
     void ocall_fwrite_switchless(struct buffer* switchless_buffer);
+    void ocall_fread_switchless(struct buffer* switchless_buffer);
     void ocall_read_switchless(struct buffer* switchless_buffer);
     void ocall_write_switchless(struct buffer* switchless_buffer);
     void ocall_lseek64_switchless(struct buffer* switchless_buffer);

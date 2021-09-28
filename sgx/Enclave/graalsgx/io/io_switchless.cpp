@@ -73,7 +73,7 @@ size_t fwrite_switchless(const void *ptr, size_t size, size_t nmemb, SGX_FILE st
     
     GRAAL_SGX_INFO();
     
-    resize_buffer_args(switchless_buffer, size * nmemb + 2 * sizeof(size_t) + size * nmemb);
+    resize_buffer_args(switchless_buffer, size * nmemb + 2 * sizeof(size_t) + sizeof(SGX_FILE));
     resize_buffer_ret(switchless_buffer, sizeof(size_t));
     
     ((size_t*) switchless_buffer->args)[0] = size;
@@ -88,6 +88,29 @@ size_t fwrite_switchless(const void *ptr, size_t size, size_t nmemb, SGX_FILE st
 
     return ret;
 }
+
+size_t fread_switchless(void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
+{
+    ssize_t ret;
+    
+    GRAAL_SGX_INFO();
+    
+    resize_buffer_args(switchless_buffer, size * nmemb + 2 * sizeof(size_t));
+    resize_buffer_ret(switchless_buffer, sizeof(size_t) + size * nmemb);
+    
+    ((size_t*) switchless_buffer->args)[0] = size;
+    ((size_t*) switchless_buffer->args)[1] = nmemb;
+    ((SGX_FILE*) (switchless_buffer->args + 2 * sizeof(size_t)))[0] = stream;
+    switchless_buffer->ocall_handler_switchless = shim_switchless_functions[FN_TOKEN_FREAD];
+    switchless_buffer->ocall_handler = shim_functions[FN_TOKEN_FREAD];
+    ocall_switchless(switchless_buffer);
+    memcpy(ptr, switchless_buffer->ret + sizeof(size_t), size * nmemb);
+    ret = *((size_t*) switchless_buffer->ret);
+    switchless_buffer->status = BUFFER_UNUSED;
+
+    return ret;
+}
+
 
 int puts_switchless(const char* pathname)
 {

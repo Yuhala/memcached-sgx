@@ -145,6 +145,7 @@ void *shim_switchless_functions[] =
         (void *)ocall_ret_int_args_int_int_switchless,      /* TN_TOKEN_DUP2 */
         (void *)ocall_ret_int_args_int_switchless,          /* FN_TOKEN_CLOSE */
         (void *)ocall_fwrite_switchless,                    /* FN_TOKEN_FWRITE */
+        (void *)ocall_fread_switchless,                     /* FN_TOKEN_FREAD */
         (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_PUTS */
         (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_UNLINK */
         (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_RMDIR */
@@ -165,7 +166,8 @@ void *shim_functions[] =
         (void *)fsync,  /* FN_TOKEN_FSYNC            */
         (void *)dup2,   /* FN_TOKEN_DUP2             */
         (void *)close,  /* FN_TOKEN_CLOSE            */
-        (void *)fwrite, /* FN_TOKEN_CLOSE            */
+        (void *)fwrite, /* FN_TOKEN_FWRITE           */
+        (void *)fread,  /* FN_TOKEN_FREAD            */
         (void *)puts,   /* FN_TOKEN_PUTS             */
         (void *)unlink, /* FN_TOKEN_UNLINK           */
         (void *)rmdir,  /* FN_TOKEN_RMDIR            */

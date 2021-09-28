@@ -57,6 +57,7 @@ enclave {
         //FN_TOKEN_OPEN,
         FN_TOKEN_CLOSE,
         FN_TOKEN_FWRITE,
+        FN_TOKEN_FREAD,
 	FN_TOKEN_PUTS,
 	FN_TOKEN_UNLINK,
 	FN_TOKEN_RMDIR,
@@ -66,7 +67,7 @@ enclave {
 	FN_TOKEN_LSEEK64,
 	FN_TOKEN_SENDMSG,
 	FN_TOKEN_TRANSMIT_PREPARE,
-	FN_TOKEN_TOTAL_SIZE /* /!\ dose not represent a function */
+	FN_TOKEN_TOTAL_SIZE /* /!\ does not represent a function */
     };
     
 
