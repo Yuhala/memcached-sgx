@@ -106,7 +106,7 @@ extern std::map<pthread_t, pthread_attr_t *> attr_map;
 // for example: num of cores can be obtained with get_nprocs()
 
 #define SGX_TCS_NUM 8
-#define CORES_NUM 4
+#define CORES_NUM 8
 #define TIME_ENCLAVE_SWITCH 13500
 #define TIME_MICRO_QUANTUM 100000 // 1000000 = 1ms
 #define MICRO_INVERSE 100
