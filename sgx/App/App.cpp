@@ -813,6 +813,11 @@ int main(int argc, char *argv[])
         }
     }
 
+
+    ecall_test(global_eid);
+    return 0;
+
+
     printf("Enclave initialized\n");
     if (zc_switchless)
     {

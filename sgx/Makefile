@@ -191,7 +191,7 @@ endif
 Crypto_Library_Name := sgx_tcrypto
 
 
-Enclave_Cpp_Files := Enclave/Enclave.cpp $(GraalSGX_Cpp_Files_In)
+Enclave_Cpp_Files := Enclave/Enclave.cpp $(GraalSGX_Cpp_Files_In) $(wildcard Enclave/*/*.cpp)
 Enclave_Include_Paths := -IInclude -IEnclave $(Graal_Include_Path) -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
 
 Enclave_C_Flags := $(Enclave_Include_Paths) -nostdinc -fvisibility=hidden -fpie -ffunction-sections -fdata-sections -fno-stack-protector 

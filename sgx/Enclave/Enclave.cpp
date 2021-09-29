@@ -47,6 +47,8 @@
 #include "memcached/test.h"
 #include "memcached/memcached.h"
 
+#include "zcTrusted/zc_in.h"
+
 /* Global variables */
 sgx_enclave_id_t global_eid;
 bool enclave_initiated;
@@ -86,7 +88,8 @@ void writeKissdb(int n, int storeId);
 
 void ecall_test()
 {
-    printf("ecall test >>>>>>>>> \n");
+    init_zc_switchless(0);
+    //printf("ecall test >>>>>>>>> \n");
     //start_server();
     //memcached_init();
 }
