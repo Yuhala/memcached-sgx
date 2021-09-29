@@ -137,13 +137,14 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE f)
 {
     GRAAL_SGX_INFO();
     size_t ret = 0;
-    if (should_be_switchless(FN_TOKEN_FWRITE))
+    if (should_be_switchless(FN_TOKEN_FWRITE) || true)
     {
         printf("xxxxxxxxxxxxxxxxxxx using fwrite zc switchless xxxxxxxxxxxxxxxxxxxxx\n");
         ret = fwrite_switchless(ptr, size, nmemb, f);
     }
     else
     {
+
         ocall_fwrite(&ret, ptr, size, nmemb, f);
     }
     return ret;
@@ -152,7 +153,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, SGX_FILE f)
 {
     GRAAL_SGX_INFO();
     size_t ret = 0;
-    if (should_be_switchless(FN_TOKEN_FREAD))
+    if (should_be_switchless(FN_TOKEN_FREAD) || true)
     {
         printf("xxxxxxxxxxxxxxxxxxx using fread zc switchless xxxxxxxxxxxxxxxxxxxxx\n");
         ret = fread_switchless(ptr, size, nmemb, f);
