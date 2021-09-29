@@ -13,14 +13,15 @@
 #include <stdio.h>
 #include <sys/times.h>
 #include <sys/ioctl.h>
-#include <dirent.h>
-#include "struct/sgx_stdio_struct.h"
+
 #include <map>
 #include "ocall_logger.h"
 #include "Enclave_u.h"
 
 //#include <libexplain/libexplain.h>
 #include "io.h"
+
+
 
 using namespace std;
 //max num of file descriptors open at once

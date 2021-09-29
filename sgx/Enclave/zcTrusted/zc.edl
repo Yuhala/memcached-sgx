@@ -1,0 +1,20 @@
+/*
+ * Created on Wed Sep 29 2021
+ *
+ * Copyright (c) 2021 Peterson Yuhala, IIUN
+ */
+
+/* zc.edl - EDL file for zc switchless related operations. */
+
+enclave {
+
+
+    trusted {
+        
+        public void ecall_init_queues_inside([user_check]void *req_q, [user_check]void *resp_q);
+    };
+
+    untrusted {
+
+    };
+};

@@ -25,6 +25,8 @@ enclave {
     from "sgx_tstdc.edl" import *;
     from "sgx_tswitchless.edl" import *;
 
+    from "zcTrusted/zc.edl" import *;
+
     enum buffer_status
     {
 	BUFFER_UNUSED,

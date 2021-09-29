@@ -84,6 +84,9 @@
 //paldb benchmarking
 #include "paldb/Paldb.h"
 
+//zc switchless
+#include "zcUntrusted/zc_out.h"
+
 //intel sdk switchless lib
 #include <sgx_uswitchless.h>
 
@@ -776,16 +779,6 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    /**
-     * ZC-switchless configuration
-     */
-
-    if (zc_switchless)
-    {
-        ret_zero = 0;
-        init_switchless();
-    }
-
     /* Initialize the enclave */
 
     if (!sdk_switchless)
@@ -813,10 +806,20 @@ int main(int argc, char *argv[])
         }
     }
 
+    /**
+     * ZC-switchless initialization
+     */
+
+    if (zc_switchless)
+    {
+        ret_zero = 0;
+        //init_switchless();
+        init_zc(2);
+        return 0;
+    }
 
     ecall_test(global_eid);
     return 0;
-
 
     printf("Enclave initialized\n");
     if (zc_switchless)
@@ -824,15 +827,6 @@ int main(int argc, char *argv[])
         use_zc_switchless = true;
 
         printf("########################## running in ZC-SWITCHLESS mode ##########################");
-
-        /* if (ecall_set_global_variables(global_eid, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers, ret_zero) != SGX_SUCCESS)
-        {
-            fprintf(stderr, "unable to set global untrusted variables inside the enclave\n");
-            exit(1);
-        }
-
-        printf("global untrusted variables set inside the enclave\n");
-        */
     }
 
     int id = global_eid;
@@ -862,28 +856,6 @@ int main(int argc, char *argv[])
 
     return 0;
 
-    /*  if (argc > 1)
-    {
-        gettimeofday(&tval_before, NULL);
-        number_of_useful_schedulings = 0;
-        ecall_graal_main_args(global_eid, id, arg1, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
-        gettimeofday(&tval_after, NULL);
-        timersub(&tval_after, &tval_before, &tval_result);
-        printf("Time elapsed: %ld.%06ld seconds\n", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
-    }
-    else
-    {
-        ecall_graal_main(global_eid, id, switchless_buffers, &switchless_buffers[0], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
-    }
- */
-    //ecall_graal_main_args(global_eid, id, arg1);
-    /**
-     * Invoke main routine of java application: for partitioned apps. 
-     * This is the initial entrypoint method, all further ecalls are performed there.
-     */
-
-    //run_main(argc, argv);
-
     if (zc_switchless)
     {
         destroy_switchless();
@@ -895,10 +867,5 @@ int main(int argc, char *argv[])
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);
 
-    /*  printf("Time inside: %lf\n", in);
-    printf("Time outside: %lf\n", out); */
-
-    //printf("Enter a character before exit ...\n");
-    //getchar();
     return 0;
 }
