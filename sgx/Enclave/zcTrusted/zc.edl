@@ -12,6 +12,7 @@ enclave {
     trusted {
         
         public void ecall_init_queues_inside([user_check]void *req_q, [user_check]void *resp_q);
+        public void ecall_init_arg_buffers([user_check]void *arg_buffers);
     };
 
     untrusted {

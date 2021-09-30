@@ -20,20 +20,8 @@
 
 #include "zc_out.h"
 
-/**
- * Argument list for different libc routines/ocalls. This list/struct will have an entry for 
- * each switchless ocall routine. 
- * The size of each argument array will depend on the number of 
- * worker threads.
- */
-
-struct zc_arg_list
-{
-    fread_arg_zc *fread_arg_array;
-    fwrite_arg_zc *fwrite_arg_array;
-    read_arg_zc *read_arg_array;
-    write_arg_zc *write_arg_array;
-};
+//this contains all the available argument slots for switchless calls
+zc_arg_list *main_arg_list;
 
 //pyuhala:some useful global variables
 extern sgx_enclave_id_t global_eid;
@@ -44,7 +32,8 @@ extern zc_resp_q *resp_queue;
 //pyuhala:forward declarations
 static void worker_loop(void);
 static int getOptimalWorkers(int);
-static void init_arg_buffers_out(int numWorkers);
+static void init_arg_buffers(int numWorkers);
+static void create_zc_worker_threads(int numWorkers);
 void *zc_worker_thread(void *input);
 
 //useful globals
@@ -73,12 +62,52 @@ void init_zc(int numWorkers)
 }
 
 /**
- * Allocates memory for thread-specific argument buffers
+ * Allocate memory for argument buffers.
+ * This routine could get a little tricky. Make sure to free all memory afterwards
+ * This is a temporary implem for the poc, thinking of a more generic implem.
  */
-static void init_arg_buffers_out(int numWorkers)
+static void init_arg_buffers()
 
 {
     log_zc_routine(__func__);
+
+    main_arg_list = (zc_arg_list *)malloc(sizeof(zc_arg_list));
+    // allocate fread arg buffers
+    main_arg_list->fread_arg_array = (fread_arg_zc *)malloc(sizeof(fread_arg_zc) * ZC_QUEUE_CAPACITY);
+    for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
+    {
+        main_arg_list->fread_arg_array[i].buf = malloc(ZC_BUFFER_SZ);
+        main_arg_list->fread_arg_array[i].request_id = ZC_FREE_ID;
+    }
+
+    // allocate fwrite arg buffers
+    main_arg_list->fwrite_arg_array = (fwrite_arg_zc *)malloc(sizeof(fwrite_arg_zc) * ZC_QUEUE_CAPACITY);
+    for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
+    {
+        main_arg_list->fwrite_arg_array[i].buf = malloc(ZC_BUFFER_SZ);
+        main_arg_list->fwrite_arg_array[i].request_id = ZC_FREE_ID;
+    }
+
+    // allocate read arg buffers
+    main_arg_list->read_arg_array = (read_arg_zc *)malloc(sizeof(read_arg_zc) * ZC_QUEUE_CAPACITY);
+    for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
+    {
+        main_arg_list->read_arg_array[i].buf = malloc(ZC_BUFFER_SZ);
+        main_arg_list->read_arg_array[i].request_id = ZC_FREE_ID;
+    }
+
+    // allocate write arg buffers
+    main_arg_list->write_arg_array = (write_arg_zc *)malloc(sizeof(write_arg_zc) * ZC_QUEUE_CAPACITY);
+    for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
+    {
+        main_arg_list->write_arg_array[i].buf = malloc(ZC_BUFFER_SZ);
+         main_arg_list->write_arg_array[i].request_id = ZC_FREE_ID;
+
+    }
+    // allocate xxx arg buffers
+
+    //send main_arg_list handle to the enclave
+    ecall_init_arg_buffers(global_eid, (void *)main_arg_list);
 }
 
 void *zc_worker_thread(void *input)
@@ -99,4 +128,8 @@ static int getOptimalWorkers(int numWorkers)
 
     //TODO
     return numWorkers;
+}
+
+static void create_zc_worker_threads(int numWorkers)
+{
 }

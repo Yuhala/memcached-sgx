@@ -46,6 +46,8 @@
         "socket.h": "c",
         "signal.h": "c",
         "storage.h": "c",
-        "future": "c"
+        "future": "c",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp"
     }
 }

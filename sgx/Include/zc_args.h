@@ -18,10 +18,11 @@
 #define ZC_BUFFER_SZ 1024 * 1024 /* 1mb default buffer size should be enough for static buffers */
 
 #define ZC_QUEUE_CAPACITY 1024 /* capacity of request and response queues */
+#define ZC_FREE_ID -1          /* free arg slots will have this request id */
 
 /**
  * structure containing pointers to argument buffers. 
- * These structures will be "cross-enclave data structures".
+ * Some of these structures will be "cross-enclave data structures".
  * The request id will be an integer variable and will be unique for each call.
  */
 
@@ -96,6 +97,7 @@ struct zc_request
     void *args;
     zc_routine func_name;
     unsigned int req_id;
+    volatile int is_done; /* do not cache this int */
 };
 
 struct zc_response
@@ -150,4 +152,33 @@ enum zc_queue_type
 
 };
 typedef enum zc_queue_type zc_q_type;
+
+/**
+ * Argument list/slots for different libc routines/ocalls. This list/struct will have an entry for 
+ * each switchless ocall routine. 
+ * The size of each argument array will depend on the number of the size of the request queue.
+ */
+
+struct zc_arg_list
+{
+    fread_arg_zc *fread_arg_array;
+    fwrite_arg_zc *fwrite_arg_array;
+    read_arg_zc *read_arg_array;
+    write_arg_zc *write_arg_array;
+};
+
+typedef zc_arg_list zc_arg_list;
+
+/**
+ * Structures to manage argument slots
+ */
+
+struct zc_arg_slot
+{
+    int data; /* index of a free slot in an arg buffer array */
+    struct zc_arg_slot *next;
+};
+
+typedef struct zc_arg_slot zc_arg_slot;
+
 #endif /* ZC_ARGS_H */
