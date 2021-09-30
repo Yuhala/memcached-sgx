@@ -8,6 +8,20 @@
 #ifndef ZC_QUEUES_OUT_H
 #define ZC_QUEUES_OUT_H
 
-void init_queues();
+#include "zc_args.h"
+
+void init_zc_queues();
+void zc_enq(zc_q_type qt);
+void *zc_dq(zc_q_type qt);
+int isempty(zc_q_type qt);
+
+void init_zc_queue_locks();
+
+// pthread lock/unlock
+void REQ_LOCK();
+void REQ_UNLOCK();
+void RESP_LOCK();
+void RESP_UNLOCK();
+
 
 #endif /* ZC_QUEUES_H */

@@ -38,6 +38,9 @@ struct zc_arg_list
 //pyuhala:some useful global variables
 extern sgx_enclave_id_t global_eid;
 
+extern zc_req_q *req_queue;
+extern zc_resp_q *resp_queue;
+
 //pyuhala:forward declarations
 static void worker_loop(void);
 static int getOptimalWorkers(int);
@@ -66,7 +69,7 @@ void init_zc(int numWorkers)
     int opt_worker = getOptimalWorkers(numWorkers);
 
     //init_arg_buffers_out(opt_worker);
-    init_queues();
+    init_zc_queues();
 }
 
 /**
@@ -76,7 +79,6 @@ static void init_arg_buffers_out(int numWorkers)
 
 {
     log_zc_routine(__func__);
-    
 }
 
 void *zc_worker_thread(void *input)

@@ -8,7 +8,7 @@
 #ifndef ZC_IN_H
 #define ZC_IN_H
 
-void init_zc_switchless(int);
+
 
 #if defined(__cplusplus)
 extern "C"

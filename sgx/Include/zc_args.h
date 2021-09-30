@@ -17,6 +17,8 @@
 
 #define ZC_BUFFER_SZ 1024 * 1024 /* 1mb default buffer size should be enough for static buffers */
 
+#define ZC_QUEUE_CAPACITY 1024 /* capacity of request and response queues */
+
 /**
  * structure containing pointers to argument buffers. 
  * These structures will be "cross-enclave data structures".
@@ -78,16 +80,28 @@ typedef struct fwrite_arg fwrite_arg_zc;
 typedef struct read_arg read_arg_zc;
 typedef struct write_arg write_arg_zc;
 
+//Special types for each zc switchless routine
+enum zc_routine
+{
+    ZC_FREAD,
+    ZC_FWRITE,
+    ZC_READ,
+    ZC_WRITE
+};
+typedef enum zc_routine zc_routine;
+
 //Request and response structs
 struct zc_request
 {
     void *args;
+    zc_routine func_name;
     unsigned int req_id;
 };
 
 struct zc_response
 {
     void *args;
+    zc_routine func_name;
     unsigned int req_id;
 };
 
@@ -97,13 +111,13 @@ typedef struct zc_response zc_resp;
 struct zc_req_node
 {
     zc_req *req;
-    struct zc_req_node *next;
+    struct zc_req_node *next; /* resp node behind this node */
 };
 
 struct zc_resp_node
 {
-    zc_req *req;
-    struct zc_resp_node *next;
+    zc_resp *resp;
+    struct zc_resp_node *next; /* req node behind this node */
 };
 
 typedef struct zc_resp_node zc_resp_node;
@@ -129,4 +143,11 @@ struct zc_request_queue
 typedef zc_response_queue zc_resp_q;
 typedef zc_request_queue zc_req_q;
 
+enum zc_queue_type
+{
+    ZC_REQ_Q = 0,
+    ZC_RESP_Q
+
+};
+typedef enum zc_queue_type zc_q_type;
 #endif /* ZC_ARGS_H */

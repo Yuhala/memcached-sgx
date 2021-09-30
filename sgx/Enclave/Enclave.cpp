@@ -88,10 +88,7 @@ void writeKissdb(int n, int storeId);
 
 void ecall_test()
 {
-    init_zc_switchless(0);
-    //printf("ecall test >>>>>>>>> \n");
-    //start_server();
-    //memcached_init();
+   
 }
 
 pid_t gettid(void)
