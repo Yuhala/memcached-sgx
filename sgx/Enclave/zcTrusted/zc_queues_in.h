@@ -15,6 +15,7 @@ void zc_enq(zc_q_type qt);
 void *zc_dq(zc_q_type qt);
 int isempty(zc_q_type qt);
 void init_zc_queue_locks();
+void* zc_malloc(size_t siz);
 
 // sgx_thread lock/unlock
 void REQ_LOCK();

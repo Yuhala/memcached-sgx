@@ -32,12 +32,16 @@ extern zc_resp_q *resp_queue;
 //pyuhala:forward declarations
 static void worker_loop(void);
 static int getOptimalWorkers(int);
-static void init_arg_buffers(int numWorkers);
+static void init_arg_buffers();
 static void create_zc_worker_threads(int numWorkers);
 void *zc_worker_thread(void *input);
+static void init_mem_pools();
+static void free_mem_pools();
 
 //useful globals
 int num_cores = -1;
+
+zc_mpool *pools;
 
 /**
  * Initializes zc switchless system using this number of worker threads out of the enclave
@@ -59,12 +63,14 @@ void init_zc(int numWorkers)
 
     //init_arg_buffers_out(opt_worker);
     init_zc_queues();
+    init_arg_buffers();
 }
 
 /**
  * Allocate memory for argument buffers.
  * This routine could get a little tricky. Make sure to free all memory afterwards
  * This is a temporary implem for the poc, thinking of a more generic implem.
+ * pyuhala: update: maybe we don't need to do this anymore; memory pools should prevent this confusing "preallocation"
  */
 static void init_arg_buffers()
 
@@ -101,13 +107,15 @@ static void init_arg_buffers()
     for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
     {
         main_arg_list->write_arg_array[i].buf = malloc(ZC_BUFFER_SZ);
-         main_arg_list->write_arg_array[i].request_id = ZC_FREE_ID;
-
+        main_arg_list->write_arg_array[i].request_id = ZC_FREE_ID;
     }
     // allocate xxx arg buffers
 
-    //send main_arg_list handle to the enclave
-    ecall_init_arg_buffers(global_eid, (void *)main_arg_list);
+    //allocate memory pools
+    init_mem_pools();
+
+    //send main_arg_list and memory pools handle to the enclave
+    ecall_init_arg_buffers(global_eid, (void *)main_arg_list, (void *)pools);
 }
 
 void *zc_worker_thread(void *input)
@@ -125,9 +133,27 @@ static void worker_loop()
 
 static int getOptimalWorkers(int numWorkers)
 {
-
     //TODO
     return numWorkers;
+}
+
+/**
+ * Preallocate untrusted  memory that will be used by enclave threads
+ * to allocate requests and pass arguments.
+ */
+
+static void init_mem_pools()
+{
+    pools = (zc_mpool *)malloc(sizeof(zc_mpool));
+
+    for (int i = 0; i < NUM_POOLS; i++)
+    {
+        pools->memory_pools[i] = mpool_create(POOL_SIZE);
+    }
+}
+
+static void free_mem_pool()
+{
 }
 
 static void create_zc_worker_threads(int numWorkers)

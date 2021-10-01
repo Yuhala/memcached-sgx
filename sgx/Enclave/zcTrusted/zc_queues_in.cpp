@@ -15,6 +15,8 @@
 #include "zc_logger_in.h"
 #include "zc_queues_in.h"
 
+#include "memcached/mpool.h"
+
 /**
  * linked list/queue with zc switchless requests and responses
  * future work: try lock free
@@ -22,10 +24,21 @@
 zc_resp_q *resp_queue = NULL;
 zc_req_q *req_queue = NULL;
 
-
 // locks used by enclave code to synchronize insertion and removal in queues.
 sgx_thread_mutex_t req_q_lock;  // = SGX_THREAD_MUTEX_INITIALIZER;
 sgx_thread_mutex_t resp_q_lock; // = SGX_THREAD_MUTEX_INITIALIZER;
+
+sgx_thread_mutex_t pool_index_lock;
+
+/**
+ * Init pools lock. A memory pool is not actually locked but  we use a global variable to assign specific pool indices to each thread once.
+ * This way each thread uses the memory pool corresponding to its thread local pool index.
+ */
+
+static int pool_counter = 0;
+
+thread_local int pool_index = -1;
+extern zc_mpool *mem_pools;
 
 void REQ_LOCK()
 {
@@ -51,6 +64,26 @@ void init_zc_queue_locks()
 {
     sgx_thread_mutex_init(&req_q_lock, NULL);
     sgx_thread_mutex_init(&resp_q_lock, NULL);
+    sgx_thread_mutex_init(&pool_index_lock, NULL);
+}
+
+/**
+ * pyuhala:Routines to allocate and deallocate memory from 
+ * preallocated memory pool.
+ */
+
+void *zc_malloc(size_t siz)
+{
+    if (pool_index < 0)
+    {
+        /* pool index has not been provided for this thread yet */
+        sgx_thread_mutex_lock(&pool_index_lock);
+        pool_index = pool_counter;
+        pool_counter++;
+        sgx_thread_mutex_unlock(&pool_index_lock);
+    }
+
+    return (mpool_alloc(siz, mem_pools->memory_pools[pool_index]));
 }
 
 /**
@@ -66,7 +99,7 @@ void zc_enq(zc_q_type qt, void *info)
     case ZC_REQ_Q:
         if (req_queue->req_count < ZC_QUEUE_CAPACITY)
         {
-            zc_req_node *req_node = (zc_req_node *)malloc(sizeof(zc_req_node));
+            zc_req_node *req_node = (zc_req_node *)zc_malloc(sizeof(zc_req_node));
             req_node->req = (zc_req *)info;
             req_node->next = NULL; // pyuhala:he just came in so there is no one behind him, yet :)
 
@@ -93,7 +126,7 @@ void zc_enq(zc_q_type qt, void *info)
     case ZC_RESP_Q:
         if (resp_queue->resp_count < ZC_QUEUE_CAPACITY)
         {
-            zc_resp_node *resp_node = (zc_resp_node *)malloc(sizeof(zc_resp_node));
+            zc_resp_node *resp_node = (zc_resp_node *)zc_malloc(sizeof(zc_resp_node));
             resp_node->resp = (zc_resp *)info;
             resp_node->next = NULL; // pyuhala:he just came in so there is no one behind him, yet :)
 

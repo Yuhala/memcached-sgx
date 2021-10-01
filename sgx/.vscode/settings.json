@@ -48,6 +48,7 @@
         "storage.h": "c",
         "future": "c",
         "unordered_map": "cpp",
-        "unordered_set": "cpp"
+        "unordered_set": "cpp",
+        "zc_mempool_in.h": "c"
     }
 }

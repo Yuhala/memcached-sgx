@@ -47,6 +47,7 @@
 #include "memcached/test.h"
 #include "memcached/memcached.h"
 
+
 #include "zcTrusted/zc_in.h"
 
 /* Global variables */
@@ -70,6 +71,9 @@ SGX_FILE stderr = SGX_STDERR;
 // by default do not use zc switchless, ie return_zero = 1
 int return_zero = 1;
 
+
+
+
 /**
  * For kissdb
  * pyuhala: this global handle causes race issues
@@ -88,7 +92,6 @@ void writeKissdb(int n, int storeId);
 
 void ecall_test()
 {
-   
 }
 
 pid_t gettid(void)

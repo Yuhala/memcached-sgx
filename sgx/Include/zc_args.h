@@ -15,11 +15,15 @@
 #include <sys/types.h>
 #include "struct/sgx_stdio_struct.h"
 
+#include "memcached/mpool.h"
+
 #define ZC_BUFFER_SZ 1024 * 1024 /* 1mb default buffer size should be enough for static buffers */
 
 #define ZC_QUEUE_CAPACITY 1024 /* capacity of request and response queues */
 #define ZC_FREE_ID -1          /* free arg slots will have this request id */
 
+#define POOL_SIZE 32 * 1024 * 1024 /* surely 32 mb should be enough for realistic tests/benchmarks */
+#define NUM_POOLS 10              /* the number of memory pools to create; == number max threads in enclave */
 /**
  * structure containing pointers to argument buffers. 
  * Some of these structures will be "cross-enclave data structures".
@@ -74,6 +78,12 @@ struct write_arg
     unsigned int request_id;
     ssize_t ret;
 };
+
+struct zc_mpool
+{
+    mpool_t *memory_pools[NUM_POOLS];
+};
+typedef struct zc_mpool zc_mpool;
 
 //Type definitions
 typedef struct fread_arg fread_arg_zc;
