@@ -11,16 +11,21 @@
 #include "zc_args.h"
 
 void init_zc_queues();
-void zc_enq(zc_q_type qt);
+void zc_enq(zc_q_type qt, void *info);
 void *zc_dq(zc_q_type qt);
 int isempty(zc_q_type qt);
 void init_zc_queue_locks();
-void* zc_malloc(size_t siz);
+void init_zc_pool_lock();
+void *zc_malloc(size_t siz);
 
 // sgx_thread lock/unlock
-void REQ_LOCK();
-void REQ_UNLOCK();
-void RESP_LOCK();
-void RESP_UNLOCK();
+void ZC_QUEUE_LOCK(zc_q_type qt);
+void ZC_QUEUE_UNLOCK(zc_q_type qt);
+
+// lock free mpmc queues
+//int zc_newmpmcq(struct mpmcq *q, size_t buffer_size);
+int zc_mpmc_enqueue(volatile struct mpmcq *q, void *data);
+int zc_mpmc_dequeue(volatile struct mpmcq *q, void **data);
+//void init_zc_mpmc_queues();
 
 #endif /* ZC_QUEUES_IN_H */

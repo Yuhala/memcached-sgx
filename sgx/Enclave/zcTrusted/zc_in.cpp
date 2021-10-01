@@ -9,38 +9,42 @@
 #include "zc_args.h"
 #include "zc_queues_in.h"
 #include "memcached/mpool.h"
+#include "zc_in.h"
 
-extern zc_resp_q *resp_queue;
-extern zc_req_q *req_queue;
+/**
+ * Lock free queues for zc switchless calls
+ */
+extern struct mpmcq *req_mpmcq;
+extern struct mpmcq *resp_mpmcq;
 
 zc_mpool *mem_pools;
 
-zc_arg_list *main_arg_list;
+//zc_arg_list *main_arg_list;
 
 //forward declarations
 void zc_malloc_test();
+static inline void asm_pause(void);
 
 /**
  * initialize request and response queues inside the enclave
  */
-void ecall_init_queues_inside(void *req_q, void *resp_q)
+void ecall_init_mpmc_queues_inside(void *req_q, void *resp_q)
 {
     printf("-------------in ecall init queues inside ----------------\n");
-    req_queue = (zc_req_q *)req_q;
-    resp_queue = (zc_resp_q *)resp_q;
+    req_mpmcq = (struct mpmcq *)req_q;
+    resp_mpmcq = (struct mpmcq *)resp_q;
 
     //init locks
-    init_zc_queue_locks();
+    init_zc_pool_lock();
 }
 
-void ecall_init_arg_buffers(void *arg_buffers, void *pools)
+void ecall_init_mem_pools(void *pools)
 {
-    printf("------------- in ecall init arg buffers ----------------\n");
-    main_arg_list = (zc_arg_list *)arg_buffers;
+    printf("------------- in ecall init mem pools ----------------\n");
 
     //init pools
     mem_pools = (zc_mpool *)pools;
-    //zc_malloc_test();
+    zc_malloc_test();
 }
 
 void zc_malloc_test()
@@ -55,12 +59,31 @@ void zc_malloc_test()
     }
 }
 
-void do_zc_switchless_request(zc_req request)
+void do_zc_switchless_request(zc_req *request)
 {
+    //enqueue request on request queue
+    zc_enq(ZC_REQ_Q, (void *)request);
+    //set a flag to notify workers ??
 }
 
 void get_zc_switchless_response(unsigned int req_id)
 {
+    // not sure if this routine is useful
+}
+
+/**
+ * Each caller thread will wait for the request to be done
+ * before progressing. I created a separate function because the 
+ * implementation of this "wait" may/would change depending on perfs.
+ * For now we use an asm pause to free some CPU time. 
+ */
+void ZC_REQUEST_WAIT(volatile int *isDone)
+{
+    while ((*isDone) != ZC_REQUEST_DONE)
+    {
+        //do nothing
+        ZC_PAUSE();
+    }
 }
 
 /**
@@ -121,3 +144,23 @@ void get_zc_switchless_response(unsigned int req_id)
 
     return arg_slot;
 }*/
+
+static inline void asm_pause(void)
+{
+    __asm__ __volatile__("pause"
+                         :
+                         :
+                         : "memory");
+}
+
+#define ZC_LOGGING_IN 1
+#undef ZC_LOGGING_IN
+
+void log_zc_routine(const char *func)
+{
+#ifdef ZC_LOGGING
+    printf("ZC trusted function: %s\n", func);
+#else
+//do nothing
+#endif
+}

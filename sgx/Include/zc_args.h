@@ -23,7 +23,10 @@
 #define ZC_FREE_ID -1          /* free arg slots will have this request id */
 
 #define POOL_SIZE 32 * 1024 * 1024 /* surely 32 mb should be enough for realistic tests/benchmarks */
-#define NUM_POOLS 10              /* the number of memory pools to create; == number max threads in enclave */
+#define NUM_POOLS 10               /* the number of memory pools to create; == number max threads in enclave */
+
+#define ZC_REQUEST_DONE 1
+
 /**
  * structure containing pointers to argument buffers. 
  * Some of these structures will be "cross-enclave data structures".
@@ -41,6 +44,7 @@
  *
  */
 
+//---------------------- zc args  -----------------------
 struct fread_arg
 {
     void *buf;
@@ -73,17 +77,11 @@ struct read_arg
 struct write_arg
 {
     int fd;
-    const void *buf;
+    void *buf;
     size_t count;
     unsigned int request_id;
     ssize_t ret;
 };
-
-struct zc_mpool
-{
-    mpool_t *memory_pools[NUM_POOLS];
-};
-typedef struct zc_mpool zc_mpool;
 
 //Type definitions
 typedef struct fread_arg fread_arg_zc;
@@ -97,10 +95,12 @@ enum zc_routine
     ZC_FREAD,
     ZC_FWRITE,
     ZC_READ,
-    ZC_WRITE
+    ZC_WRITE,
+    ZC_SENDMSG
 };
 typedef enum zc_routine zc_routine;
 
+//---------------------- zc req/resp queues -----------------------
 //Request and response structs
 struct zc_request
 {
@@ -140,14 +140,24 @@ typedef struct zc_req_node zc_req_node;
  */
 struct zc_response_queue
 {
-    unsigned int resp_count = 0; /* number of responses in queue */
-    zc_resp_node *front;
-    zc_resp_node *rear;
+    unsigned int resp_count = 0; /* number of completed requests in queue */
+    zc_req_node *front;
+    zc_req_node *rear;
 };
 
 struct zc_request_queue
 {
-    unsigned int req_count = 0; /* number of responses in queue */
+    unsigned int req_count = 0; /* number of requests in queue */
+    zc_req_node *front;
+    zc_req_node *rear;
+};
+
+/**
+ *  generic queue for requests; we may not need a special response queue
+ */
+struct zc_queue
+{
+    unsigned int count = 0; /* number of requests/items in queue */
     zc_req_node *front;
     zc_req_node *rear;
 };
@@ -162,6 +172,8 @@ enum zc_queue_type
 
 };
 typedef enum zc_queue_type zc_q_type;
+
+//---------------------- zc arg list -----------------------
 
 /**
  * Argument list/slots for different libc routines/ocalls. This list/struct will have an entry for 
@@ -190,5 +202,27 @@ struct zc_arg_slot
 };
 
 typedef struct zc_arg_slot zc_arg_slot;
+
+//---------------------- zc memory pool -----------------------
+struct zc_mpool
+{
+    mpool_t *memory_pools[NUM_POOLS];
+};
+typedef struct zc_mpool zc_mpool;
+
+#define ZC_ASSERT(EXPR)                                \
+    do                                                 \
+    {                                                  \
+        if (!(EXPR))                                   \
+        {                                              \
+            printf(                                    \
+                "ASSERTION FAILED: %s (%s: %d: %s)\n", \
+                #EXPR,                                 \
+                __FILE__,                              \
+                __LINE__,                              \
+                __FUNCTION__);                         \
+            abort();                                   \
+        }                                              \
+    } while (0)
 
 #endif /* ZC_ARGS_H */

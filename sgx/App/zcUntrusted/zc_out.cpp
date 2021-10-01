@@ -21,21 +21,25 @@
 #include "zc_out.h"
 
 //this contains all the available argument slots for switchless calls
+//update: with mem pools this is not needed
 zc_arg_list *main_arg_list;
 
-//pyuhala:some useful global variables
+//pyuhala: some useful global variables
 extern sgx_enclave_id_t global_eid;
 
-extern zc_req_q *req_queue;
-extern zc_resp_q *resp_queue;
+/**
+ * Lock free queues for zc switchless calls
+ */
+extern volatile struct mpmcq *req_mpmcq;
+extern volatile struct mpmcq *resp_mpmcq;
 
-//pyuhala:forward declarations
+//pyuhala: forward declarations
 static void worker_loop(void);
 static int getOptimalWorkers(int);
-static void init_arg_buffers();
 static void create_zc_worker_threads(int numWorkers);
 void *zc_worker_thread(void *input);
 static void init_mem_pools();
+static void init_pools();
 static void free_mem_pools();
 
 //useful globals
@@ -62,60 +66,24 @@ void init_zc(int numWorkers)
     int opt_worker = getOptimalWorkers(numWorkers);
 
     //init_arg_buffers_out(opt_worker);
-    init_zc_queues();
-    init_arg_buffers();
+    init_zc_mpmc_queues();
+    init_pools();
 }
 
 /**
- * Allocate memory for argument buffers.
- * This routine could get a little tricky. Make sure to free all memory afterwards
- * This is a temporary implem for the poc, thinking of a more generic implem.
- * pyuhala: update: maybe we don't need to do this anymore; memory pools should prevent this confusing "preallocation"
+ * Initialize untrusted memory pools which will be 
+ * used by enclave threads for untrusted memory allocations (for arguments, request buffers etc)
  */
-static void init_arg_buffers()
+static void init_pools()
 
 {
     log_zc_routine(__func__);
-
-    main_arg_list = (zc_arg_list *)malloc(sizeof(zc_arg_list));
-    // allocate fread arg buffers
-    main_arg_list->fread_arg_array = (fread_arg_zc *)malloc(sizeof(fread_arg_zc) * ZC_QUEUE_CAPACITY);
-    for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
-    {
-        main_arg_list->fread_arg_array[i].buf = malloc(ZC_BUFFER_SZ);
-        main_arg_list->fread_arg_array[i].request_id = ZC_FREE_ID;
-    }
-
-    // allocate fwrite arg buffers
-    main_arg_list->fwrite_arg_array = (fwrite_arg_zc *)malloc(sizeof(fwrite_arg_zc) * ZC_QUEUE_CAPACITY);
-    for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
-    {
-        main_arg_list->fwrite_arg_array[i].buf = malloc(ZC_BUFFER_SZ);
-        main_arg_list->fwrite_arg_array[i].request_id = ZC_FREE_ID;
-    }
-
-    // allocate read arg buffers
-    main_arg_list->read_arg_array = (read_arg_zc *)malloc(sizeof(read_arg_zc) * ZC_QUEUE_CAPACITY);
-    for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
-    {
-        main_arg_list->read_arg_array[i].buf = malloc(ZC_BUFFER_SZ);
-        main_arg_list->read_arg_array[i].request_id = ZC_FREE_ID;
-    }
-
-    // allocate write arg buffers
-    main_arg_list->write_arg_array = (write_arg_zc *)malloc(sizeof(write_arg_zc) * ZC_QUEUE_CAPACITY);
-    for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
-    {
-        main_arg_list->write_arg_array[i].buf = malloc(ZC_BUFFER_SZ);
-        main_arg_list->write_arg_array[i].request_id = ZC_FREE_ID;
-    }
-    // allocate xxx arg buffers
 
     //allocate memory pools
     init_mem_pools();
 
     //send main_arg_list and memory pools handle to the enclave
-    ecall_init_arg_buffers(global_eid, (void *)main_arg_list, (void *)pools);
+    ecall_init_mem_pools(global_eid, (void *)pools);
 }
 
 void *zc_worker_thread(void *input)
@@ -152,10 +120,28 @@ static void init_mem_pools()
     }
 }
 
-static void free_mem_pool()
+static void free_mem_pools()
 {
+    for (int i = 0; i < NUM_POOLS; i++)
+    {
+        mpool_destroy(pools->memory_pools[i]);
+    }
+
+    free(pools);
 }
 
 static void create_zc_worker_threads(int numWorkers)
 {
+}
+
+#define ZC_LOGGING 1
+#undef ZC_LOGGING
+
+void log_zc_routine(const char *func)
+{
+#ifdef ZC_LOGGING
+    printf("ZC untrusted function: %s\n", func);
+#else
+//do nothing
+#endif
 }
