@@ -34,6 +34,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * Created on Fri Oct 01 2021
+ *
+ * Copyright (c) 2021 Peterson Yuhala, IIUN
+ */
+
 //#include "openenclave/corelibc/oemalloc.h"
 //#include "enclave/enclave_util.h"
 
@@ -176,6 +182,18 @@ int zc_mpmc_enqueue(volatile struct mpmcq *q, void *data)
 int zc_mpmc_dequeue(volatile struct mpmcq *q, void **data)
 {
     mpmc_dequeue(q, data);
+}
+
+/**
+ * pyuhala: routine I added to count queue elements
+ * is it correct ? probably ...
+ */
+size_t mpmc_queue_count(volatile struct mpmcq *q)
+{
+    size_t eq_pos = __atomic_load_n(&q->enqueue_pos, __ATOMIC_RELAXED);
+    size_t dq_pos = __atomic_load_n(&q->dequeue_pos, __ATOMIC_RELAXED);
+
+    return (eq_pos - dq_pos);
 }
 
 void init_zc_mpmc_queues()

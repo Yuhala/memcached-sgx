@@ -44,25 +44,15 @@ void ecall_init_mem_pools(void *pools)
 
     //init pools
     mem_pools = (zc_mpool *)pools;
-    zc_malloc_test();
+    //zc_malloc_test();
 }
 
-void zc_malloc_test()
-{
-    printf("-------------- testing array allocation from mem pool ------------------\n");
-    int *test_int = (int *)zc_malloc(10 * sizeof(int));
-    printf("-----zc malloc worked ----------\n");
-    for (int i = 0; i < 10; i++)
-    {
-        test_int[i] = i;
-        printf("---- array[%d] = %d ----\n", i, test_int[i]);
-    }
-}
+
 
 void do_zc_switchless_request(zc_req *request)
 {
     //enqueue request on request queue
-    zc_enq(ZC_REQ_Q, (void *)request);
+    zc_mpmc_enqueue(req_mpmcq, (void *)request);
     //set a flag to notify workers ??
 }
 
@@ -83,6 +73,39 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
     {
         //do nothing
         ZC_PAUSE();
+    }
+}
+
+static inline void asm_pause(void)
+{
+    __asm__ __volatile__("pause"
+                         :
+                         :
+                         : "memory");
+}
+
+#define ZC_LOGGING_IN 1
+#undef ZC_LOGGING_IN
+
+void log_zc_routine(const char *func)
+{
+#ifdef ZC_LOGGING
+    printf("ZC trusted function: %s\n", func);
+#else
+//do nothing
+#endif
+}
+
+// -------------------- Test routines -----------------------------
+void zc_malloc_test()
+{
+    printf("-------------- testing array allocation from mem pool ------------------\n");
+    int *test_int = (int *)zc_malloc(10 * sizeof(int));
+    printf("-----zc malloc worked ----------\n");
+    for (int i = 0; i < 10; i++)
+    {
+        test_int[i] = i;
+        printf("---- array[%d] = %d ----\n", i, test_int[i]);
     }
 }
 
@@ -144,23 +167,3 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
 
     return arg_slot;
 }*/
-
-static inline void asm_pause(void)
-{
-    __asm__ __volatile__("pause"
-                         :
-                         :
-                         : "memory");
-}
-
-#define ZC_LOGGING_IN 1
-#undef ZC_LOGGING_IN
-
-void log_zc_routine(const char *func)
-{
-#ifdef ZC_LOGGING
-    printf("ZC trusted function: %s\n", func);
-#else
-//do nothing
-#endif
-}

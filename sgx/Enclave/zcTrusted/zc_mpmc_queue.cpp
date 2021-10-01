@@ -54,13 +54,11 @@ static void _mpmc_pause()
 #endif
 }
 
-
 /**
  * Lock free queues for zc switchless calls
  */
 struct mpmcq *req_mpmcq;
 struct mpmcq *resp_mpmcq;
-
 
 /* user is responsible for freeing the queue buffer, but it's tied to the
    runtime of the enclave, so is not necessary in practice */
@@ -68,7 +66,7 @@ int newmpmcq(struct mpmcq *q, size_t buffer_size, void *buffer)
 {
     size_t i;
     buffer_size /= sizeof(*q->buffer);
-    q->buffer = (struct cell_t *)buffer != 0 ? (struct cell_t *)buffer : (struct cell_t *)calloc(sizeof(struct cell_t), buffer_size);
+    q->buffer = (struct cell_t *)buffer != 0 ? (struct cell_t *)buffer : (struct cell_t *)zc_malloc(sizeof(struct cell_t) * buffer_size);
     q->buffer_mask = (buffer_size - 1);
     ZC_ASSERT((buffer_size >= 2) && ((buffer_size & (buffer_size - 1)) == 0));
     for (i = 0; i != buffer_size; i += 1)
@@ -177,6 +175,3 @@ int zc_mpmc_dequeue(volatile struct mpmcq *q, void **data)
 {
     mpmc_dequeue(q, data);
 }
-
-
-

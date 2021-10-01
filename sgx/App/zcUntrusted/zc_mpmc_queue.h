@@ -33,7 +33,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #ifndef ZC_MPMC_QUEUE_H
 #define ZC_MPMC_QUEUE_H
 
@@ -42,13 +41,13 @@
 struct cell_t
 {
     size_t seq;
-    void* data;
+    void *data;
 };
 
 struct mpmcq
 {
     char pad0[128];
-    struct cell_t* buffer;
+    struct cell_t *buffer;
     size_t buffer_mask;
     char pad1[128];
     size_t enqueue_pos;
@@ -57,10 +56,12 @@ struct mpmcq
     char pad3[128];
 } __attribute__((aligned(64)));
 
-int mpmc_enqueue(volatile struct mpmcq* q, void* data);
+int mpmc_enqueue(volatile struct mpmcq *q, void *data);
 
-int newmpmcq(struct mpmcq* q, size_t buffer_bytesize, void* buffer);
+int newmpmcq(struct mpmcq *q, size_t buffer_bytesize, void *buffer);
 
-int mpmc_dequeue(volatile struct mpmcq* q, void** data);
+int mpmc_dequeue(volatile struct mpmcq *q, void **data);
+
+size_t mpmc_queue_count(volatile struct mpmcq *q);
 
 #endif /* ZC_MPMC_QUEUE_H */

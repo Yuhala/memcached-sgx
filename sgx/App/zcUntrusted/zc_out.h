@@ -13,6 +13,7 @@
 #include "zc_queues_out.h"
 
 void init_zc(int numWorkers);
+void handle_zc_switchless_request(zc_req *request);
 
 
 #define ZC_RET_OK 1    /* zc call passed */

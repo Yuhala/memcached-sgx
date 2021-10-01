@@ -10,6 +10,7 @@ extern "C"
 #endif
 
     void *transmit_prepare();
+    ssize_t ocall_sendmsg(int sockfd, struct msghdr *msg, int flags);
 
 #if defined(__cplusplus)
 }

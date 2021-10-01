@@ -19,6 +19,7 @@
 #include "zc_logger.h"
 
 #include "zc_out.h"
+#include "zc_ocalls_out.h"
 
 //this contains all the available argument slots for switchless calls
 //update: with mem pools this is not needed
@@ -27,14 +28,17 @@ zc_arg_list *main_arg_list;
 //pyuhala: some useful global variables
 extern sgx_enclave_id_t global_eid;
 
+//zc switchless worker thread ids
+pthread_t *worker_ids;
+
 /**
  * Lock free queues for zc switchless calls
  */
-extern volatile struct mpmcq *req_mpmcq;
-extern volatile struct mpmcq *resp_mpmcq;
+extern struct mpmcq req_mpmcq;
+extern struct mpmcq resp_mpmcq;
 
 //pyuhala: forward declarations
-static void worker_loop(void);
+static void zc_worker_loop(void);
 static int getOptimalWorkers(int);
 static void create_zc_worker_threads(int numWorkers);
 void *zc_worker_thread(void *input);
@@ -67,7 +71,10 @@ void init_zc(int numWorkers)
 
     //init_arg_buffers_out(opt_worker);
     init_zc_mpmc_queues();
+    //allocate memory pools
     init_pools();
+    //create zc switchless worker threads
+    create_zc_worker_threads(numWorkers);
 }
 
 /**
@@ -89,14 +96,75 @@ static void init_pools()
 void *zc_worker_thread(void *input)
 {
     log_zc_routine(__func__);
+
+    printf("---------hello I'm a zc worker and this is a test -----------\n");
+    //return;
+    //zc_worker_loop();
 }
 
 /**
  * Each worker thread loops in here for sometime waiting for pending requests.
  */
-static void worker_loop()
+static void zc_worker_loop()
 {
     log_zc_routine(__func__);
+
+    while (1)
+    {
+        /**
+         * If request queue is non-empty, dequeue and handle request
+         */
+        if (mpmc_queue_count(&req_mpmcq) > 0)
+        {
+            void *request;
+            zc_mpmc_dequeue(&req_mpmcq, &request);
+            handle_zc_switchless_request((zc_req *)request);
+        }
+
+        //TODO: sleep or something to save cpu cycles
+    }
+}
+
+/**
+ * pyuhala: Routine to handle switchless routines. Using switch is probably not the smartest way,
+ * but OK for a POC with a few shim functions.
+ * Try using a function table to resolve the corresponding functions
+ */
+void handle_zc_switchless_request(zc_req *request)
+{
+    switch (request->func_name)
+    {
+    case ZC_FREAD:
+        zc_fread_switchless(request);
+        break;
+
+    case ZC_FWRITE:
+        zc_fwrite_switchless(request);
+        break;
+
+    case ZC_READ:
+        zc_read_switchless(request);
+        break;
+
+    case ZC_WRITE:
+        zc_write_switchless(request);
+        break;
+
+    case ZC_SENDMSG:
+        zc_sendmsg_switchless(request);
+        break;
+
+    default:
+        printf("----------- cannot handle zc switchless request -------------\n");
+        break;
+    }
+
+    /**
+     * Finalize request: change its status to done,
+     * and enqueue on response queue
+     */
+    request->is_done = 1;
+    zc_mpmc_enqueue(&resp_mpmcq, (void *)request);
 }
 
 static int getOptimalWorkers(int numWorkers)
@@ -132,6 +200,20 @@ static void free_mem_pools()
 
 static void create_zc_worker_threads(int numWorkers)
 {
+    worker_ids = (pthread_t *)malloc(sizeof(pthread_t) * numWorkers);
+    for (int i = 0; i < numWorkers; i++)
+    {
+        pthread_create(worker_ids + i, NULL, zc_worker_thread, NULL);
+    }
+
+    /* for (int i = 0; i < numWorkers; i++)
+    {
+        printf(" -------------- zc worker thread: %d ----------------\n", *(worker_ids + i));
+    }*/
+    for (int i = 0; i < numWorkers; i++)
+    {
+        pthread_join(*(worker_ids + i), NULL);
+    }
 }
 
 #define ZC_LOGGING 1
