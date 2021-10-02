@@ -44,7 +44,7 @@
 //#include "enclave/enclave_util.h"
 
 #include "zc_mpmc_queue.h"
-#include "zc_args.h"
+#include "zc_types.h"
 #include "zc_queues_out.h"
 #include <stdlib.h>
 #include <stdint.h>

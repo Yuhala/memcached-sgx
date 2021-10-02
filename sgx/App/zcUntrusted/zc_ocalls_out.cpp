@@ -20,7 +20,7 @@
 
 //zc headers
 #include "ocall_logger.h"
-#include "zc_args.h"
+#include "zc_types.h"
 #include "zc_queues_out.h"
 #include "zc_ocalls_out.h"
 

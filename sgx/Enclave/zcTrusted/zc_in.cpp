@@ -6,10 +6,11 @@
 
 #include "Enclave.h"
 
-#include "zc_args.h"
+#include "zc_types.h"
 #include "zc_queues_in.h"
 #include "memcached/mpool.h"
 #include "zc_in.h"
+#include "zc_lfu.h"
 
 /**
  * Lock free queues for zc switchless calls
@@ -36,6 +37,8 @@ void ecall_init_mpmc_queues_inside(void *req_q, void *resp_q)
 
     //init locks
     init_zc_pool_lock();
+    //initialize zc switchless map
+    use_zc_test();
 }
 
 void ecall_init_mem_pools(void *pools)
@@ -46,8 +49,6 @@ void ecall_init_mem_pools(void *pools)
     mem_pools = (zc_mpool *)pools;
     //zc_malloc_test();
 }
-
-
 
 void do_zc_switchless_request(zc_req *request)
 {

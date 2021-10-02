@@ -74,7 +74,7 @@ void init_zc(int numWorkers)
     //allocate memory pools
     init_pools();
     //create zc switchless worker threads
-    create_zc_worker_threads(numWorkers);
+    //create_zc_worker_threads(numWorkers);
 }
 
 /**

@@ -8,7 +8,7 @@
 #ifndef ZC_QUEUES_OUT_H
 #define ZC_QUEUES_OUT_H
 
-#include "zc_args.h"
+#include "zc_types.h"
 #include "zc_mpmc_queue.h"
 
 // locking queues

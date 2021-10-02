@@ -202,7 +202,7 @@ else
 	#Enclave_C_Flags += -fstack-protector-strong
 endif
 
-Enclave_Cpp_Flags := $(Enclave_C_Flags) -nostdinc++ -fpermissive
+Enclave_Cpp_Flags := $(Enclave_C_Flags) -fpermissive #-nostdinc++ 
 
 # Enable the security flags
 Enclave_Security_Link_Flags := -Wl,-z,relro,-z,now,-z,noexecstack

@@ -43,7 +43,7 @@
 #include "Enclave.h"
 
 #include "zc_mpmc_queue.h"
-#include "zc_args.h"
+#include "zc_types.h"
 #include "zc_queues_in.h"
 
 static void _mpmc_pause(void);

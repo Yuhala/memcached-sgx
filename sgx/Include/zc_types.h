@@ -92,7 +92,7 @@ typedef struct write_arg write_arg_zc;
 //Special types for each zc switchless routine
 enum zc_routine
 {
-    ZC_FREAD,
+    ZC_FREAD = 0,
     ZC_FWRITE,
     ZC_READ,
     ZC_WRITE,

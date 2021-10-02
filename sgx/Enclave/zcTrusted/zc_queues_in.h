@@ -8,7 +8,7 @@
 #ifndef ZC_QUEUES_IN_H
 #define ZC_QUEUES_IN_H
 
-#include "zc_args.h"
+#include "zc_types.h"
 
 void init_zc_queues();
 void zc_enq(zc_q_type qt, void *info);

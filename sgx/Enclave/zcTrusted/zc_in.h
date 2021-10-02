@@ -10,7 +10,7 @@
 #ifndef ZC_IN_H
 #define ZC_IN_H
 
-#include "zc_args.h"
+#include "zc_types.h"
 
 void do_zc_switchless_request(zc_req *request);
 void get_zc_switchless_response(unsigned int req_id);

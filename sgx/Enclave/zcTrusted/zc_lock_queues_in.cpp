@@ -8,7 +8,7 @@
  */
 
 #include "Enclave.h"
-#include "zc_args.h"
+#include "zc_types.h"
 
 #include <stdlib.h>
 

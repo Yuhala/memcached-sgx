@@ -9,7 +9,7 @@
 #ifndef ZC_OUT_H
 #define ZC_OUT_H
 
-#include "zc_args.h"
+#include "zc_types.h"
 #include "zc_queues_out.h"
 
 void init_zc(int numWorkers);
