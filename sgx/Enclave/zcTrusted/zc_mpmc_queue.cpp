@@ -120,6 +120,53 @@ int mpmc_enqueue(volatile struct mpmcq *q, void *data)
 
 int mpmc_dequeue(volatile struct mpmcq *q, void **data)
 {
+    
+    struct cell_t *cell;
+    size_t seq;
+    intptr_t dif;
+    size_t pos = __atomic_load_n(&q->dequeue_pos, __ATOMIC_RELAXED);
+    for (;;)
+    {
+        cell = &q->buffer[pos & q->buffer_mask];
+        seq = __atomic_load_n(&cell->seq, __ATOMIC_ACQUIRE);
+        dif = (intptr_t)seq - (intptr_t)(pos + 1);
+        if (dif == 0)
+        {
+            size_t exp = pos;
+            if (__atomic_compare_exchange_n(
+                    &q->dequeue_pos,
+                    &exp,
+                    pos + 1,
+                    1,
+                    __ATOMIC_RELAXED,
+                    __ATOMIC_RELAXED))
+            {
+                break;
+            }
+        }
+        else if (dif < 0)
+        {
+            return 0;
+        }
+        else
+        {
+            pos = __atomic_load_n(&q->dequeue_pos, __ATOMIC_RELAXED);
+            _mpmc_pause();
+        }
+    }
+    *data = cell->data;
+    __atomic_store_n(&cell->seq, pos + q->buffer_mask + 1, __ATOMIC_RELEASE);
+    return 1;
+}
+
+/**
+ * pyuhala: dequeue only specific request...
+ * just for testing..probably not useful.
+ * 
+ */
+int mpmc_dequeue_request(volatile struct mpmcq *q, void **data, zc_req *request)
+{
+    //TODO: still same as mpmc_dequeue, needs to change.
     struct cell_t *cell;
     size_t seq;
     intptr_t dif;

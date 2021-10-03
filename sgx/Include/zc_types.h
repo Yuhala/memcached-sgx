@@ -4,8 +4,8 @@
  * Copyright (c) 2021 Peterson Yuhala, IIUN
  * 
  * For the proof of concept I implement specific structures which will hold the 
- * arguments of each switchless function. We will allocate "enough" memory at the onset to avoid ocalls to resize.
- * Future work can implement a more generic system.
+ * arguments of each switchless function. Untrusted memory pools will be pre-allocated for each enclave thread 
+ * on which switchless requests + arguments will be allocated.
  * ZC == zero config (as in zero config/dynamic switchless call system)
  */
 

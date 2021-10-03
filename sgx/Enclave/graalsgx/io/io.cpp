@@ -34,11 +34,12 @@ int fsync(int fd)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    log_ocall(FN_TOKEN_FSYNC);
+    ocall_fsync(&ret, fd);
+    /* log_ocall(FN_TOKEN_FSYNC);
     if (should_be_switchless(FN_TOKEN_FSYNC))
         ret = fsync_switchless(fd);
     else
-        ocall_fsync(&ret, fd);
+        ocall_fsync(&ret, fd); */
     return ret;
 }
 
@@ -46,11 +47,12 @@ int dup2(int oldfd, int newfd)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    log_ocall(FN_TOKEN_FSYNC);
+    ocall_dup2(&ret, oldfd, newfd);
+    /* log_ocall(FN_TOKEN_FSYNC);
     if (should_be_switchless(FN_TOKEN_FSYNC))
         ret = dup2_switchless(oldfd, newfd);
     else
-        ocall_dup2(&ret, oldfd, newfd);
+        ocall_dup2(&ret, oldfd, newfd); */
     return ret;
 }
 
@@ -73,6 +75,7 @@ int open(const char *path, int oflag, ...)
 
     return ret;
 }
+
 int open64(const char *path, int oflag, ...)
 {
     GRAAL_SGX_INFO();
@@ -92,15 +95,17 @@ int open64(const char *path, int oflag, ...)
 
     return ret;
 }
+
 int close(int fd)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    log_ocall(FN_TOKEN_CLOSE);
+    ocall_xclose(&ret, fd);
+    /* log_ocall(FN_TOKEN_CLOSE);
     if (should_be_switchless(FN_TOKEN_CLOSE))
         ret = close_switchless(fd);
     else
-        ocall_xclose(&ret, fd);
+        ocall_xclose(&ret, fd); */
     return ret;
 }
 
@@ -111,6 +116,7 @@ SGX_FILE fopen(const char *pathname, const char *mode)
     ocall_fopen(&f, pathname, mode);
     return f;
 }
+
 SGX_FILE fdopen(int fd, const char *mode)
 {
     GRAAL_SGX_INFO();
@@ -137,18 +143,37 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE f)
 {
     GRAAL_SGX_INFO();
     size_t ret = 0;
-    if (should_be_switchless(FN_TOKEN_FWRITE))
+    /* if (should_be_switchless(FN_TOKEN_FWRITE))
         ret = fwrite_switchless(ptr, size, nmemb, f);
     else
         ocall_fwrite(&ret, ptr, size, nmemb, f);
+    return ret; */
+
+    if (use_zc_switchless(ZC_FWRITE))
+    {
+        ret = zc_fwrite(ptr, size, nmemb, f);
+    }
+    else
+    {
+        ocall_fwrite(&ret, ptr, size, nmemb, f);
+    }
     return ret;
 }
+
 size_t fread(void *ptr, size_t size, size_t nmemb, SGX_FILE f)
 {
     GRAAL_SGX_INFO();
     size_t ret = 0;
 
-    ocall_fread(&ret, ptr, size, nmemb, f);
+    if (use_zc_switchless(ZC_FREAD))
+    {
+        ret = zc_fread(ptr, size, nmemb, f);
+    }
+    else
+    {
+        ocall_fread(&ret, ptr, size, nmemb, f);
+    }
+
     return ret;
 }
 
@@ -218,19 +243,28 @@ ssize_t read(int fd, void *buf, size_t count)
 {
     GRAAL_SGX_INFO();
     ssize_t ret = 0;
-    log_ocall(FN_TOKEN_READ);
+    /* log_ocall(FN_TOKEN_READ);
     if (should_be_switchless(FN_TOKEN_READ))
     {
-        printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< using read switchless >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+
         ret = read_switchless(fd, buf, count);
     }
 
     else
     {
         ocall_read(&ret, fd, buf, count);
-    }
+    } */
 
     //printf("read fd: %d\n", fd);
+
+    if (use_zc_switchless(ZC_READ))
+    {
+        ret = zc_read(fd, buf, count);
+    }
+    else
+    {
+        ocall_read(&ret, fd, buf, count);
+    }
     return ret;
 }
 
@@ -238,11 +272,20 @@ ssize_t write(int fd, const void *buf, size_t count)
 {
     GRAAL_SGX_INFO();
     ssize_t ret = 0;
-    log_ocall(FN_TOKEN_WRITE);
+    /* log_ocall(FN_TOKEN_WRITE);
     if (should_be_switchless(FN_TOKEN_WRITE))
         ret = write_switchless(fd, buf, count);
     else
+        ocall_write(&ret, fd, buf, count); */
+
+    if (use_zc_switchless(ZC_WRITE))
+    {
+        ret = zc_write(fd, buf, count);
+    }
+    else
+    {
         ocall_write(&ret, fd, buf, count);
+    }
     return ret;
 }
 int sprintf(char *str, const char *fmt, ...)

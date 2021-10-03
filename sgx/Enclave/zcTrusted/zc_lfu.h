@@ -24,7 +24,8 @@
 #define ZC_LFU_INIT_NUM 0  /* number of ocalls done since the start of enclave b4 zc switchless is activated */
 
 #define NOT_IN_CACHE -1
-#define ZC_CACHE_TEST
+#define POC 1 /* if we are doing proof of concept, perform switchless call on the tested routines w/o lfu cache */
+//#define ZC_CACHE_TEST
 
 
 bool use_zc_switchless(zc_routine func_name);

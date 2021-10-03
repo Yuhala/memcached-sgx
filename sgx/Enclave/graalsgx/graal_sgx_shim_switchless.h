@@ -40,6 +40,11 @@
 #include <sgx/sys/wait.h>
 //#include <sgx/sys/statvfs.h>
 
+//zc switchless headers
+#include "zc_types.h"
+#include "zcTrusted/zc_lfu.h"
+#include "zcTrusted/zc_ocalls_in.h"
+
 //io
 #include <stdio.h>
 

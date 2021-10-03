@@ -21,7 +21,7 @@ ssize_t zc_read(int fd, void *buf, size_t count)
 
     // do request
     zc_req *request = (zc_req *)zc_malloc(sizeof(zc_req));
-    request->args = (void*)arg;
+    request->args = (void *)arg;
     request->func_name = ZC_READ;
     request->is_done = 0;
     do_zc_switchless_request(request);
@@ -30,8 +30,10 @@ ssize_t zc_read(int fd, void *buf, size_t count)
     ZC_REQUEST_WAIT(&request->is_done);
 
     // copy response to enclave if needed
+    mempcpy(buf, arg->buf, count);
 
     // return
+    return ((read_arg_zc *)request->args)->ret;
 }
 
 ssize_t zc_write(int fd, const void *buf, size_t count)
@@ -47,7 +49,7 @@ ssize_t zc_write(int fd, const void *buf, size_t count)
 
     // do request
     zc_req *request = (zc_req *)zc_malloc(sizeof(zc_req));
-    request->args = (void*)arg;
+    request->args = (void *)arg;
     request->func_name = ZC_WRITE;
     request->is_done = 0;
     do_zc_switchless_request(request);
@@ -58,6 +60,7 @@ ssize_t zc_write(int fd, const void *buf, size_t count)
     // copy response to enclave if needed
 
     // return
+    return ((write_arg_zc *)request->args)->ret;
 }
 
 ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags)
@@ -80,6 +83,7 @@ ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags)
     // copy response to enclave if needed
 
     // return
+    return 0;
 }
 
 size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
@@ -97,7 +101,7 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
 
     // do request
     zc_req *request = (zc_req *)zc_malloc(sizeof(zc_req));
-    request->args = (void*)arg;
+    request->args = (void *)arg;
     request->func_name = ZC_FWRITE;
     request->is_done = 0;
     do_zc_switchless_request(request);
@@ -108,6 +112,7 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
     // copy response to enclave if needed
 
     // return
+    return ((fwrite_arg_zc *)request->args)->ret;
 }
 
 size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
@@ -123,16 +128,17 @@ size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
 
     // do request
     zc_req *request = (zc_req *)zc_malloc(sizeof(zc_req));
-    request->args = (void*)arg;
+    request->args = (void *)arg;
     request->func_name = ZC_FREAD;
     request->is_done = 0;
     do_zc_switchless_request(request);
-
 
     // wait for response
     ZC_REQUEST_WAIT(&request->is_done);
 
     // copy response to enclave if needed
+    mempcpy(ptr, arg->buf, total_bytes);
 
     // return
+    return ((fread_arg_zc *)request->args)->ret;
 }

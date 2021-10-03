@@ -14,6 +14,7 @@
 
 void init_zc(int numWorkers);
 void handle_zc_switchless_request(zc_req *request);
+void finalize_zc();
 
 
 #define ZC_RET_OK 1    /* zc call passed */

@@ -38,7 +38,7 @@ void ecall_init_mpmc_queues_inside(void *req_q, void *resp_q)
     //init locks
     init_zc_pool_lock();
     //initialize zc switchless map
-    use_zc_test();
+    //use_zc_test();
 }
 
 void ecall_init_mem_pools(void *pools)

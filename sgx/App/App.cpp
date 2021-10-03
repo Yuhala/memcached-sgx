@@ -711,10 +711,11 @@ void removeKissDbs()
     printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
     system("rm kissdb*");
 }
+
 void runKissdbBench()
 {
     int min_keys = 2000;
-    int max_keys = 50000;
+    int max_keys = 1000;
     int step = 2000;
     int numWriters = 2;
     int numReaders = 2;
@@ -815,16 +816,16 @@ int main(int argc, char *argv[])
         ret_zero = 0;
         //init_switchless();
         init_zc(2);
-        return 0;
+        //return 0;
     }
 
-    ecall_test(global_eid);
-    return 0;
+    // ecall_test(global_eid);
+    // return 0;
 
     printf("Enclave initialized\n");
     if (zc_switchless)
     {
-        use_zc_switchless = true;
+        // use_zc_switchless = true;
 
         printf("########################## running in ZC-SWITCHLESS mode ##########################");
     }
@@ -841,8 +842,9 @@ int main(int argc, char *argv[])
      */
 
     runKissdbBench();
-
     return 0;
+
+    
     /**
      * pyuhala: this prevents read errors in kissdb (eg readers reading from a non-existent file).
      *  Still to fix the issue

@@ -21,9 +21,8 @@
 #include "zc_out.h"
 #include "zc_ocalls_out.h"
 
-//this contains all the available argument slots for switchless calls
-//update: with mem pools this is not needed
-zc_arg_list *main_arg_list;
+
+//zc_arg_list *main_arg_list;
 
 //pyuhala: some useful global variables
 extern sgx_enclave_id_t global_eid;
@@ -74,7 +73,7 @@ void init_zc(int numWorkers)
     //allocate memory pools
     init_pools();
     //create zc switchless worker threads
-    //create_zc_worker_threads(numWorkers);
+    create_zc_worker_threads(numWorkers);
 }
 
 /**
@@ -97,9 +96,8 @@ void *zc_worker_thread(void *input)
 {
     log_zc_routine(__func__);
 
-    printf("---------hello I'm a zc worker and this is a test -----------\n");
-    //return;
-    //zc_worker_loop();
+    //printf("---------hello I'm a zc worker and this is a test -----------\n");  
+    zc_worker_loop();
 }
 
 /**
@@ -116,6 +114,7 @@ static void zc_worker_loop()
          */
         if (mpmc_queue_count(&req_mpmcq) > 0)
         {
+            printf("-------------- mpmpc queue count > 0 -----------------\n");
             void *request;
             zc_mpmc_dequeue(&req_mpmcq, &request);
             handle_zc_switchless_request((zc_req *)request);
@@ -161,10 +160,10 @@ void handle_zc_switchless_request(zc_req *request)
 
     /**
      * Finalize request: change its status to done,
-     * and enqueue on response queue
+     * 
      */
     request->is_done = 1;
-    zc_mpmc_enqueue(&resp_mpmcq, (void *)request);
+    //zc_mpmc_enqueue(&resp_mpmcq, (void *)request);
 }
 
 static int getOptimalWorkers(int numWorkers)
@@ -206,15 +205,27 @@ static void create_zc_worker_threads(int numWorkers)
         pthread_create(worker_ids + i, NULL, zc_worker_thread, NULL);
     }
 
+    
     /* for (int i = 0; i < numWorkers; i++)
     {
         printf(" -------------- zc worker thread: %d ----------------\n", *(worker_ids + i));
     }*/
-    for (int i = 0; i < numWorkers; i++)
+    
+    /* for (int i = 0; i < numWorkers; i++)
     {
         pthread_join(*(worker_ids + i), NULL);
-    }
+    }*/
 }
+
+
+void finalize_zc(){
+    //stop all zc threads
+
+    //deallocate mem pools
+    free_mem_pools();
+
+}
+
 
 #define ZC_LOGGING 1
 #undef ZC_LOGGING

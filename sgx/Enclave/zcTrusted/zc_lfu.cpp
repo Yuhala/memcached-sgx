@@ -37,6 +37,10 @@ int number_of_ocalls = 0; /* total number of ocalls/shim function calls since en
  */
 bool use_zc_switchless(zc_routine func_name)
 {
+#ifdef POC
+    return true;
+#endif
+
     number_of_ocalls++;
     int f = (int)func_name;
     bool test = false; /* true if func is inserted in cache ==> switchless hit; otherwise switchless miss */
