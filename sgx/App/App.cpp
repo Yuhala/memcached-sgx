@@ -715,9 +715,9 @@ void removeKissDbs()
 void runKissdbBench()
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 2000;
-    int max_keys = 10000;
-    int step = 2000;
+    int min_keys = 2;
+    int max_keys = 50;
+    int step = 2;
     int numWriters = 2;
     int numReaders = 2;
     //write_keys(numKeys, numWriters);

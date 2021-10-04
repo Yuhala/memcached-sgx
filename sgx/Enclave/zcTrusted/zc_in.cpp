@@ -127,7 +127,7 @@ void release_worker(const int pool_index)
     }
     ZC_POOL_UNLOCK();
 
-    printf("---------------released pool/worker ---------------\n");
+    //printf("---------------released pool/worker ---------------\n");
 }
 
 /**
