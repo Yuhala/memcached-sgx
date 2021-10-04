@@ -12,6 +12,8 @@
 #include "zc_in.h"
 #include "zc_lfu.h"
 
+//#define ZC_LOGGING 1
+
 /**
  * Lock free queues for zc switchless calls
  */
@@ -25,19 +27,20 @@ zc_mpool_array *mem_pools;
 //forward declarations
 void zc_malloc_test();
 static inline void asm_pause(void);
-static void set_zc_thread_id();
+static unsigned int get_counter();
 
 //track enclave threads
-static int enclave_thread_counter = 0;
-thread_local int enclave_thread_id = -1;
-sgx_thread_mutex_t id_setter_lock;
+static int enclave_request_counter = 0;
+//thread_local int enclave_thread_id = -1;
+sgx_thread_mutex_t counter_setter_lock;
+bool zc_switchless_active = false;
 
 /**
  * initialize request and response queues inside the enclave
  */
 void ecall_init_mpmc_queues_inside(void *req_q, void *resp_q)
 {
-    printf("-------------in ecall init queues inside ----------------\n");
+    log_zc_routine(__func__);
     req_mpmcq = (struct mpmcq *)req_q;
     resp_mpmcq = (struct mpmcq *)resp_q;
 
@@ -47,7 +50,7 @@ void ecall_init_mpmc_queues_inside(void *req_q, void *resp_q)
 
 void ecall_init_mem_pools(void *pools)
 {
-    printf("------------- in ecall init mem pools ----------------\n");
+    log_zc_routine(__func__);
 
     //init pools
     mem_pools = (zc_mpool_array *)pools;
@@ -55,11 +58,15 @@ void ecall_init_mem_pools(void *pools)
 
     //init locks
     init_zc_pool_lock();
-    sgx_thread_mutex_init(&id_setter_lock, NULL);
+    sgx_thread_mutex_init(&counter_setter_lock, NULL);
+
+    //active zc
+    zc_switchless_active = true;
 }
 
-void do_zc_switchless_request(zc_req *req, int pool_index)
+void do_zc_switchless_request(zc_req *req, const int pool_index)
 {
+    log_zc_routine(__func__);
     //enqueue request on request queue
     //zc_mpmc_enqueue(req_mpmcq, (void *)request);
     //set a flag to notify workers ??
@@ -85,8 +92,11 @@ void do_zc_switchless_request(zc_req *req, int pool_index)
  */
 int reserve_worker()
 {
-    // get a thread identifier first
-    set_zc_thread_id();
+    //log_zc_routine(__func__);
+    if (!zc_switchless_active)
+    {
+        return ZC_NO_FREE_POOL;
+    }
 
     int index = get_free_pool();
     if (index == ZC_NO_FREE_POOL)
@@ -105,9 +115,14 @@ int reserve_worker()
 /**
  * Releases a switchless worker/memory pool
  */
-void release_worker(int pool_index)
+void release_worker(const int pool_index)
 {
+
+    log_zc_routine(__func__);
+    ZC_POOL_LOCK();
     mem_pools->memory_pools[pool_index]->pool_status == (int)UNUSED;
+    ZC_POOL_UNLOCK();
+    printf("---------------released pool/worker ---------------\n");
 }
 
 /**
@@ -115,22 +130,27 @@ void release_worker(int pool_index)
  */
 int get_free_pool()
 {
+    //log_zc_routine(__func__);
     //int free_pool_index = ZC_NO_FREE_POOL;
+
+    // get a thread identifier first
+    int req_num = get_counter();
+
     for (int i = 0; i < NUM_POOLS; i++)
     {
         if (mem_pools->memory_pools[i]->active && mem_pools->memory_pools[i]->pool_status == (int)UNUSED)
         {
-            //pyuhala: we may have concurrency issues here
+            //pyuhala: we may have concurrency issues here..well not really
             ZC_POOL_LOCK();
             mem_pools->memory_pools[i]->pool_status == (int)RESERVED;
-            mem_pools->memory_pools[i]->curr_user_id = enclave_thread_id;
+            mem_pools->memory_pools[i]->curr_user_id = req_num;
             ZC_POOL_UNLOCK();
             /**
              * make sure it is you who reserved here, 
              * b/c a diff thread could have found this free pool at the same time as you, 
              * and you should continue checking for an unused slot
              */
-            if (mem_pools->memory_pools[i]->curr_user_id == enclave_thread_id)
+            if (mem_pools->memory_pools[i]->curr_user_id == req_num)
             {
                 return i;
             }
@@ -148,25 +168,28 @@ int get_free_pool()
  */
 void ZC_REQUEST_WAIT(volatile int *isDone)
 {
+    log_zc_routine(__func__);
     while ((*isDone) != ZC_REQUEST_DONE)
     {
         //do nothing
-        ZC_PAUSE();
+        //ZC_PAUSE();
+        //printf("---- in request wait loop ------\n");
     }
+    printf("---- request is done ------\n");
 }
 
 /**
- * Assign a thread identifier to each enclave thread
+ * get a temporary counter/id value for the request
  */
-static void set_zc_thread_id()
+static unsigned int get_counter()
 {
-    if (enclave_thread_id < 0)
-    {
-        sgx_thread_mutex_lock(&id_setter_lock);
-        enclave_thread_id = enclave_thread_counter;
-        enclave_thread_counter++;
-        sgx_thread_mutex_unlock(&id_setter_lock);
-    }
+    //log_zc_routine(__func__);
+    int val = -1;
+    sgx_thread_mutex_lock(&counter_setter_lock);
+    val = enclave_request_counter;
+    enclave_request_counter++;
+    sgx_thread_mutex_unlock(&counter_setter_lock);
+    return val;
 }
 
 static inline void asm_pause(void)
@@ -209,62 +232,3 @@ void zc_malloc_test()
         printf("---- array[%d] = %d ----\n", i, test_int[i]);
     }
 }
-
-/**
- * Get a free argument slot for a switchless request 
- * for the corresponding routine.
- * Traversing the array each time may not be efficient
- * Could we allocate untrusted memory efficiently from the enclave ? I doubt this would be good
- * because we will end up doing an ocall while trying to prevent an ocall :( ..robbing peter to pay paul
- */
-
-/* void *get_free_arg_slot(zc_routine func)
-{
-    void *arg_slot == NULL;
-
-    switch (func)
-    {
-    case ZC_FREAD:
-        for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
-        {
-            if (main_arg_list->fread_arg_array[i].request_id < 0)
-            {
-                arg_slot = (void *)fread_arg_array[i];
-                break;
-            }
-        }
-        break;
-    case ZC_FWRITE:
-        for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
-        {
-            if (main_arg_list->fwrite_arg_array[i].request_id < 0)
-            {
-                arg_slot = (void *)fwrite_arg_array[i];
-                break;
-            }
-        }
-        break;
-    case ZC_READ:
-        for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
-        {
-            if (main_arg_list->read_arg_array[i].request_id < 0)
-            {
-                arg_slot = (void *)read_arg_array[i];
-                break;
-            }
-        }
-        break;
-    case ZC_WRITE:
-        for (int i = 0; i < ZC_QUEUE_CAPACITY; i++)
-        {
-            if (main_arg_list->write_arg_array[i].request_id < 0)
-            {
-                arg_slot = (void *)write_arg_array[i];
-                break;
-            }
-        }
-        break;
-    }
-
-    return arg_slot;
-}*/

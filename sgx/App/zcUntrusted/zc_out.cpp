@@ -41,9 +41,11 @@ static void zc_worker_loop(int);
 static int getOptimalWorkers(int);
 static void create_zc_worker_threads(int numWorkers);
 void *zc_worker_thread(void *input);
+void *zc_scheduler_thread(void *input);
 static void init_mem_pools();
 static void init_pools();
 static void free_mem_pools();
+static void init_zc_scheduler(int num_workers);
 
 //useful globals
 int num_cores = -1;
@@ -53,7 +55,6 @@ zc_mpool_array *pools;
 ssize_t curr_pool_index = 0; /* workers will get the pool at this index */
 
 pthread_mutex_t pool_index_lock;
-thread_local int thread_pool_index = 0;
 
 /**
  * Initializes zc switchless system using this number of worker threads out of the enclave
@@ -79,8 +80,14 @@ void init_zc(int numWorkers)
     init_pools();
     //init locks
     pthread_mutex_init(&pool_index_lock, NULL);
-    //create zc switchless worker threads
+    //launch scheduler thread
     create_zc_worker_threads(numWorkers);
+    //create zc switchless worker threads
+}
+
+static void init_zc_scheduler(int num_workers)
+{
+    //TODO
 }
 
 /**
@@ -99,33 +106,42 @@ static void init_pools()
     ecall_init_mem_pools(global_eid, (void *)pools);
 }
 
+void *zc_scheduler_thread(void *input)
+{
+    //TODO
+}
+
 void *zc_worker_thread(void *input)
 {
-
+    int thread_pool_index = -1;
     log_zc_routine(__func__);
     pthread_mutex_lock(&pool_index_lock);
     thread_pool_index = curr_pool_index;
     curr_pool_index++;
     pthread_mutex_unlock(&pool_index_lock);
 
-    printf("---------hello I'm a zc worker and my pool id is: %d -----------\n", thread_pool_index);
+    //printf("---------hello I'm a zc worker and my pool id is: %d -----------\n", thread_pool_index);
     zc_worker_loop(thread_pool_index);
 }
 
 /**
  * Each worker thread loops in here for sometime waiting for pending requests.
  */
-static void zc_worker_loop(int pool_index)
+static void zc_worker_loop(int index)
 {
     log_zc_routine(__func__);
     //set pool states
+
+    int pool_index = index;
     pools->memory_pools[pool_index]->active = 1; /* pool is assigned to this thread */
     pools->memory_pools[pool_index]->request = NULL;
     pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
-    zc_pool_status pool_state;
+    volatile zc_pool_status pool_state;
 
-    while (1)
+    for (;;)
     {
+        //printf("xxxxxxxxxxxxxxxxx in worker loop xxxxxxxxxxxxxxxxxxxx\n");
+
         pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
         /**
          * using queues
@@ -156,6 +172,7 @@ static void zc_worker_loop(int pool_index)
         break;
         case PROCESSING: /* caller is done setting up request, call the corresponding routine */
         {
+            //printf("------zc worker handling a request--------\n");
             zc_req *req = pools->memory_pools[pool_index]->request;
             handle_zc_switchless_request(req, pool_index);
         }
@@ -198,7 +215,6 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     {
     case ZC_FREAD:
         zc_fread_switchless(request);
-
         break;
 
     case ZC_FWRITE:
@@ -226,7 +242,7 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      * Finalize request: change its status to done,
      * 
      */
-    request->is_done = 1;
+    request->is_done = ZC_REQUEST_DONE;
     pools->memory_pools[pool_index]->pool_status = (int)WAITING;
 
     //zc_mpmc_enqueue(&resp_mpmcq, (void *)request);
@@ -284,6 +300,7 @@ static void create_zc_worker_threads(int numWorkers)
         printf(" -------------- zc worker thread: %d ----------------\n", *(worker_ids + i));
     }*/
 
+    // pyuhala: joining not a good idea.. since these threads loop "infinitely"
     /* for (int i = 0; i < numWorkers; i++)
     {
         pthread_join(*(worker_ids + i), NULL);

@@ -6,12 +6,14 @@
  * It is important to understand the semantics of each function to implement them correctly.
  */
 
+#include "Enclave.h"
 #include "zc_in.h"
 #include "zc_ocalls_in.h"
 #include "zc_queues_in.h" /* for zc_malloc */
 
 ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
 {
+    log_zc_routine(__func__);
     // allocate memory for args
     read_arg_zc *arg = (read_arg_zc *)zc_malloc(pool_index, sizeof(read_arg_zc));
     // copy args from enclave to untrusted memory
@@ -38,6 +40,7 @@ ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
 
 ssize_t zc_write(int fd, const void *buf, size_t count, int pool_index)
 {
+    log_zc_routine(__func__);
     // allocate memory for args
     write_arg_zc *arg = (write_arg_zc *)zc_malloc(pool_index, sizeof(write_arg_zc));
     // copy args from enclave to untrusted memory
@@ -65,6 +68,7 @@ ssize_t zc_write(int fd, const void *buf, size_t count, int pool_index)
 
 ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags, int pool_index)
 {
+    log_zc_routine(__func__);
     // allocate memory for args
     //_arg_zc *arg = (_arg_zc *)zc_malloc(sizeof(_arg_zc));
     // copy args from enclave to untrusted memory
@@ -88,6 +92,7 @@ ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags, int pool_ind
 
 size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_index)
 {
+    log_zc_routine(__func__);
     // allocate memory for args
     fwrite_arg_zc *arg = (fwrite_arg_zc *)zc_malloc(pool_index, sizeof(fwrite_arg_zc));
     // copy args from enclave to untrusted memory
@@ -112,11 +117,14 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
     release_worker(pool_index);
 
     // return
-    return ((fwrite_arg_zc *)request->args)->ret;
+    ssize_t ret = ((fwrite_arg_zc *)request->args)->ret;
+    //printf("---------------zc fwrite ret: %d ---------------------\n", ret);
+    return ret;
 }
 
 size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_index)
 {
+    log_zc_routine(__func__);
     // allocate memory for args
     fread_arg_zc *arg = (fread_arg_zc *)zc_malloc(pool_index, sizeof(fread_arg_zc));
     // copy args from enclave to untrusted memory
@@ -141,5 +149,7 @@ size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_
     release_worker(pool_index);
 
     // return
-    return ((fread_arg_zc *)request->args)->ret;
+    ssize_t ret = ((fread_arg_zc *)request->args)->ret;
+    printf("---------------zc fread ret: %d ---------------------\n", ret);
+    return ret;
 }

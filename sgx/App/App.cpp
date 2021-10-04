@@ -714,8 +714,9 @@ void removeKissDbs()
 
 void runKissdbBench()
 {
+    printf(">>>>>>>>>>>>>>>>> kissdb bench >>>>>>>>>>>>>>>>>\n");
     int min_keys = 2000;
-    int max_keys = 1000;
+    int max_keys = 10000;
     int step = 2000;
     int numWriters = 2;
     int numReaders = 2;
@@ -815,7 +816,7 @@ int main(int argc, char *argv[])
     {
         ret_zero = 0;
         //init_switchless();
-        init_zc(2);
+        init_zc(4);
         //return 0;
     }
 
@@ -842,6 +843,7 @@ int main(int argc, char *argv[])
      */
 
     runKissdbBench();
+    //finalize_zc();
     return 0;
 
     /**

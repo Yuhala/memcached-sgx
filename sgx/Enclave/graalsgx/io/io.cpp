@@ -150,10 +150,11 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE f)
         ocall_fwrite(&ret, ptr, size, nmemb, f);
     return ret; */
 
-    int index = reserve_worker();
+    int index = -1;//reserve_worker();
 
     if (index != ZC_NO_FREE_POOL)
     {
+
         ret = zc_fwrite(ptr, size, nmemb, f, index);
     }
     else
@@ -171,6 +172,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, SGX_FILE f)
 
     if (index != ZC_NO_FREE_POOL)
     {
+
         ret = zc_fread(ptr, size, nmemb, f, index);
     }
     else
@@ -265,6 +267,7 @@ ssize_t read(int fd, void *buf, size_t count)
 
     if (index != ZC_NO_FREE_POOL)
     {
+
         ret = zc_read(fd, buf, count, index);
     }
     else
@@ -288,6 +291,7 @@ ssize_t write(int fd, const void *buf, size_t count)
 
     if (index != ZC_NO_FREE_POOL)
     {
+
         ret = zc_write(fd, buf, count, index);
     }
     else

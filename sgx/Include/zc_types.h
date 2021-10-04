@@ -225,7 +225,7 @@ struct zc_mpool
 {
     mpool_t *pool;
     unsigned int pool_id;
-    unsigned int curr_user_id; /* id of caller/enclave thread using this pool atm */
+    volatile int curr_user_id; /* temp unique identifier added by caller/enclave thread using this pool atm */
     unsigned int active;       /* is this pool allocated to a worker (1) or not (0) */
     volatile int pool_status;
 
