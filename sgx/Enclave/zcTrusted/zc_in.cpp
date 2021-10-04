@@ -120,8 +120,13 @@ void release_worker(const int pool_index)
 
     log_zc_routine(__func__);
     ZC_POOL_LOCK();
-    mem_pools->memory_pools[pool_index]->pool_status == (int)UNUSED;
+    //only return if this changes..
+    while (mem_pools->memory_pools[pool_index]->pool_status != (int)UNUSED)
+    {
+        mem_pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
+    }
     ZC_POOL_UNLOCK();
+
     //printf("---------------released pool/worker ---------------\n");
 }
 

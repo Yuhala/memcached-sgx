@@ -32,7 +32,7 @@ ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
     mempcpy(buf, arg->buf, count);
 
     // release worker/memory pool
-    release_worker(pool_index);
+    release_worker(request->req_pool_index);
 
     // return
     return ((read_arg_zc *)request->args)->ret;
@@ -60,7 +60,7 @@ ssize_t zc_write(int fd, const void *buf, size_t count, int pool_index)
     // copy response to enclave if needed
 
     // release worker/memory pool
-    release_worker(pool_index);
+    release_worker(request->req_pool_index);
 
     // return
     return ((write_arg_zc *)request->args)->ret;
@@ -84,7 +84,7 @@ ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags, int pool_ind
     // copy response to enclave if needed
 
     // release worker/memory pool
-    release_worker(pool_index);
+    release_worker(request->req_pool_index);
 
     // return
     return 0;
@@ -114,7 +114,11 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
     // copy response to enclave if needed
 
     // release worker/memory pool
-    release_worker(pool_index);
+    /**
+     * pyuhala: can use pool_index variable but it seems 
+     * caller is not changing the pool status
+     */
+    release_worker(request->req_pool_index);
 
     // return
     ssize_t ret = ((fwrite_arg_zc *)request->args)->ret;
@@ -146,7 +150,7 @@ size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_
     mempcpy(ptr, arg->buf, total_bytes);
 
     // release worker/memory pool
-    release_worker(pool_index);
+    release_worker(request->req_pool_index);
 
     // return
     ssize_t ret = ((fread_arg_zc *)request->args)->ret;

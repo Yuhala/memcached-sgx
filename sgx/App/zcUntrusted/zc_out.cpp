@@ -250,6 +250,8 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      */
     request->is_done = ZC_REQUEST_DONE;
     pools->memory_pools[pool_index]->pool_status = (int)WAITING;
+    //pyuhala: doing below for debug reasons..something's not alright
+    request->req_pool_index = pool_index;
 
     //zc_mpmc_enqueue(&resp_mpmcq, (void *)request);
 }
