@@ -12,9 +12,11 @@
 
 #include "zc_types.h"
 
-void do_zc_switchless_request(zc_req *request);
-void get_zc_switchless_response(unsigned int req_id);
+void do_zc_switchless_request(zc_req *request, int pool_index);
+int reserve_worker();
+void release_worker(int pool_index);
 void ZC_REQUEST_WAIT(volatile int *isDone);
+int get_free_pool();
 
 #define ZC_PAUSE() __asm__ __volatile__("pause" \
                                         :       \

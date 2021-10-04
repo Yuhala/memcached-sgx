@@ -109,6 +109,9 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "charconv": "cpp"
+        "charconv": "cpp",
+        "mpool.h": "c",
+        "zc_types.h": "c",
+        "stdbool.h": "c"
     }
 }

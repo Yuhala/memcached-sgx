@@ -38,7 +38,7 @@ sgx_thread_mutex_t pool_index_lock;
 static int pool_counter = 0;
 
 thread_local int pool_index = -1;
-extern zc_mpool *mem_pools;
+extern zc_mpool_array *mem_pools;
 
 void ZC_QUEUE_LOCK(zc_q_type qt)
 {
@@ -66,6 +66,16 @@ void ZC_QUEUE_UNLOCK(zc_q_type qt)
         sgx_thread_mutex_unlock(&resp_q_lock);
         break;
     }
+}
+
+void ZC_POOL_LOCK()
+{
+    sgx_thread_mutex_lock(&pool_index_lock);
+}
+
+void ZC_POOL_UNLOCK()
+{
+    sgx_thread_mutex_unlock(&pool_index_lock);
 }
 
 void init_zc_queue_locks()
@@ -99,7 +109,17 @@ void *zc_malloc(size_t siz)
         sgx_thread_mutex_unlock(&pool_index_lock);
     }
 
-    return (mpool_alloc(siz, mem_pools->memory_pools[pool_index]));
+    return (mpool_alloc(siz, mem_pools->memory_pools[pool_index]->pool));
+}
+
+/**
+ * pyuhala: allocate memory from a specific memory pool.
+ * This will be used by a caller thread who is searching for
+ * an unused worker/pool.
+ */
+void *zc_malloc(int index, size_t siz)
+{
+    return (mpool_alloc(siz, mem_pools->memory_pools[index]->pool));
 }
 
 /**

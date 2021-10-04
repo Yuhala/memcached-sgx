@@ -296,11 +296,11 @@ endif
 ####### Build Memcached Objects ######
 
 $(Memcached_Src_In)/%.o: $(Memcached_Src_In)/%.c $(Memcached_Headers_In)
-		$(CC) $(Memcached_Inc_Paths) $(SGX_COMMON_CFLAGS) $(Enclave_C_Flags) -c $< -o $@
+		$(CC)  $(SGX_COMMON_CFLAGS) $(Enclave_C_Flags) $(Memcached_Inc_Paths) -c $< -o $@
 		@echo "CC <= $<"
 
 $(Memcached_Src_Out)/%.o: $(Memcached_Src_Out)/%.c $(Memcached_Headers_Out)
-		$(CC) -I$(Memcached_Src_Out) $(SGX_COMMON_CFLAGS) $(App_C_Flags) -c $< -o $@
+		$(CC)  $(SGX_COMMON_CFLAGS) $(App_C_Flags) -I$(Memcached_Src_Out) -c $< -o $@
 		@echo "CC <= $<"
 
 ######## App Objects ########

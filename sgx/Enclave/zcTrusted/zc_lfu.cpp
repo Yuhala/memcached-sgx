@@ -35,7 +35,7 @@ int number_of_ocalls = 0; /* total number of ocalls/shim function calls since en
  * This function tests if a function should be called as zc switchless or not; 
  * it replaced routines in the switchless cache following a least frequently used algorithm.
  */
-bool use_zc_switchless(zc_routine func_name)
+bool use_zc_switchless_lfu(zc_routine func_name)
 {
 #ifdef POC
     return true;
@@ -179,7 +179,7 @@ void use_zc_test()
 
     for (int i = 0; i < 9; i++)
     {
-        if (use_zc_switchless(call_array[i]))
+        if (use_zc_switchless_lfu(call_array[i]))
         {
             printf("<<<<<<< using zc for function: %d >>>>>>>\n", (int)call_array[i]);
         }

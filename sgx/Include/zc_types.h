@@ -9,8 +9,8 @@
  * ZC == zero config (as in zero config/dynamic switchless call system)
  */
 
-#ifndef ZC_ARGS_H
-#define ZC_ARGS_H
+#ifndef ZC_TYPES_H
+#define ZC_TYPES_H
 
 #include <sys/types.h>
 #include "struct/sgx_stdio_struct.h"
@@ -21,6 +21,8 @@
 
 #define ZC_QUEUE_CAPACITY 1024 /* capacity of request and response queues */
 #define ZC_FREE_ID -1          /* free arg slots will have this request id */
+
+#define ZC_NO_FREE_POOL -1 /* if there is not free pool in the pool array return -1 index */
 
 #define POOL_SIZE 32 * 1024 * 1024 /* surely 32 mb should be enough for realistic tests/benchmarks */
 #define NUM_POOLS 10               /* the number of memory pools to create; == number max threads in enclave */
@@ -162,8 +164,8 @@ struct zc_queue
     zc_req_node *rear;
 };
 
-typedef zc_response_queue zc_resp_q;
-typedef zc_request_queue zc_req_q;
+typedef struct zc_response_queue zc_resp_q;
+typedef struct zc_request_queue zc_req_q;
 
 enum zc_queue_type
 {
@@ -189,7 +191,7 @@ struct zc_arg_list
     write_arg_zc *write_arg_array;
 };
 
-typedef zc_arg_list zc_arg_list;
+typedef struct zc_arg_list zc_arg_list;
 
 /**
  * Structures to manage argument slots
@@ -204,11 +206,40 @@ struct zc_arg_slot
 typedef struct zc_arg_slot zc_arg_slot;
 
 //---------------------- zc memory pool -----------------------
+
+/**
+ * Memory pool status. Based on Michael Paper's worker status design
+ */
+
+typedef enum
+{
+    UNUSED = 0,
+    RESERVED,
+    PROCESSING,
+    WAITING,
+    PAUSED,
+    EXIT
+} zc_pool_status;
+
 struct zc_mpool
 {
-    mpool_t *memory_pools[NUM_POOLS];
+    mpool_t *pool;
+    unsigned int pool_id;
+    unsigned int curr_user_id; /* id of caller/enclave thread using this pool atm */
+    unsigned int active;       /* is this pool allocated to a worker (1) or not (0) */
+    volatile int pool_status;
+
+    zc_req *request; /* caller request */
 };
+
 typedef struct zc_mpool zc_mpool;
+
+struct zc_mpool_array
+{
+    zc_mpool **memory_pools;
+};
+
+typedef struct zc_mpool_array zc_mpool_array;
 
 #define ZC_ASSERT(EXPR)                                \
     do                                                 \
@@ -225,4 +256,4 @@ typedef struct zc_mpool zc_mpool;
         }                                              \
     } while (0)
 
-#endif /* ZC_ARGS_H */
+#endif /* ZC_TYPES_H */

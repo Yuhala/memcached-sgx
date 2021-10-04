@@ -13,7 +13,7 @@
 #include "zc_queues_out.h"
 
 void init_zc(int numWorkers);
-void handle_zc_switchless_request(zc_req *request);
+void handle_zc_switchless_request(zc_req *request, int pool_index);
 void finalize_zc();
 
 

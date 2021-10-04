@@ -28,7 +28,7 @@
 //#define ZC_CACHE_TEST
 
 
-bool use_zc_switchless(zc_routine func_name);
+bool use_zc_switchless_lfu(zc_routine func_name);
 bool cache_insert(std::vector<std::pair<int, int>> &v, zc_routine func_name);
 int findLeastFrequent(std::vector<std::pair<int, int>> &v);
 void clear_zc_cache();

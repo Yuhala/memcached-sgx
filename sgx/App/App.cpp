@@ -827,7 +827,7 @@ int main(int argc, char *argv[])
     {
         // use_zc_switchless = true;
 
-        printf("########################## running in ZC-SWITCHLESS mode ##########################");
+        printf("########################## running in ZC-SWITCHLESS mode ##########################\n");
     }
 
     int id = global_eid;
@@ -844,7 +844,6 @@ int main(int argc, char *argv[])
     runKissdbBench();
     return 0;
 
-    
     /**
      * pyuhala: this prevents read errors in kissdb (eg readers reading from a non-existent file).
      *  Still to fix the issue

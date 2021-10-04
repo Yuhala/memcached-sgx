@@ -15,6 +15,7 @@
 #include "Enclave.h" //for printf
 #include "graal_sgx_shim_switchless.h"
 #include "ocall_manager.h"
+#include "zcTrusted/zc_in.h"
 
 void empty(int repeats)
 {
@@ -149,9 +150,11 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE f)
         ocall_fwrite(&ret, ptr, size, nmemb, f);
     return ret; */
 
-    if (use_zc_switchless(ZC_FWRITE))
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
     {
-        ret = zc_fwrite(ptr, size, nmemb, f);
+        ret = zc_fwrite(ptr, size, nmemb, f, index);
     }
     else
     {
@@ -164,10 +167,11 @@ size_t fread(void *ptr, size_t size, size_t nmemb, SGX_FILE f)
 {
     GRAAL_SGX_INFO();
     size_t ret = 0;
+    int index = reserve_worker();
 
-    if (use_zc_switchless(ZC_FREAD))
+    if (index != ZC_NO_FREE_POOL)
     {
-        ret = zc_fread(ptr, size, nmemb, f);
+        ret = zc_fread(ptr, size, nmemb, f, index);
     }
     else
     {
@@ -257,9 +261,11 @@ ssize_t read(int fd, void *buf, size_t count)
 
     //printf("read fd: %d\n", fd);
 
-    if (use_zc_switchless(ZC_READ))
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
     {
-        ret = zc_read(fd, buf, count);
+        ret = zc_read(fd, buf, count, index);
     }
     else
     {
@@ -278,9 +284,11 @@ ssize_t write(int fd, const void *buf, size_t count)
     else
         ocall_write(&ret, fd, buf, count); */
 
-    if (use_zc_switchless(ZC_WRITE))
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
     {
-        ret = zc_write(fd, buf, count);
+        ret = zc_write(fd, buf, count, index);
     }
     else
     {
