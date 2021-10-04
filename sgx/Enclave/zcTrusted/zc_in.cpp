@@ -11,6 +11,7 @@
 #include "memcached/mpool.h"
 #include "zc_in.h"
 #include "zc_lfu.h"
+#include "zc_spinlocks.h"
 
 //#define ZC_LOGGING 1
 
@@ -64,7 +65,7 @@ void ecall_init_mem_pools(void *pools)
     zc_switchless_active = true;
 }
 
-void do_zc_switchless_request(zc_req *req, const int pool_index)
+void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
 {
     log_zc_routine(__func__);
     //enqueue request on request queue
@@ -107,7 +108,7 @@ int reserve_worker()
     else
     {
         //* reserve the worker/pool */
-        //mem_pools->memory_pools[index]->pool_status == (int)RESERVED;
+        //mem_pools->memory_pools[index]->pool_status = (int)RESERVED;
         return index;
     }
 }
@@ -115,17 +116,13 @@ int reserve_worker()
 /**
  * Releases a switchless worker/memory pool
  */
-void release_worker(const int pool_index)
+void release_worker(unsigned int pool_index)
 {
 
     log_zc_routine(__func__);
-    ZC_POOL_LOCK();
-    //only return if this changes..
-    while (mem_pools->memory_pools[pool_index]->pool_status != (int)UNUSED)
-    {
-        mem_pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
-    }
-    ZC_POOL_UNLOCK();
+    //ZC_POOL_LOCK();
+    mem_pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
+    //ZC_POOL_UNLOCK();
 
     //printf("---------------released pool/worker ---------------\n");
 }
@@ -138,18 +135,20 @@ int get_free_pool()
     //log_zc_routine(__func__);
     //int free_pool_index = ZC_NO_FREE_POOL;
 
+    int status;
     // get a thread identifier first
     int req_num = get_counter();
 
     for (int i = 0; i < NUM_POOLS; i++)
     {
-        if (mem_pools->memory_pools[i]->active && mem_pools->memory_pools[i]->pool_status == (int)UNUSED)
+        status = mem_pools->memory_pools[i]->pool_status;
+        if (mem_pools->memory_pools[i]->active && status == (int)UNUSED)
         {
             //pyuhala: we may have concurrency issues here..well not really
-            ZC_POOL_LOCK();
-            mem_pools->memory_pools[i]->pool_status == (int)RESERVED;
+            //ZC_POOL_LOCK();
+            mem_pools->memory_pools[i]->pool_status = (int)RESERVED;
             mem_pools->memory_pools[i]->curr_user_id = req_num;
-            ZC_POOL_UNLOCK();
+            //ZC_POOL_UNLOCK();
             /**
              * make sure it is you who reserved here, 
              * b/c a diff thread could have found this free pool at the same time as you, 
@@ -174,11 +173,11 @@ int get_free_pool()
 void ZC_REQUEST_WAIT(volatile int *isDone)
 {
     log_zc_routine(__func__);
+    //spin_lock(isDone);
     while ((*isDone) != ZC_REQUEST_DONE)
     {
         //do nothing
         //ZC_PAUSE();
-        //printf("---- in request wait loop ------\n");
     }
     //printf("---- request is done ------\n");
 }
@@ -190,10 +189,10 @@ static unsigned int get_counter()
 {
     //log_zc_routine(__func__);
     int val = -1;
-    sgx_thread_mutex_lock(&counter_setter_lock);
+    //sgx_thread_mutex_lock(&counter_setter_lock);
     val = enclave_request_counter;
     enclave_request_counter++;
-    sgx_thread_mutex_unlock(&counter_setter_lock);
+    //sgx_thread_mutex_unlock(&counter_setter_lock);
     return val;
 }
 

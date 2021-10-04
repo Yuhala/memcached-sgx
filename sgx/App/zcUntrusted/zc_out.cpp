@@ -113,15 +113,11 @@ void *zc_scheduler_thread(void *input)
 
 void *zc_worker_thread(void *input)
 {
-    int thread_pool_index = -1;
     log_zc_routine(__func__);
-    pthread_mutex_lock(&pool_index_lock);
-    thread_pool_index = curr_pool_index;
-    curr_pool_index++;
-    pthread_mutex_unlock(&pool_index_lock);
+    zc_worker_args *args = (zc_worker_args *)input;
 
     //printf("---------hello I'm a zc worker and my pool id is: %d -----------\n", thread_pool_index);
-    zc_worker_loop(thread_pool_index);
+    zc_worker_loop(args->pool_index);
 }
 
 /**
@@ -293,10 +289,14 @@ static void free_mem_pools()
 static void create_zc_worker_threads(int numWorkers)
 {
     worker_ids = (pthread_t *)malloc(sizeof(pthread_t) * numWorkers);
+
+    zc_worker_args *args;
     for (int i = 0; i < numWorkers; i++)
     {
+        args = (zc_worker_args *)malloc(sizeof(zc_worker_args));
+        args->pool_index = curr_pool_index++;
 
-        pthread_create(worker_ids + i, NULL, zc_worker_thread, NULL);
+        pthread_create(worker_ids + i, NULL, zc_worker_thread, (void *)args);
     }
 
     /* for (int i = 0; i < numWorkers; i++)
