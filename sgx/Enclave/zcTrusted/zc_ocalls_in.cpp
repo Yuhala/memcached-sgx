@@ -150,6 +150,6 @@ size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_
 
     // return
     ssize_t ret = ((fread_arg_zc *)request->args)->ret;
-    printf("---------------zc fread ret: %d ---------------------\n", ret);
+    //printf("---------------zc fread ret: %d ---------------------\n", ret);
     return ret;
 }

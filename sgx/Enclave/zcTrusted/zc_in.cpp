@@ -122,7 +122,7 @@ void release_worker(const int pool_index)
     ZC_POOL_LOCK();
     mem_pools->memory_pools[pool_index]->pool_status == (int)UNUSED;
     ZC_POOL_UNLOCK();
-    printf("---------------released pool/worker ---------------\n");
+    //printf("---------------released pool/worker ---------------\n");
 }
 
 /**
@@ -175,7 +175,7 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
         //ZC_PAUSE();
         //printf("---- in request wait loop ------\n");
     }
-    printf("---- request is done ------\n");
+    //printf("---- request is done ------\n");
 }
 
 /**

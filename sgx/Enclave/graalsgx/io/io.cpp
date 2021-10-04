@@ -150,7 +150,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE f)
         ocall_fwrite(&ret, ptr, size, nmemb, f);
     return ret; */
 
-    int index = -1;//reserve_worker();
+    int index = reserve_worker();
 
     if (index != ZC_NO_FREE_POOL)
     {
