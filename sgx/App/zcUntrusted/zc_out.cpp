@@ -175,7 +175,11 @@ static void zc_worker_loop(int index)
             printf("------zc worker handling a request--------\n");
             zc_req *req = pools->memory_pools[pool_index]->request;
             handle_zc_switchless_request(req, pool_index);
-            
+            //check if this thread sees change in pool status
+            while (pools->memory_pools[pool_index]->pool_status != (int)UNUSED)
+            {
+            }
+            printf("------zc worker attests status = UNUSED --------\n");
         }
         break;
 
