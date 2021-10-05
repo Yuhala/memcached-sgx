@@ -95,7 +95,7 @@ int mpmc_enqueue(volatile struct mpmcq *q, void *data)
     for (;;)
     {
         cell = &q->buffer[pos & q->buffer_mask];
-        seq = __atomic_load_n(&cell->seq, __ATOMIC_ACQUIRE);
+        seq = __atomic_load_n(&cell->seq, __ATOMIC_RELAXED);
         dif = (intptr_t)seq - (intptr_t)pos;
         if (dif == 0)
         {
@@ -135,7 +135,7 @@ int mpmc_dequeue(volatile struct mpmcq *q, void **data)
     for (;;)
     {
         cell = &q->buffer[pos & q->buffer_mask];
-        seq = __atomic_load_n(&cell->seq, __ATOMIC_ACQUIRE);
+        seq = __atomic_load_n(&cell->seq, __ATOMIC_RELAXED);
         dif = (intptr_t)seq - (intptr_t)(pos + 1);
         if (dif == 0)
         {

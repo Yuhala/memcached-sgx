@@ -249,6 +249,11 @@ typedef struct zc_worker_args zc_worker_args;
 
 typedef struct zc_mpool_array zc_mpool_array;
 
+#define ZC_PAUSE() __asm__ __volatile__("pause" \
+                                        :       \
+                                        :       \
+                                        : "memory")
+
 #define ZC_ASSERT(EXPR)                                \
     do                                                 \
     {                                                  \

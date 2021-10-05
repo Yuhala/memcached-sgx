@@ -24,10 +24,7 @@ int get_free_pool();
 //logging
 void log_zc_routine(const char *func);
 
-#define ZC_PAUSE() __asm__ __volatile__("pause" \
-                                        :       \
-                                        :       \
-                                        : "memory")
+
 
 #if defined(__cplusplus)
 extern "C"

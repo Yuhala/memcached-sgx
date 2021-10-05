@@ -78,7 +78,7 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
 
     mem_pools->memory_pools[pool_index]->request = req;
     //pyuhala: I don't think atomic store is necessary here.. but lets keep it
-    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_ACQUIRE);
+    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_RELAXED);
     //mem_pools->memory_pools[pool_index]->pool_status = (int)PROCESSING;
 
     // wait for response
@@ -126,7 +126,7 @@ void release_worker(unsigned int pool_index)
     log_zc_routine(__func__);
     //ZC_POOL_LOCK();
     //mem_pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
-    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_ACQUIRE);
+    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_RELAXED);
 
     //ZC_POOL_UNLOCK();
 
@@ -158,7 +158,7 @@ int get_free_pool()
         }
         //if pool status is unused, reserve it.
         bool res = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
-                                               &unused, reserved, false, __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE);
+                                               &unused, reserved, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
         if (res)
         {
             return i;

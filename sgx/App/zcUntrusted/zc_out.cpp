@@ -33,6 +33,9 @@ pthread_t *worker_ids;
 //number of completed switchless requests
 static unsigned int completed_switchless_requests = 0;
 
+//number of initialized workers
+static unsigned int num_init_worker = 0;
+
 /**
  * Lock free queues for zc switchless calls
  */
@@ -137,10 +140,15 @@ static void zc_worker_loop(int index)
     pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
     volatile zc_pool_status pool_state;
 
+    // worker initialization complete
+    int val = __atomic_fetch_add(&num_init_worker, 1, __ATOMIC_RELAXED);
+
     for (;;)
     {
+
+        //ZC_PAUSE();
         //printf("xxxxxxxxxxxxxxxxx in worker loop xxxxxxxxxxxxxxxxxxxx\n");
-        int state = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_ACQUIRE);
+        int state = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_RELAXED);
         //pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
         pool_state = (zc_pool_status)state;
 
@@ -190,11 +198,6 @@ static void zc_worker_loop(int index)
         {
             /* worker should exit */
             //TODO: exit thread
-        }
-        break;
-
-        default:
-        {
         }
         break;
         }
@@ -247,14 +250,14 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      */
     request->is_done = ZC_REQUEST_DONE;
 
-    __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_ACQUIRE);
+    __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_RELAXED);
     //pools->memory_pools[pool_index]->pool_status = (int)WAITING;
     //pyuhala: doing below for debug reasons..something's not alright
     //request->req_pool_index = pool_index;
 
     int val = __atomic_add_fetch(&completed_switchless_requests, 1, __ATOMIC_RELAXED);
     //print for every 10 switchless requests
-    if (!(val % 100))
+    if (!(val % 10))
     {
         printf(">>>>>>>>>>>>>>>> num complete switchless calls: %d >>>>>>>>>>>>>>>>>>>>>\n", val);
     }
@@ -313,16 +316,17 @@ static void create_zc_worker_threads(int numWorkers)
         pthread_create(worker_ids + i, NULL, zc_worker_thread, (void *)args);
     }
 
-    /* for (int i = 0; i < numWorkers; i++)
-    {
-        printf(" -------------- zc worker thread: %d ----------------\n", *(worker_ids + i));
-    }*/
-
-    // pyuhala: joining not a good idea.. since these threads loop "infinitely"
+      // pyuhala: joining not a good idea.. since these threads loop "infinitely"
     /* for (int i = 0; i < numWorkers; i++)
     {
         pthread_join(*(worker_ids + i), NULL);
     }*/
+
+    // wait for workers to initialize
+    while (num_init_worker < numWorkers)
+    {
+        ZC_PAUSE();
+    }
 }
 
 void finalize_zc()

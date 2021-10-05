@@ -714,14 +714,14 @@ void removeKissDbs()
 
 void runKissdbBench()
 {
-    printf(">>>>>>>>>>>>>>>>> kissdb bench >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 100;
-    int max_keys = 1000;
-    int step = 100;
+    //printf(">>>>>>>>>>>>>>>>> kissdb bench >>>>>>>>>>>>>>>>>\n");
+    int min_keys = 10;
+    int max_keys = 100;
+    int step = 10;
     int numWriters = 2;
     int numReaders = 2;
     //write_keys(numKeys, numWriters);
-    bool test = (numReaders == numWriters) || ((numReaders != numWriters) && (numWriters == 1));
+    bool test = (numReaders == numWriters);
     if (!test)
     {
         printf("xxxxxxxxxxxxxxxx check num of writer and reader threads xxxxxxxxxxxxxxxxxxxx");

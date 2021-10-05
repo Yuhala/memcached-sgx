@@ -16,6 +16,7 @@
 #include <sys/sysinfo.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stddef.h>
 
 extern sgx_enclave_id_t global_eid;
 extern struct buffer switchless_buffers[];
@@ -32,7 +33,8 @@ extern bool use_zc_switchless;
  * Used by the writers. We need to make sure any 2 writers don't use the same 
  * storeId ==> storeFile
  */
-static int store_counter = 0;
+static int write_store_counter = 0;
+static int read_store_counter = 0;
 pthread_mutex_t lock;
 
 struct thread_args
@@ -54,8 +56,8 @@ void *reader_thread(void *input)
      * TODO: make this more interesting ie choose diff stores for diff readers
      */
 
-    int id = (store_counter > 0) ? store_counter - 1 : 0;
-
+    //int id = (store_counter > 0) ? store_counter - 1 : 0;
+    int id = __atomic_fetch_add(&read_store_counter, 1, __ATOMIC_RELAXED);
     ecall_readKissdb(global_eid, n, id);
 }
 
@@ -63,10 +65,11 @@ void *writer_thread(void *input)
 {
     int n = ((struct thread_args *)input)->nkeys;
     //int id = ((struct thread_args *)input)->rw_id;
-    int id = 0;
-    pthread_mutex_lock(&lock);
-    id = store_counter++;
-    pthread_mutex_unlock(&lock);
+
+    //pthread_mutex_lock(&lock);
+    //id = write_store_counter++;
+    int id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
+    //pthread_mutex_unlock(&lock);
 
     ecall_writeKissdb(global_eid, n, id);
 }
