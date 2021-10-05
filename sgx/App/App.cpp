@@ -195,6 +195,8 @@ std::map<std::string, int> ocall_map;
 
 bool use_zc_switchless = false;
 
+extern unsigned int completed_switchless_requests;
+
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
     printf("Caught signal: %d\n", sig);
@@ -816,7 +818,8 @@ int main(int argc, char *argv[])
     {
         ret_zero = 0;
         //init_switchless();
-        init_zc(2);
+        init_zc(4);
+       
         //return 0;
     }
 
@@ -843,6 +846,7 @@ int main(int argc, char *argv[])
      */
 
     runKissdbBench();
+     printf("--------------- Total number of completed zc switchless calls: %d -------------------\n", completed_switchless_requests);
     //finalize_zc();
     return 0;
 

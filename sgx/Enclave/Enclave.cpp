@@ -363,6 +363,7 @@ void ecall_writeN(int n)
 
 void readKissdb(int n, int storeId)
 {
+    log_zc_routine(__func__);
     /**
      * Reading the db should not cause race issues for threads if 
      * all handles are local to the threads
@@ -410,6 +411,7 @@ void readKissdb(int n, int storeId)
 
 void writeKissdb(int n, int storeId)
 {
+    log_zc_routine(__func__);
     uint64_t i, j;
     uint64_t v[8];
     //KISSDB db;

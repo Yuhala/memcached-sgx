@@ -31,16 +31,19 @@ extern sgx_enclave_id_t global_eid;
 pthread_t *worker_ids;
 
 //number of completed switchless requests
-static unsigned int completed_switchless_requests = 0;
+unsigned int completed_switchless_requests = 0;
 
 //number of initialized workers
 static unsigned int num_init_worker = 0;
 
+//number of requests on the request queue
+extern volatile unsigned int num_items;
+
 /**
  * Lock free queues for zc switchless calls
  */
-extern struct mpmcq req_mpmcq;
-extern struct mpmcq resp_mpmcq;
+extern struct mpmcq *req_mpmcq;
+extern struct mpmcq *resp_mpmcq;
 
 //pyuhala: forward declarations
 static void zc_worker_loop(int);
@@ -52,6 +55,7 @@ static void init_mem_pools();
 static void init_pools();
 static void free_mem_pools();
 static void init_zc_scheduler(int num_workers);
+static void zc_worker_loop_q();
 
 //useful globals
 int num_cores = -1;
@@ -61,6 +65,8 @@ zc_mpool_array *pools;
 ssize_t curr_pool_index = 0; /* workers will get the pool at this index */
 
 pthread_mutex_t pool_index_lock;
+
+static bool use_queues = false;
 
 /**
  * Initializes zc switchless system using this number of worker threads out of the enclave
@@ -81,7 +87,11 @@ void init_zc(int numWorkers)
     int opt_worker = getOptimalWorkers(numWorkers);
 
     //init_arg_buffers_out(opt_worker);
-    //init_zc_mpmc_queues();
+
+    if (use_queues)
+    {
+        init_zc_mpmc_queues();
+    }
     //allocate memory pools
     init_pools();
     //init locks
@@ -120,10 +130,18 @@ void *zc_scheduler_thread(void *input)
 void *zc_worker_thread(void *input)
 {
     log_zc_routine(__func__);
-    zc_worker_args *args = (zc_worker_args *)input;
 
     //printf("---------hello I'm a zc worker and my pool id is: %d -----------\n", thread_pool_index);
-    zc_worker_loop(args->pool_index);
+    if (use_queues)
+    {
+        zc_worker_loop_q();
+    }
+    else
+    {
+        //use worker thread buffers/pool system
+        zc_worker_args *args = (zc_worker_args *)input;
+        zc_worker_loop(args->pool_index);
+    }
 }
 
 /**
@@ -139,6 +157,7 @@ static void zc_worker_loop(int index)
     pools->memory_pools[pool_index]->request = NULL;
     pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
     volatile zc_pool_status pool_state;
+    volatile int status;
 
     // worker initialization complete
     int val = __atomic_fetch_add(&num_init_worker, 1, __ATOMIC_RELAXED);
@@ -146,22 +165,11 @@ static void zc_worker_loop(int index)
     for (;;)
     {
 
-        //ZC_PAUSE();
+        ZC_PAUSE();
         //printf("xxxxxxxxxxxxxxxxx in worker loop xxxxxxxxxxxxxxxxxxxx\n");
-        int state = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_RELAXED);
+        status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_RELAXED);
         //pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
-        pool_state = (zc_pool_status)state;
-
-        /**
-         * using queues
-         */
-        /* if (mpmc_queue_count(&req_mpmcq) > 0)
-        {
-            printf("-------------- mpmpc queue count > 0 -----------------\n");
-            void *request;
-            zc_mpmc_dequeue(&req_mpmcq, &request);
-            handle_zc_switchless_request((zc_req *)request);
-        }*/
+        pool_state = (zc_pool_status)status;
 
         /**
          * using per thread memory pools
@@ -210,6 +218,43 @@ static void zc_worker_loop(int index)
 }
 
 /**
+ * Each worker thread loops in here for sometime waiting for pending requests.
+ * Implementation with mpmc request queue
+ */
+static void zc_worker_loop_q()
+{
+    log_zc_routine(__func__);
+    //set pool states
+
+    // worker initialization complete
+    int val = __atomic_fetch_add(&num_init_worker, 1, __ATOMIC_RELAXED);
+    zc_req *request = NULL;
+
+    for (;;)
+    {
+
+        ZC_PAUSE();
+
+        /**
+         * using queues
+         */
+        if (mpmc_queue_count(req_mpmcq) > 0)
+        {
+
+            int ret = mpmc_dequeue(req_mpmcq, (void **)&request);
+            if (ret == 1)
+            {
+                printf("------------------- request dequeued ----------------\n");
+            }
+            handle_zc_switchless_request(request, -1);
+        }
+
+        //TODO: sleep or something to save cpu cycles
+    }
+    printf("xxxxxxxxxxxxxxxxxxxxx ------------------zc thread broke out of infinite loop -------------------xxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+}
+
+/**
  * pyuhala: Routine to handle switchless routines. Using switch is probably not the smartest way,
  * but OK for a POC with a few shim functions.
  * Try using a function table to resolve the corresponding functions
@@ -248,14 +293,21 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      * Finalize request: change its status to done,
      * 
      */
-    request->is_done = ZC_REQUEST_DONE;
+    //request->is_done = ZC_REQUEST_DONE;
 
-    __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_RELAXED);
+    __atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_RELAXED);
+
+    if (pool_index != -1)
+    {
+        // we do not do this for the queue system; callers find any free pools for arg allocation, independent of workers
+        __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_RELAXED);
+    }
+
     //pools->memory_pools[pool_index]->pool_status = (int)WAITING;
     //pyuhala: doing below for debug reasons..something's not alright
     //request->req_pool_index = pool_index;
 
-    int val = __atomic_add_fetch(&completed_switchless_requests, 1, __ATOMIC_RELAXED);
+    int val = __atomic_add_fetch(&completed_switchless_requests, 1, __ATOMIC_ACQUIRE);
     //print for every 10 switchless requests
     if (!(val % 10))
     {
@@ -289,7 +341,27 @@ static void init_mem_pools()
         pools->memory_pools[i] = (zc_mpool *)malloc(sizeof(zc_mpool));
         pools->memory_pools[i]->pool = mpool_create(POOL_SIZE);
         pools->memory_pools[i]->pool_id = i;
-        pools->memory_pools[i]->active = 0; /* it hasn't been allocated to a thread yet */
+
+        if (use_queues)
+        {
+            /**
+             * pyuhala: when using queues, the memory pools are simply used by
+             * in-enclave threads for untrusted mem allocation independent of 
+             * worker threads. The worker threads only dequeue and handle requests.
+             * So activate all the pools.
+             */
+            pools->memory_pools[i]->active = 1;
+        }
+        else
+        {
+            /**
+             * when using our per-worker buffer/pool system, each worker 
+             * "owns" a pool and this active status will be set only when a 
+             * corresponding worker is created, so we don't have caller threads
+             * using pools w/o a worker.
+             */
+            pools->memory_pools[i]->active = 0;
+        }
     }
 }
 
@@ -316,7 +388,7 @@ static void create_zc_worker_threads(int numWorkers)
         pthread_create(worker_ids + i, NULL, zc_worker_thread, (void *)args);
     }
 
-      // pyuhala: joining not a good idea.. since these threads loop "infinitely"
+    // pyuhala: joining not a good idea.. since these threads loop "infinitely"
     /* for (int i = 0; i < numWorkers; i++)
     {
         pthread_join(*(worker_ids + i), NULL);

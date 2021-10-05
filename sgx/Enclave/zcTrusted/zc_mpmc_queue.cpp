@@ -75,6 +75,7 @@ int newmpmcq(struct mpmcq *q, size_t buffer_size, void *buffer)
     }
     __atomic_store_n(&q->enqueue_pos, 0, __ATOMIC_RELAXED);
     __atomic_store_n(&q->dequeue_pos, 0, __ATOMIC_RELAXED);
+    q->num_items = 0;
     return 1;
 }
 
@@ -87,7 +88,7 @@ int mpmc_enqueue(volatile struct mpmcq *q, void *data)
     for (;;)
     {
         cell = &q->buffer[pos & q->buffer_mask];
-        seq = __atomic_load_n(&cell->seq, __ATOMIC_RELAXED);
+        seq = __atomic_load_n(&cell->seq, __ATOMIC_ACQUIRE);
         dif = (intptr_t)seq - (intptr_t)pos;
         if (dif == 0)
         {
@@ -115,12 +116,14 @@ int mpmc_enqueue(volatile struct mpmcq *q, void *data)
     }
     cell->data = data;
     __atomic_store_n(&cell->seq, pos + 1, __ATOMIC_RELEASE);
+
+    int val = __atomic_add_fetch(&q->num_items, 1, __ATOMIC_ACQUIRE);
     return 1;
 }
 
 int mpmc_dequeue(volatile struct mpmcq *q, void **data)
 {
-    
+
     struct cell_t *cell;
     size_t seq;
     intptr_t dif;
@@ -128,7 +131,7 @@ int mpmc_dequeue(volatile struct mpmcq *q, void **data)
     for (;;)
     {
         cell = &q->buffer[pos & q->buffer_mask];
-        seq = __atomic_load_n(&cell->seq, __ATOMIC_RELAXED);
+        seq = __atomic_load_n(&cell->seq, __ATOMIC_ACQUIRE);
         dif = (intptr_t)seq - (intptr_t)(pos + 1);
         if (dif == 0)
         {
@@ -156,6 +159,8 @@ int mpmc_dequeue(volatile struct mpmcq *q, void **data)
     }
     *data = cell->data;
     __atomic_store_n(&cell->seq, pos + q->buffer_mask + 1, __ATOMIC_RELEASE);
+
+    int val = __atomic_sub_fetch(&q->num_items, 1, __ATOMIC_ACQUIRE);
     return 1;
 }
 
@@ -174,7 +179,7 @@ int mpmc_dequeue_request(volatile struct mpmcq *q, void **data, zc_req *request)
     for (;;)
     {
         cell = &q->buffer[pos & q->buffer_mask];
-        seq = __atomic_load_n(&cell->seq, __ATOMIC_RELAXED);
+        seq = __atomic_load_n(&cell->seq, __ATOMIC_ACQUIRE);
         dif = (intptr_t)seq - (intptr_t)(pos + 1);
         if (dif == 0)
         {

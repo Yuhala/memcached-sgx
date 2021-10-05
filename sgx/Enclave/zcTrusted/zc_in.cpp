@@ -18,6 +18,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "zc_mpmc_queue.h"
+
 //#define ZC_LOGGING 1
 
 /**
@@ -25,6 +27,7 @@
  */
 extern struct mpmcq *req_mpmcq;
 extern struct mpmcq *resp_mpmcq;
+static bool use_queues = false;
 
 zc_mpool_array *mem_pools;
 
@@ -49,6 +52,7 @@ void ecall_init_mpmc_queues_inside(void *req_q, void *resp_q)
     log_zc_routine(__func__);
     req_mpmcq = (struct mpmcq *)req_q;
     resp_mpmcq = (struct mpmcq *)resp_q;
+    use_queues = true;
 
     //initialize zc switchless map
     //use_zc_test();
@@ -73,20 +77,32 @@ void ecall_init_mem_pools(void *pools)
 void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
 {
     log_zc_routine(__func__);
-    //enqueue request on request queue
-    //zc_mpmc_enqueue(req_mpmcq, (void *)request);#include <stdlib.h>
 
-    mem_pools->memory_pools[pool_index]->request = req;
-    //pyuhala: I don't think atomic store is necessary here.. but lets keep it
-    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_RELAXED);
-    //mem_pools->memory_pools[pool_index]->pool_status = (int)PROCESSING;
+    if (use_queues)
+    {
+        //enqueue request on request queue
+
+        int ret = mpmc_enqueue(req_mpmcq, (void *)req);
+        if (ret == 1)
+        {
+            printf("--------------- caller successfully enqueued request -----------------\n");
+        }
+    }
+    else
+    {
+        //use worker thread buffers for request
+        mem_pools->memory_pools[pool_index]->request = req;
+        //pyuhala: I don't think atomic store is necessary here.. but lets keep it
+        __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_ACQUIRE);
+        //mem_pools->memory_pools[pool_index]->pool_status = (int)PROCESSING;
+    }
 
     // wait for response
-    ZC_REQUEST_WAIT(&req->is_done);
     /**
      * The worker thread will eventually change the status of the request to done, 
      * and we will leave the waiting loop
      */
+    ZC_REQUEST_WAIT(&req->is_done);
 }
 
 /**
@@ -97,12 +113,13 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
  */
 int reserve_worker()
 {
-    //log_zc_routine(__func__);
+
     if (!zc_switchless_active)
     {
         return ZC_NO_FREE_POOL;
     }
 
+    //log_zc_routine(__func__);
     int index = get_free_pool();
     if (index == ZC_NO_FREE_POOL)
     {
@@ -123,7 +140,7 @@ int reserve_worker()
 void release_worker(unsigned int pool_index)
 {
 
-    log_zc_routine(__func__);
+    //log_zc_routine(__func__);
     //ZC_POOL_LOCK();
     //mem_pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
     __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_RELAXED);
@@ -192,17 +209,23 @@ int get_free_pool()
  * Each caller thread will wait for the request to be done
  * before progressing. I created a separate function because the 
  * implementation of this "wait" may/would change depending on perfs.
- * For now we use an asm pause to free some CPU time. 
+ * For now we could use an asm pause to free some CPU time. 
  */
 void ZC_REQUEST_WAIT(volatile int *isDone)
 {
     log_zc_routine(__func__);
-    //spin_lock(isDone);
-    while ((*isDone) != ZC_REQUEST_DONE)
+    volatile int done;
+
+    for (;;)
     {
-        //do nothing
+        done = __atomic_load_n(isDone, __ATOMIC_RELAXED);
+        if (done == ZC_REQUEST_DONE)
+        {
+            break;
+        }
         //ZC_PAUSE();
     }
+
     //printf("---- request is done ------\n");
 }
 
@@ -212,9 +235,9 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
 static unsigned int get_counter()
 {
     //log_zc_routine(__func__);
-    
+
     //sgx_thread_mutex_lock(&counter_setter_lock);
-    int val = __atomic_fetch_add(&enclave_request_counter, 1, __ATOMIC_RELAXED);
+    int val = __atomic_fetch_add(&enclave_request_counter, 1, __ATOMIC_ACQUIRE);
     //val = enclave_request_counter;
     //enclave_request_counter++;
     //sgx_thread_mutex_unlock(&counter_setter_lock);

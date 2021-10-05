@@ -65,8 +65,8 @@ extern sgx_enclave_id_t global_eid;
 /**
  * Lock free queues for zc switchless calls
  */
-struct mpmcq req_mpmcq;
-struct mpmcq resp_mpmcq;
+struct mpmcq *req_mpmcq;
+struct mpmcq *resp_mpmcq;
 
 /* user is responsible for freeing the queue buffer, but it's tied to the
    runtime of the enclave, so is not necessary in practice */
@@ -83,6 +83,7 @@ int newmpmcq(struct mpmcq *q, size_t buffer_size, void *buffer)
     }
     __atomic_store_n(&q->enqueue_pos, 0, __ATOMIC_RELAXED);
     __atomic_store_n(&q->dequeue_pos, 0, __ATOMIC_RELAXED);
+    q->num_items = 0;
     return 1;
 }
 
@@ -91,7 +92,7 @@ int mpmc_enqueue(volatile struct mpmcq *q, void *data)
     struct cell_t *cell;
     size_t seq, exp;
     intptr_t dif;
-    size_t pos = __atomic_load_n(&q->enqueue_pos, __ATOMIC_RELAXED);
+    size_t pos = __atomic_load_n(&q->enqueue_pos, __ATOMIC_ACQUIRE);
     for (;;)
     {
         cell = &q->buffer[pos & q->buffer_mask];
@@ -123,6 +124,8 @@ int mpmc_enqueue(volatile struct mpmcq *q, void *data)
     }
     cell->data = data;
     __atomic_store_n(&cell->seq, pos + 1, __ATOMIC_RELEASE);
+
+    int val = __atomic_add_fetch(&q->num_items, 1, __ATOMIC_ACQUIRE);
     return 1;
 }
 
@@ -135,7 +138,7 @@ int mpmc_dequeue(volatile struct mpmcq *q, void **data)
     for (;;)
     {
         cell = &q->buffer[pos & q->buffer_mask];
-        seq = __atomic_load_n(&cell->seq, __ATOMIC_RELAXED);
+        seq = __atomic_load_n(&cell->seq, __ATOMIC_ACQUIRE);
         dif = (intptr_t)seq - (intptr_t)(pos + 1);
         if (dif == 0)
         {
@@ -163,6 +166,8 @@ int mpmc_dequeue(volatile struct mpmcq *q, void **data)
     }
     *data = cell->data;
     __atomic_store_n(&cell->seq, pos + q->buffer_mask + 1, __ATOMIC_RELEASE);
+
+    int val = __atomic_sub_fetch(&q->num_items, 1, __ATOMIC_ACQUIRE);
     return 1;
 }
 
@@ -190,16 +195,17 @@ int zc_mpmc_dequeue(volatile struct mpmcq *q, void **data)
  */
 size_t mpmc_queue_count(volatile struct mpmcq *q)
 {
-    size_t eq_pos = __atomic_load_n(&q->enqueue_pos, __ATOMIC_RELAXED);
-    size_t dq_pos = __atomic_load_n(&q->dequeue_pos, __ATOMIC_RELAXED);
+    size_t count = __atomic_load_n(&q->num_items, __ATOMIC_RELAXED);
 
-    return (eq_pos - dq_pos);
+    return count;
 }
 
 void init_zc_mpmc_queues()
 {
-    zc_newmpmcq(&req_mpmcq, ZC_QUEUE_CAPACITY);
-    zc_newmpmcq(&resp_mpmcq, ZC_QUEUE_CAPACITY);
+    req_mpmcq = (struct mpmcq *)malloc(sizeof(struct mpmcq));
+    resp_mpmcq = (struct mpmcq *)malloc(sizeof(struct mpmcq));
+    newmpmcq(req_mpmcq, ZC_QUEUE_CAPACITY, 0);
+    newmpmcq(resp_mpmcq, ZC_QUEUE_CAPACITY, 0);
 
-    ecall_init_mpmc_queues_inside(global_eid, (void *)&req_mpmcq, (void *)&resp_mpmcq);
+    ecall_init_mpmc_queues_inside(global_eid, (void *)req_mpmcq, (void *)resp_mpmcq);
 }

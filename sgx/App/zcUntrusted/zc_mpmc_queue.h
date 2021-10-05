@@ -54,6 +54,7 @@ struct mpmcq
     char pad2[128];
     size_t dequeue_pos;
     char pad3[128];
+    volatile unsigned int num_items = 0; //number of items on a req queue
 } __attribute__((aligned(64)));
 
 int mpmc_enqueue(volatile struct mpmcq *q, void *data);
