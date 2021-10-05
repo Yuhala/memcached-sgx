@@ -715,11 +715,11 @@ void removeKissDbs()
 void runKissdbBench()
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 2;
-    int max_keys = 50;
-    int step = 2;
-    int numWriters = 1;
-    int numReaders = 1;
+    int min_keys = 100;
+    int max_keys = 1000;
+    int step = 100;
+    int numWriters = 2;
+    int numReaders = 2;
     //write_keys(numKeys, numWriters);
     bool test = (numReaders == numWriters) || ((numReaders != numWriters) && (numWriters == 1));
     if (!test)

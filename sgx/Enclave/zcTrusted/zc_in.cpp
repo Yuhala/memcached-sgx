@@ -2,6 +2,7 @@
  * Created on Tue Sep 28 2021
  *
  * Copyright (c) 2021 Peterson Yuhala, IIUN
+ * Builtins doc: https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
  */
 
 #include "Enclave.h"
@@ -12,6 +13,10 @@
 #include "zc_in.h"
 #include "zc_lfu.h"
 #include "zc_spinlocks.h"
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <stddef.h>
 
 //#define ZC_LOGGING 1
 
@@ -69,13 +74,12 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
 {
     log_zc_routine(__func__);
     //enqueue request on request queue
-    //zc_mpmc_enqueue(req_mpmcq, (void *)request);
-    //set a flag to notify workers ??
+    //zc_mpmc_enqueue(req_mpmcq, (void *)request);#include <stdlib.h>
 
-    // place request on worker's buffer
     mem_pools->memory_pools[pool_index]->request = req;
-    // change status of worker pool to PROCESSING
-    mem_pools->memory_pools[pool_index]->pool_status = (int)PROCESSING;
+    //pyuhala: I don't think atomic store is necessary here.. but lets keep it
+    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_ACQUIRE);
+    //mem_pools->memory_pools[pool_index]->pool_status = (int)PROCESSING;
 
     // wait for response
     ZC_REQUEST_WAIT(&req->is_done);
@@ -121,7 +125,9 @@ void release_worker(unsigned int pool_index)
 
     log_zc_routine(__func__);
     //ZC_POOL_LOCK();
-    mem_pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
+    //mem_pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
+    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_ACQUIRE);
+
     //ZC_POOL_UNLOCK();
 
     //printf("---------------released pool/worker ---------------\n");
@@ -137,29 +143,47 @@ int get_free_pool()
 
     int status;
     // get a thread identifier first
-    int req_num = get_counter();
+    //int req_num = get_counter();
+    int unused = (int)UNUSED;
+    int reserved = (int)RESERVED;
 
     for (int i = 0; i < NUM_POOLS; i++)
     {
-        status = mem_pools->memory_pools[i]->pool_status;
-        if (mem_pools->memory_pools[i]->active && status == (int)UNUSED)
+        //status = mem_pools->memory_pools[i]->pool_status;
+        //status = __atomic_load_n(&mem_pools->memory_pools[i]->pool_status, __ATOMIC_RELAXED);
+
+        if (!mem_pools->memory_pools[i]->active)
         {
-            //pyuhala: we may have concurrency issues here..well not really
-            //ZC_POOL_LOCK();
-            mem_pools->memory_pools[i]->pool_status = (int)RESERVED;
-            mem_pools->memory_pools[i]->curr_user_id = req_num;
-            //ZC_POOL_UNLOCK();
-            /**
-             * make sure it is you who reserved here, 
-             * b/c a diff thread could have found this free pool at the same time as you, 
-             * and you should continue checking for an unused slot
-             */
-            if (mem_pools->memory_pools[i]->curr_user_id == req_num)
-            {
-                return i;
-            }
             continue;
         }
+        //if pool status is unused, reserve it.
+        bool res = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
+                                               &unused, reserved, false, __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE);
+        if (res)
+        {
+            return i;
+        }
+
+        //if (mem_pools->memory_pools[i]->active && status == (int)UNUSED)
+        //{
+        //pyuhala: we may have concurrency issues here..well not really
+        //ZC_POOL_LOCK();
+        //mem_pools->memory_pools[i]->pool_status = (int)RESERVED;
+        //__atomic_store_n(&mem_pools->memory_pools[i]->pool_status, (int)RESERVED, __ATOMIC_RELAXED);
+        //mem_pools->memory_pools[i]->curr_user_id = req_num;
+        //__atomic_store_n(&mem_pools->memory_pools[i]->curr_user_id, req_num, __ATOMIC_RELAXED);
+
+        //ZC_POOL_UNLOCK();
+
+        //make sure it is you who reserved here,
+        //b/c a diff thread could have found this free pool at the same time as you,
+        //and you should continue checking for an unused slot
+
+        //if (mem_pools->memory_pools[i]->curr_user_id == req_num)
+        //{
+        //return i;
+        //}
+        //continue;
     }
     return ZC_NO_FREE_POOL;
 }
@@ -188,10 +212,11 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
 static unsigned int get_counter()
 {
     //log_zc_routine(__func__);
-    int val = -1;
+    
     //sgx_thread_mutex_lock(&counter_setter_lock);
-    val = enclave_request_counter;
-    enclave_request_counter++;
+    int val = __atomic_fetch_add(&enclave_request_counter, 1, __ATOMIC_RELAXED);
+    //val = enclave_request_counter;
+    //enclave_request_counter++;
     //sgx_thread_mutex_unlock(&counter_setter_lock);
     return val;
 }

@@ -30,6 +30,9 @@ extern sgx_enclave_id_t global_eid;
 //zc switchless worker thread ids
 pthread_t *worker_ids;
 
+//number of completed switchless requests
+static unsigned int completed_switchless_requests = 0;
+
 /**
  * Lock free queues for zc switchless calls
  */
@@ -137,8 +140,10 @@ static void zc_worker_loop(int index)
     for (;;)
     {
         //printf("xxxxxxxxxxxxxxxxx in worker loop xxxxxxxxxxxxxxxxxxxx\n");
+        int state = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_ACQUIRE);
+        //pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
+        pool_state = (zc_pool_status)state;
 
-        pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
         /**
          * using queues
          */
@@ -241,9 +246,18 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      * 
      */
     request->is_done = ZC_REQUEST_DONE;
-    pools->memory_pools[pool_index]->pool_status = (int)WAITING;
+
+    __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_ACQUIRE);
+    //pools->memory_pools[pool_index]->pool_status = (int)WAITING;
     //pyuhala: doing below for debug reasons..something's not alright
-    request->req_pool_index = pool_index;
+    //request->req_pool_index = pool_index;
+
+    int val = __atomic_add_fetch(&completed_switchless_requests, 1, __ATOMIC_RELAXED);
+    //print for every 10 switchless requests
+    if (!(val % 100))
+    {
+        printf(">>>>>>>>>>>>>>>> num complete switchless calls: %d >>>>>>>>>>>>>>>>>>>>>\n", val);
+    }
 
     //zc_mpmc_enqueue(&resp_mpmcq, (void *)request);
 }
