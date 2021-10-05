@@ -48,13 +48,7 @@ void *reader_thread(void *input)
 {
     int n = ((struct thread_args *)input)->nkeys;
     //int id = ((struct thread_args *)input)->rw_id;
-    /**
-     * pyuhala
-     * store_counter - 1 should give us a valid counter
-     * at this point since we assume writes have been done to a store file.
-     * 
-     * TODO: make this more interesting ie choose diff stores for diff readers
-     */
+    // readers read in the store corresponding to their store id
 
     //int id = (store_counter > 0) ? store_counter - 1 : 0;
     int id = __atomic_fetch_add(&read_store_counter, 1, __ATOMIC_RELAXED);
