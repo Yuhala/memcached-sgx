@@ -109,6 +109,7 @@ struct zc_request
     void *args;
     zc_routine func_name;
     unsigned int req_id;
+    //volatile int is_done;        /* do not cache this int */
     volatile int is_done;        /* do not cache this int */
     unsigned int req_pool_index; /* pool index of worker thread */
 };

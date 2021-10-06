@@ -167,9 +167,9 @@ static void zc_worker_loop(int index)
 
         //ZC_PAUSE();
         //printf("xxxxxxxxxxxxxxxxx in worker loop xxxxxxxxxxxxxxxxxxxx\n");
-        status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_ACQUIRE);
-        //pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
-        pool_state = (zc_pool_status)status;
+        //status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_SEQ_CST);
+        pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
+        //pool_state = (zc_pool_status)status;
 
         /**
          * using per thread memory pools
@@ -191,8 +191,15 @@ static void zc_worker_loop(int index)
         {
             //printf("------zc worker handling a request--------\n");
             zc_req *req = pools->memory_pools[pool_index]->request;
+            /**
+             * pyuhala: if req = NULL, pause and try again
+             */
+            if (req == NULL)
+            {
+                goto resume;
+            }
             handle_zc_switchless_request(req, pool_index);
-            //check if this thread sees change in pool status
+            //remove this request from this pool
         }
         break;
 
@@ -209,6 +216,8 @@ static void zc_worker_loop(int index)
         }
         break;
         }
+
+    resume:;
 
         //manage memory pool
 
@@ -293,7 +302,6 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      * Finalize request: change its status to done,
      * 
      */
-    //request->is_done = ZC_REQUEST_DONE;
 
     /**
      * pyuhala: from cpp ref
@@ -301,7 +309,9 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      * i use a mem order release. The caller in the enclave will use mem order acquire
      * and so is guaranteed to see this change... this is my understanding
      */
-    __atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_RELEASE);
+
+    //request->is_done = ZC_REQUEST_DONE; /* w/o atomic store */
+    __atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_SEQ_CST); /* with atomic store */
 
     if (pool_index != -1)
     {
@@ -313,6 +323,7 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     //pyuhala: doing below for debug reasons..something's not alright
     //request->req_pool_index = pool_index;
 
+    //count switchless calls
     int val = __atomic_add_fetch(&completed_switchless_requests, 1, __ATOMIC_RELAXED);
     //print for every 10 switchless requests
     /*
@@ -320,8 +331,6 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     {
         printf(">>>>>>>>>>>>>>>> num complete switchless calls: %d >>>>>>>>>>>>>>>>>>>>>\n", val);
     }*/
-
-    //zc_mpmc_enqueue(&resp_mpmcq, (void *)request);
 }
 
 static int getOptimalWorkers(int numWorkers)

@@ -722,8 +722,8 @@ void runKissdbBench()
     int min_keys = 10;
     int max_keys = 100;
     int step = 10;
-    int numWriters = 2;
-    int numReaders = 2;
+    int numWriters = 1;
+    int numReaders = 1;
     //write_keys(numKeys, numWriters);
     bool test = (numReaders == numWriters);
 
@@ -740,7 +740,7 @@ void runKissdbBench()
         stop_clock();
         double runTime = time_diff(&start, &stop, SEC);
         registerKissResults(i, runTime);
-        printf(">>>>>>>>>>>>>>>>> kissdb bench keys: %d COMPLETE >>>>>>>>>>>>>>>>>\n", i);
+        printf(">>>>>>>>>>>>>>>>> kissdb bench: %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
         removeKissDbs();
     }
     printf(">>>>>>>>>>>>>>>>> kissdb bench END >>>>>>>>>>>>>>>>>\n");
