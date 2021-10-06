@@ -23,7 +23,7 @@ ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
 
     // do request
     zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
-    request->args = (void *)arg;req_pool_index
+    request->args = (void *)arg;
     request->func_name = ZC_READ;
     request->is_done = 0;
     do_zc_switchless_request(request, pool_index);

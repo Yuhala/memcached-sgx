@@ -165,9 +165,9 @@ static void zc_worker_loop(int index)
     for (;;)
     {
 
-        ZC_PAUSE();
+        //ZC_PAUSE();
         //printf("xxxxxxxxxxxxxxxxx in worker loop xxxxxxxxxxxxxxxxxxxx\n");
-        status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_RELAXED);
+        status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_ACQUIRE);
         //pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
         pool_state = (zc_pool_status)status;
 
@@ -214,7 +214,7 @@ static void zc_worker_loop(int index)
 
         //TODO: sleep or something to save cpu cycles
     }
-    printf("xxxxxxxxxxxxxxxxxxxxx ------------------zc thread broke out of infinite loop -------------------xxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+    //printf("xxxxxxxxxxxxxxxxxxxxx ------------------zc thread broke out of infinite loop -------------------xxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
 }
 
 /**
@@ -244,14 +244,14 @@ static void zc_worker_loop_q()
             int ret = mpmc_dequeue(req_mpmcq, (void **)&request);
             if (ret == 1)
             {
-                printf("------------------- request dequeued ----------------\n");
+                //printf("------------------- request dequeued ----------------\n");
             }
             handle_zc_switchless_request(request, -1);
         }
 
         //TODO: sleep or something to save cpu cycles
     }
-    printf("xxxxxxxxxxxxxxxxxxxxx ------------------zc thread broke out of infinite loop -------------------xxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+    //printf("xxxxxxxxxxxxxxxxxxxxx ------------------zc thread broke out of infinite loop -------------------xxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
 }
 
 /**
@@ -285,7 +285,7 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
         break;
 
     default:
-        printf("----------- cannot handle zc switchless request -------------\n");
+        //printf("----------- cannot handle zc switchless request -------------\n");
         break;
     }
 
@@ -295,24 +295,31 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      */
     //request->is_done = ZC_REQUEST_DONE;
 
-    __atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_RELAXED);
+    /**
+     * pyuhala: from cpp ref
+     * you can look at this store as a producer updating the request state so 
+     * i use a mem order release. The caller in the enclave will use mem order acquire
+     * and so is guaranteed to see this change... this is my understanding
+     */
+    __atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_RELEASE);
 
     if (pool_index != -1)
     {
         // we do not do this for the queue system; callers find any free pools for arg allocation, independent of workers
-        __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_RELAXED);
+        //__atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_RELAXED);
     }
 
     //pools->memory_pools[pool_index]->pool_status = (int)WAITING;
     //pyuhala: doing below for debug reasons..something's not alright
     //request->req_pool_index = pool_index;
 
-    int val = __atomic_add_fetch(&completed_switchless_requests, 1, __ATOMIC_ACQUIRE);
+    int val = __atomic_add_fetch(&completed_switchless_requests, 1, __ATOMIC_RELAXED);
     //print for every 10 switchless requests
+    /*
     if (!(val % 10))
     {
         printf(">>>>>>>>>>>>>>>> num complete switchless calls: %d >>>>>>>>>>>>>>>>>>>>>\n", val);
-    }
+    }*/
 
     //zc_mpmc_enqueue(&resp_mpmcq, (void *)request);
 }

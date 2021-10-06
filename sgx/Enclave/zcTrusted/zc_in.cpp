@@ -93,7 +93,7 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
         //use worker thread buffers for request
         mem_pools->memory_pools[pool_index]->request = req;
         //pyuhala: I don't think atomic store is necessary here.. but lets keep it
-        __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_ACQUIRE);
+        __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_RELEASE);
         //mem_pools->memory_pools[pool_index]->pool_status = (int)PROCESSING;
     }
 
@@ -143,7 +143,7 @@ void release_worker(unsigned int pool_index)
     //log_zc_routine(__func__);
     //ZC_POOL_LOCK();
     //mem_pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
-    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_RELAXED);
+    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_RELEASE);
 
     //ZC_POOL_UNLOCK();
 
@@ -161,6 +161,7 @@ int get_free_pool()
     int status;
     // get a thread identifier first
     //int req_num = get_counter();
+
     int unused = (int)UNUSED;
     int reserved = (int)RESERVED;
 
@@ -174,8 +175,13 @@ int get_free_pool()
             continue;
         }
         //if pool status is unused, reserve it.
+        /**
+         * pyuhala: i used release memory order here in the caller and acquire in the 
+         * worker outside so the latter sees the changes
+         */
         bool res = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
-                                               &unused, reserved, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+                                               &unused, reserved, false, __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE);
+
         if (res)
         {
             return i;
@@ -218,12 +224,12 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
 
     for (;;)
     {
-        done = __atomic_load_n(isDone, __ATOMIC_RELAXED);
+        done = __atomic_load_n(isDone, __ATOMIC_ACQUIRE);
         if (done == ZC_REQUEST_DONE)
         {
             break;
         }
-        ZC_PAUSE();
+        //ZC_PAUSE();
     }
 
     //printf("---- request is done ------\n");
@@ -237,7 +243,7 @@ static unsigned int get_counter()
     //log_zc_routine(__func__);
 
     //sgx_thread_mutex_lock(&counter_setter_lock);
-    int val = __atomic_fetch_add(&enclave_request_counter, 1, __ATOMIC_ACQUIRE);
+    int val = __atomic_fetch_add(&enclave_request_counter, 1, __ATOMIC_RELAXED);
     //val = enclave_request_counter;
     //enclave_request_counter++;
     //sgx_thread_mutex_unlock(&counter_setter_lock);

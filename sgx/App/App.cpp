@@ -710,13 +710,15 @@ void destroy_switchless(void)
 
 void removeKissDbs()
 {
-    printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
-    system("rm kissdb*");
+    //printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
+    int ret = system("rm kissdb*");
+    //WEXITSTATUS(ret);
+    ZC_ASSERT(!ret);
 }
 
 void runKissdbBench()
 {
-    //printf(">>>>>>>>>>>>>>>>> kissdb bench >>>>>>>>>>>>>>>>>\n");
+    printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
     int min_keys = 10;
     int max_keys = 100;
     int step = 10;
@@ -724,23 +726,24 @@ void runKissdbBench()
     int numReaders = 2;
     //write_keys(numKeys, numWriters);
     bool test = (numReaders == numWriters);
-    if (!test)
-    {
-        printf("xxxxxxxxxxxxxxxx check num of writer and reader threads xxxxxxxxxxxxxxxxxxxx");
-        return;
-    }
+
+    ZC_ASSERT(test);
+
+    //printf("xxxxxxxxxxxxxxxx check num of writer and reader threads xxxxxxxxxxxxxxxxxxxx");
 
     for (int i = min_keys; i <= max_keys; i += step)
     {
-        printf("<--------------------- running kissdb bench for: %d keys ----------------------->\n", i);
+        //printf("<--------------------- running kissdb bench for: %d keys ----------------------->\n", i);
         start_clock();
         write_keys(i, numWriters);
         read_keys(i, numReaders);
         stop_clock();
         double runTime = time_diff(&start, &stop, SEC);
         registerKissResults(i, runTime);
+        printf(">>>>>>>>>>>>>>>>> kissdb bench keys: %d COMPLETE >>>>>>>>>>>>>>>>>\n", i);
         removeKissDbs();
     }
+    printf(">>>>>>>>>>>>>>>>> kissdb bench END >>>>>>>>>>>>>>>>>\n");
 }
 
 /* Application entry */
@@ -819,7 +822,7 @@ int main(int argc, char *argv[])
         ret_zero = 0;
         //init_switchless();
         init_zc(4);
-       
+
         //return 0;
     }
 
@@ -846,7 +849,7 @@ int main(int argc, char *argv[])
      */
 
     runKissdbBench();
-     printf("--------------- Total number of completed zc switchless calls: %d -------------------\n", completed_switchless_requests);
+    printf("--------------- Total number of completed zc switchless calls: %d -------------------\n", completed_switchless_requests);
     //finalize_zc();
     return 0;
 

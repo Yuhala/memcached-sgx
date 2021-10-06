@@ -265,16 +265,7 @@ void ecall_graal_main_args(int id, int arg1, struct buffer *bs, struct buffer *b
     //run_main(2, argv);
 }
 
-void *graal_job(void *arg)
-{
-    //int sum = graal_add(enc_iso, 1, 2);
-    //printf("Enclave Graal add 1+2 = %d\n", sum);
 
-    printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx Native Image Code Start xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
-    //run_main(1, NULL);
-
-    printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  Native Image Code End  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
-}
 
 void ecall_run_main(int id)
 {
@@ -434,6 +425,7 @@ void writeKissdb(int n, int storeId)
     if (retOpen)
     {
         printf("KISSDB_open failed\n");
+        return;
     }
 
     //printf("Adding %d 64-byte kv pairs in kissdb...\n", n);

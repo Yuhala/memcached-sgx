@@ -35,7 +35,7 @@ extern bool use_zc_switchless;
  */
 static int write_store_counter = 0;
 static int read_store_counter = 0;
-pthread_mutex_t lock;
+pthread_mutex_t kissdb_lock;
 
 struct thread_args
 {
@@ -50,7 +50,7 @@ void *reader_thread(void *input)
     //int id = ((struct thread_args *)input)->rw_id;
     // readers read in the store corresponding to their store id
 
-    //int id = (store_counter > 0) ? store_counter - 1 : 0;
+    //int id = (write_store_counter > 0) ? write_store_counter - 1 : 0;
     int id = __atomic_fetch_add(&read_store_counter, 1, __ATOMIC_RELAXED);
       
     ecall_readKissdb(global_eid, n, id);
