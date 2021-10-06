@@ -11,7 +11,6 @@
 #include "zc_ocalls_in.h"
 #include "zc_queues_in.h" /* for zc_malloc */
 
-
 ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
 {
     //log_zc_routine(__func__);
@@ -24,7 +23,7 @@ ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
 
     // do request
     zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
-    request->args = (void *)arg;
+    request->args = (void *)arg;req_pool_index
     request->func_name = ZC_READ;
     request->is_done = 0;
     do_zc_switchless_request(request, pool_index);
@@ -33,7 +32,7 @@ ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
     mempcpy(buf, arg->buf, count);
 
     // release worker/memory pool
-    release_worker(request->req_pool_index);
+    release_worker(pool_index);
 
     // return
     return ((read_arg_zc *)request->args)->ret;
@@ -61,7 +60,7 @@ ssize_t zc_write(int fd, const void *buf, size_t count, int pool_index)
     // copy response to enclave if needed
 
     // release worker/memory pool
-    release_worker(request->req_pool_index);
+    release_worker(pool_index);
 
     // return
     return ((write_arg_zc *)request->args)->ret;
@@ -79,13 +78,13 @@ ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags, int pool_ind
     //request->args = (void*)arg;
     request->func_name = ZC_SENDMSG;
     request->is_done = 0;
-
+    //TODO: not complete
     do_zc_switchless_request(request, pool_index);
 
     // copy response to enclave if needed
 
     // release worker/memory pool
-    release_worker(request->req_pool_index);
+    release_worker(pool_index);
 
     // return
     return 0;
@@ -102,7 +101,7 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
     arg->stream = stream;
     size_t total_bytes = size * nmemb;
     arg->buf = zc_malloc(pool_index, total_bytes);
-    //TODO:pointer checks
+    //TODO: do we do pointer checks ?
     memcpy(arg->buf, ptr, total_bytes);
 
     // do request
@@ -119,7 +118,7 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
      * pyuhala: can use pool_index variable but it seems 
      * caller is not changing the pool status
      */
-    release_worker(request->req_pool_index);
+    release_worker(pool_index);
 
     // return
     ssize_t ret = ((fwrite_arg_zc *)request->args)->ret;
@@ -151,7 +150,7 @@ size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_
     mempcpy(ptr, arg->buf, total_bytes);
 
     // release worker/memory pool
-    release_worker(request->req_pool_index);
+    release_worker(pool_index);
 
     // return
     ssize_t ret = ((fread_arg_zc *)request->args)->ret;

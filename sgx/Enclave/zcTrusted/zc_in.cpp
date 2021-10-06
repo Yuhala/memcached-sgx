@@ -85,7 +85,7 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
         int ret = mpmc_enqueue(req_mpmcq, (void *)req);
         if (ret == 1)
         {
-            printf("--------------- caller successfully enqueued request -----------------\n");
+            //printf("--------------- caller successfully enqueued request -----------------\n");
         }
     }
     else
@@ -223,7 +223,7 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
         {
             break;
         }
-        //ZC_PAUSE();
+        ZC_PAUSE();
     }
 
     //printf("---- request is done ------\n");
@@ -252,8 +252,7 @@ static inline void asm_pause(void)
                          : "memory");
 }
 
-#define ZC_LOGGING_IN 1
-#undef ZC_LOGGING_IN
+//#define ZC_LOGGING_IN 1
 
 void log_zc_routine(const char *func)
 {
