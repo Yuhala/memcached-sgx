@@ -24,23 +24,32 @@
 
 #include "zc_locks.h"
 
+//#include "zc_scheduler.h"
+
 //zc_arg_list *main_arg_list;
 
 //pyuhala: some useful global variables
 extern sgx_enclave_id_t global_eid;
 
 //zc switchless worker thread ids
-pthread_t *worker_ids;
+pthread_t *workers;
 
 // statistics of the switchless run
 zc_stats *zc_statistics;
 
 //number of initialized workers
-static unsigned int num_init_worker = 0;
+unsigned int num_workers = 0;
 
 //number of requests on the request queue
 extern volatile unsigned int num_items;
 
+//globals from scheduler module
+extern int time_quantum;
+extern int number_of_useful_schedulings;
+
+bool use_zc_scheduler = false;
+
+static __thread int sl_calls_treated;
 /**
  * Lock free queues for zc switchless calls
  */
@@ -48,16 +57,19 @@ extern struct mpmcq *req_mpmcq;
 extern struct mpmcq *resp_mpmcq;
 
 //pyuhala: forward declarations
-static void zc_worker_loop(int);
+static void zc_worker_loop(zc_worker_args *args);
 static int getOptimalWorkers(int);
-static void create_zc_worker_threads(int numWorkers);
+static void create_zc_worker_threads();
 void *zc_worker_thread(void *input);
 void *zc_scheduler_thread(void *input);
 static void init_mem_pools();
 static void init_pools();
 static void free_mem_pools();
-static void init_zc_scheduler(int num_workers);
+static void init_zc_scheduler();
 static void zc_worker_loop_q();
+
+//for scheduler
+void zc_create_scheduling_thread();
 
 //useful globals
 int num_cores = -1;
@@ -75,8 +87,10 @@ static bool use_queues = false;
  * to service ocalls. Future work: implement zc for ecalls.
  */
 
-void init_zc(int numWorkers)
+void init_zc()
 {
+    use_zc_scheduler = true;
+
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
     num_cores = get_nprocs();
@@ -86,10 +100,11 @@ void init_zc(int numWorkers)
         exit(EXIT_FAILURE);
     }
 
-    int opt_worker = getOptimalWorkers(numWorkers);
+    printf("<<<<<<<<<<<<<<<<< number of cores found: %d >>>>>>>>>>>>>>>>>>>\n", num_cores);
+    num_workers = num_cores / 2;
 
     // make sure num of default pools >= num of workers
-    ZC_ASSERT(numWorkers <= NUM_POOLS);
+    //ZC_ASSERT(numWorkers <= NUM_POOLS);
 
     //init_arg_buffers_out(opt_worker);
 
@@ -110,7 +125,13 @@ void init_zc(int numWorkers)
     pthread_mutex_init(&pool_index_lock, NULL);
 
     //create zc switchless worker threads
-    create_zc_worker_threads(numWorkers);
+    create_zc_worker_threads();
+
+    //create scheduling thread
+    if (use_zc_scheduler)
+    {
+        zc_create_scheduling_thread();
+    }
 }
 
 /**
@@ -136,13 +157,15 @@ static void init_pools()
 
 static void init_mem_pools()
 {
+    int n = NUM_POOLS;
     pools = (zc_mpool_array *)malloc(sizeof(zc_mpool_array));
-    pools->memory_pools = (zc_mpool **)malloc(sizeof(zc_mpool *) * NUM_POOLS);
+    pools->memory_pools = (zc_mpool **)malloc(sizeof(zc_mpool *) * n);
+    pools->num_pools = n;
 
     //initializing memory pools
     printf("<<<<<<<<<<<<<<< initializing memory pools >>>>>>>>>>>>>>>>\n");
 
-    for (int i = 0; i < NUM_POOLS; i++)
+    for (int i = 0; i < n; i++)
     {
         pools->memory_pools[i] = (zc_mpool *)malloc(sizeof(zc_mpool));
         pools->memory_pools[i]->pool = mpool_create(POOL_SIZE);
@@ -172,21 +195,10 @@ static void init_mem_pools()
     }
 }
 
-static void init_zc_scheduler(int num_workers)
-{
-    //TODO
-}
-
-void *zc_scheduler_thread(void *input)
-{
-    //TODO
-}
-
 void *zc_worker_thread(void *input)
 {
     log_zc_routine(__func__);
 
-    //printf("---------hello I'm a zc worker and my pool id is: %d -----------\n", thread_pool_index);
     if (use_queues)
     {
         zc_worker_loop_q();
@@ -195,27 +207,43 @@ void *zc_worker_thread(void *input)
     {
         //use worker thread buffers/pool system
         zc_worker_args *args = (zc_worker_args *)input;
-        zc_worker_loop(args->pool_index);
+        zc_worker_loop(args);
     }
 }
 
 /**
  * Each worker thread loops in here for sometime waiting for pending requests.
  */
-static void zc_worker_loop(int index)
+static void zc_worker_loop(zc_worker_args *args)
 {
     log_zc_routine(__func__);
-    //set pool states
 
-    int pool_index = index;
+    struct sched_param param;
+    /* setting the worker's priority to a high priority */
+    param.sched_priority = 50;
+    if (sched_setscheduler(0, SCHED_RR, &param) == -1)
+    {
+        printf("Unable to change the policy of a worker thread to SCHED_RR\n");
+        //perror("Unable to change the policy of a worker thread to SCHED_RR");
+        //exit(1);
+    }
+
+    int unused = (int)UNUSED;
+    int paused = (int)PAUSED;
+    bool res = false;
+
+    int worker_id = args->worker_id;
+
+    int pool_index = args->pool_index;
     pools->memory_pools[pool_index]->active = 1; /* pool is assigned to this thread */
     pools->memory_pools[pool_index]->request = NULL;
     pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
     volatile zc_pool_status pool_state;
     volatile int status;
+    bool exit = false;
 
     // worker initialization complete
-    int val = __atomic_fetch_add(&num_init_worker, 1, __ATOMIC_RELAXED);
+    int val = __atomic_fetch_add(&num_workers, 1, __ATOMIC_RELAXED);
 
     for (;;)
     {
@@ -257,8 +285,7 @@ static void zc_worker_loop(int index)
             handle_zc_switchless_request(req, pool_index);
             // caller thread is waiting for this unlock
             zc_spin_unlock(&req->is_done);
-
-            //TODO:remove this request from this pool; maybe do inside
+            sl_calls_treated++;
         }
         break;
 
@@ -271,18 +298,45 @@ static void zc_worker_loop(int index)
 
         {
             /* worker should exit */
-            //TODO: exit thread
+            exit = true;
         }
         break;
+        } //end switch case
+
+        // test for unused buffers
+        if (worker_id >= num_workers && pools->memory_pools[pool_index]->pool_status == (int)UNUSED)
+        {
+            // lock, test again, and change status
+            zc_spin_lock(&pools->memory_pools[pool_index]->pool_lock);
+
+            res = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
+                                              &unused, paused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+
+            if (!res)
+            {
+                //could not change status of buffer.. resume loop
+                zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
+                goto resume;
+            }
+
+            pause();
+            if (pools->memory_pools[pool_index]->pool_status == (int)PAUSED)
+            {
+                res = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
+                                                  &paused, unused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+            }
+            zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
         }
 
     resume:;
 
-        //manage memory pool
-
-        //TODO: sleep or something to save cpu cycles
+        if (exit)
+        {
+            //leave while loop
+            break;
+        }
     }
-    //printf("xxxxxxxxxxxxxxxxxxxxx ------------------zc thread broke out of infinite loop -------------------xxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+    printf("\e[0;31mnumber of switchless calls treated by worker %d : %d\e[0m\n", worker_id, sl_calls_treated);
 }
 
 /**
@@ -295,7 +349,7 @@ static void zc_worker_loop_q()
     //set pool states
 
     // worker initialization complete
-    int val = __atomic_fetch_add(&num_init_worker, 1, __ATOMIC_RELAXED);
+    int val = __atomic_fetch_add(&num_workers, 1, __ATOMIC_RELAXED);
     zc_req *request = NULL;
 
     for (;;)
@@ -353,8 +407,10 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
         break;
     case ZC_FSEEKO:
         zc_fseeko_switchless(request);
+        break;
     case ZC_TEST:
         zc_test_switchless(request);
+        break;
 
     default:
         //printf("----------- cannot handle zc switchless request -------------\n");
@@ -383,15 +439,11 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     }
 }
 
-static int getOptimalWorkers(int numWorkers)
-{
-    //TODO
-    return numWorkers;
-}
-
 static void free_mem_pools()
 {
-    for (int i = 0; i < NUM_POOLS; i++)
+    int n = num_cores / 2;
+
+    for (int i = 0; i < n; i++)
     {
         mpool_destroy(pools->memory_pools[i]->pool);
     }
@@ -399,35 +451,48 @@ static void free_mem_pools()
     free(pools);
 }
 
-static void create_zc_worker_threads(int numWorkers)
+static void create_zc_worker_threads()
 {
-    worker_ids = (pthread_t *)malloc(sizeof(pthread_t) * numWorkers);
+    workers = (pthread_t *)malloc(sizeof(pthread_t) * num_workers);
+
+    ZC_ASSERT(num_workers <= NUM_POOLS);
 
     zc_worker_args *args;
-    for (int i = 0; i < numWorkers; i++)
+    for (int i = 0; i < num_workers; i++)
     {
         args = (zc_worker_args *)malloc(sizeof(zc_worker_args));
-        args->pool_index = curr_pool_index++;
+        args->pool_index = i; //curr_pool_index++;
+        args->worker_pool = pools->memory_pools[i];
+        args->worker_id = i;
 
-        pthread_create(worker_ids + i, NULL, zc_worker_thread, (void *)args);
+        pthread_create(workers + i, NULL, zc_worker_thread, (void *)args);
     }
-
-    // pyuhala: joining not a good idea.. since these threads loop "infinitely"
-    /* for (int i = 0; i < numWorkers; i++)
-    {
-        pthread_join(*(worker_ids + i), NULL);
-    }*/
 
     // wait for workers to initialize
-    while (num_init_worker < numWorkers)
+    /*while (num_init_workers < num_workers)
     {
         ZC_PAUSE();
-    }
+    }*/
+    ZC_PAUSE();
 }
 
 void finalize_zc()
 {
+    //print stats
+    printf("number of useful schedulings : %d\n", number_of_useful_schedulings);
+    printf("time_quantum : %d\n", time_quantum);
+
     //stop all zc threads
+    for (int i = 0; i < num_cores / 2; i++)
+    {
+        pools->memory_pools[i]->pool_status = (int)EXIT;
+        pthread_kill(workers[i], SIGALRM);
+        if (pthread_join(workers[i], NULL) != 0)
+        {
+            fprintf(stderr, "Error joining worker thread number %d, exiting\n", i);
+            exit(1);
+        }
+    }
 
     //deallocate mem pools
     free_mem_pools();

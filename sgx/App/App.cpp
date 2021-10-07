@@ -103,6 +103,9 @@ double diff;
 using namespace std;
 extern std::map<pthread_t, pthread_attr_t *> attr_map;
 
+extern int total_sl; /* total # of switchless calls at runtime */
+extern int total_fb; /* total # of fallback calls */
+
 /* Macro for this value which is in the config file of the enclave because I
  * don't know how to do better
  */
@@ -117,9 +120,7 @@ extern std::map<pthread_t, pthread_attr_t *> attr_map;
 #define MICRO_INVERSE 100
 #define CPU_FREQ 3.8
 
-static int time_before;
-static int time_after;
-static int time_quantum;
+extern bool use_zc_scheduler;
 
 /* arguments of the worker threads */
 struct worker_args
@@ -136,51 +137,8 @@ struct buffer switchless_buffers[CORES_NUM / 2];
 volatile sig_atomic_t number_of_sl_calls = 0;
 volatile sig_atomic_t number_of_fallbacked_calls = 0;
 volatile sig_atomic_t number_of_workers = 0;
-int number_of_useful_schedulings = 0;
-pthread_t workers[CORES_NUM / 2];
-
-/* pointers to the functions of the switchless shim library so that the enclave
- * may use them
- */
-void *shim_switchless_functions[] =
-    {
-        (void *)ocall_empty_switchless,                     /* FN_TOKEN_EMPTY */
-        (void *)ocall_ret_int_args_int_switchless,          /* FN_TOKEN_SLEEP */
-        (void *)ocall_ret_int_args_int_switchless,          /* FN_TOKEN_FSYNC */
-        (void *)ocall_ret_int_args_int_int_switchless,      /* TN_TOKEN_DUP2 */
-        (void *)ocall_ret_int_args_int_switchless,          /* FN_TOKEN_CLOSE */
-        (void *)ocall_fwrite_switchless,                    /* FN_TOKEN_FWRITE */
-        (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_PUTS */
-        (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_UNLINK */
-        (void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_RMDIR */
-        //(void *)ocall_ret_int_args_const_string_switchless, /* FN_TOKEN_REMOVE */
-        (void *)ocall_read_switchless,             /* FN_TOKEN_READ  */
-        (void *)ocall_write_switchless,            /* FN_TOKEN_WRITE */
-        (void *)ocall_lseek64_switchless,          /* FN_TOKEN_LSEEK64 */
-        (void *)ocall_sendmsg_switchless,          /* FN_TOKEN_SENDMSG */
-        (void *)ocall_transmit_prepare_switchless, /* FN_TOKEN_TRANSMIT_PREPARE */
-};
-
-void empty(void) {}
-
-void *shim_functions[] =
-    {
-        (void *)empty,  /* FN_TOKEN_EMPTY            */
-        (void *)sleep,  /* FN_TOKEN_SLEEP            */
-        (void *)fsync,  /* FN_TOKEN_FSYNC            */
-        (void *)dup2,   /* FN_TOKEN_DUP2             */
-        (void *)close,  /* FN_TOKEN_CLOSE            */
-        (void *)fwrite, /* FN_TOKEN_CLOSE            */
-        (void *)puts,   /* FN_TOKEN_PUTS             */
-        (void *)unlink, /* FN_TOKEN_UNLINK           */
-        (void *)rmdir,  /* FN_TOKEN_RMDIR            */
-        //(void *)remove,           /* FN_TOKEN_REMOVE           */
-        (void *)read,             /* FN_TOKEN_READ             */
-        (void *)write,            /* FN_TOKEN_WRITE            */
-        (void *)lseek64,          /* FN_TOKEN_LSEEK64          */
-        (void *)sendmsg,          /* FN_TOKEN_SENDMSG          */
-        (void *)transmit_prepare, /* FN_TOKEN_TRANSMIT_PREPARE */
-};
+//int number_of_useful_schedulings = 0;
+//pthread_t workers[CORES_NUM / 2];
 
 /* Main app isolate */
 graal_isolatethread_t *global_app_iso;
@@ -284,282 +242,11 @@ int initialize_enclave(const sgx_uswitchless_config_t *us_config)
     return 0;
 }
 
-static inline void _mm_pause(void) __attribute__((always_inline));
-static inline int _InterlockedExchange(int volatile *dst, int val) __attribute__((always_inline));
-
-static inline void _mm_pause(void) { __asm __volatile("pause"); }
-
-static inline int _InterlockedExchange(int volatile *dst, int val)
-{
-    int res;
-
-    __asm __volatile(
-        "lock xchg %2, %1;"
-        "mov %2, %0"
-        : "=m"(res)
-        : "m"(*dst),
-          "r"(val)
-        : "memory");
-
-    return (res);
-}
-
-static __thread int sl_calls_treated;
-
-/* Code of the worker thread */
-void *worker_thread_fn(void *arg)
-{
-    struct worker_args *args = (struct worker_args *)arg;
-    struct buffer *buffer = args->buffer;
-    int worker_id = args->worker_id;
-    struct sched_param param;
-
-    /* setting the worker's priority to a high priority */
-    param.sched_priority = 50;
-    if (sched_setscheduler(0, SCHED_RR, &param) == -1)
-    {
-        //perror("Unable to change the policy of a worker thread to SCHED_RR");
-        //exit(1);
-    }
-
-    while (buffer->status != BUFFER_EXIT)
-    {
-        if (buffer->status == BUFFER_WAITING)
-        {
-            sl_calls_treated++;
-            ((void (*)(struct buffer *))buffer->ocall_handler_switchless)(buffer);
-            buffer->status = BUFFER_PROCESSED;
-        }
-        else if (worker_id >= number_of_workers && buffer->status == BUFFER_UNUSED)
-        {
-            //sgx_spin_lock(&buffer->spinlock);
-            while (_InterlockedExchange((volatile int *)&buffer->spinlock, 1) != 0)
-            {
-                while (buffer->spinlock)
-                {
-                    _mm_pause();
-                }
-            }
-            if (worker_id >= number_of_workers && buffer->status == BUFFER_UNUSED)
-            {
-                buffer->status = BUFFER_PAUSED;
-                // sgx_spin_unlock(&buffer->spinlock);
-                buffer->spinlock = 0;
-                pause();
-                if (buffer->status == BUFFER_PAUSED)
-                    buffer->status = BUFFER_UNUSED;
-            }
-            else
-                // sgx_spin_unlock(&buffer->spinlock);
-                buffer->spinlock = 0;
-        }
-    }
-    printf("\e[0;31mnumber of switchless calls treated by worker %d : %d\e[0m\n", worker_id, sl_calls_treated);
-    return NULL;
-}
-
-void reset_runtime_data(void)
-{
-    number_of_sl_calls = 0;
-    number_of_fallbacked_calls = 0;
-}
-
-void set_number_of_workers(int m)
-{
-    int tmp;
-    int i;
-
-    if (m > number_of_workers)
-        while (m > number_of_workers)
-            pthread_kill(workers[number_of_workers++], SIGALRM);
-    else
-        number_of_workers = m;
-}
-
-int compute_opt_workers(void)
-{
-    long long argmin, min;
-    long long mprime, uchapeau;
-    long long u[CORES_NUM / 2 + 1];
-
-    //min = number_of_fallbacked_calls*TIME_ENCLAVE_SWITCH + number_of_workers*time_quantum;
-    //argmin = number_of_workers;
-    //u[argmin] = min;
-
-    min = 100000000000;
-    argmin = -1;
-
-    for (mprime = 0; mprime <= CORES_NUM / 2; mprime++)
-    {
-        //if (mprime != number_of_workers)
-        {
-            if (number_of_workers == 0 && mprime == 0)
-                uchapeau = number_of_fallbacked_calls * TIME_ENCLAVE_SWITCH;
-            else if (number_of_workers != 0)
-                uchapeau = ((number_of_fallbacked_calls + (number_of_workers - mprime) * (number_of_sl_calls / number_of_workers)) * TIME_ENCLAVE_SWITCH) + (mprime * time_quantum);
-            else
-                uchapeau = ((number_of_fallbacked_calls / mprime) * TIME_ENCLAVE_SWITCH) + (mprime * time_quantum);
-            u[mprime] = uchapeau;
-            if (uchapeau < min)
-            {
-                min = uchapeau;
-                argmin = mprime;
-            }
-        }
-    }
-
-    /*if (number_of_useful_schedulings % 100 == 0 || argmin != number_of_workers)
-    {
-	printf("Scheduling number %d\n")
-	if (argmin != number_of_workers)
-	    printf("\t\e[1;31mCHANGEMENT !\e[0m %d -> %d\n", number_of_workers, argmin);
-	printf("\t\e[0;33mnumber_of_switchless_calls\e[0m : %d\n", number_of_sl_calls);
-	printf("\t\e[0;33mnumber_of_fallbacked_calls\e[0m : %d\n", number_of_fallbacked_calls);
-	for (mprime=0; mprime<CORES_NUM/2 + 1; mprime++)
-	    if (mprime == argmin)
-		printf("\t\e[0;32mÛ_%d = %d\e[0m\n", mprime, u[mprime]);
-	    else
-		printf("\tÛ_%d = %d\n", mprime, u[mprime]);
-    }*/
-
-    return argmin;
-}
-
-void sig_ign(int arg) { (void)arg; }
-
-int number_of_results[CORES_NUM / 2 + 1] = {0};
-
-#ifdef __i386
-extern __inline__ uint64_t rdtscp(void)
-{
-    uint64_t x;
-    __asm__ volatile("rdtscp"
-                     : "=A"(x));
-    return x;
-}
-#elif defined __amd64
-extern __inline__ uint64_t rdtscp(void)
-{
-    uint64_t a, d;
-    __asm__ volatile("rdtscp"
-                     : "=a"(a), "=d"(d));
-    return (d << 32) | a;
-}
-#endif
-
-/* Code of the scheduling thread */
-void *scheduling_thread_fn(void *arg)
-{
-    (void)arg;
-
-    struct sigevent sevp;
-    timer_t timerid;
-    struct sigaction act;
-    struct itimerspec timervalue;
-    int next_number_of_workers;
-    struct sched_param param;
-    int i;
-    long long uchapeaumin, uchapeautmp;
-    int argmin;
-    long long u[CORES_NUM / 2 + 1], sl[CORES_NUM / 2 + 1], fb[CORES_NUM / 2 + 1];
-
-    /* setting the scheduling priority to a high priority */
-    param.sched_priority = 99;
-    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1)
-    {
-        //perror("Unable to change the policy of the scheduling thread to SCHED_FIFO");
-        //exit(1);
-        fprintf(stderr, "[\e[0;33mWarning\e[0m] Unable to change the policy of the scheduling thread to SCHED_FIFO\n");
-    }
-    act.sa_handler = sig_ign;
-    act.sa_flags = 0;
-    sigemptyset(&act.sa_mask);
-    if (sigaction(SIGALRM, &act, NULL) != 0)
-    {
-        perror("Could not set scheduler's timer");
-        exit(1);
-    }
-
-    sevp.sigev_notify = SIGEV_THREAD_ID;
-    sevp._sigev_un._tid = syscall(SYS_gettid);
-    sevp.sigev_signo = SIGALRM;
-    if (timer_create(CLOCK_REALTIME, &sevp, &timerid) != 0)
-    {
-        perror("Could not set scheduler's timer");
-        exit(1);
-    }
-
-    timervalue.it_interval.tv_sec = 0;
-    timervalue.it_interval.tv_nsec = TIME_MICRO_QUANTUM;
-    timervalue.it_value.tv_sec = 0;
-    timervalue.it_value.tv_nsec = TIME_MICRO_QUANTUM;
-    if (timer_settime(timerid, 0, &timervalue, NULL) != 0)
-    {
-        perror("Could not set scheduler's timer");
-        exit(1);
-    }
-
-    while (1)
-    {
-        uchapeaumin = 100000000000;
-        argmin = -1;
-        set_number_of_workers(0);
-        reset_runtime_data();
-        for (i = 0; i <= CORES_NUM / 2; i++)
-        {
-            pause();
-            /* counting the number of cpu cycles since */
-            time_after = rdtscp();
-            time_quantum = time_after - time_before;
-            time_before = time_after;
-            uchapeautmp = number_of_fallbacked_calls * TIME_ENCLAVE_SWITCH + i * time_quantum;
-            u[i] = uchapeautmp;
-            sl[i] = number_of_sl_calls;
-            fb[i] = number_of_fallbacked_calls;
-            if (uchapeautmp < uchapeaumin)
-            {
-                uchapeaumin = uchapeautmp;
-                argmin = i;
-            }
-            if (i < CORES_NUM / 2)
-                set_number_of_workers(i + 1);
-            //set_number_of_workers(0);
-            reset_runtime_data();
-        }
-        /*if (number_of_useful_schedulings % 5 == 0)
-	{
-	    printf("Scheduling number %d\n", number_of_useful_schedulings);
-	    for (i=0; i<CORES_NUM/2 + 1; i++)
-	    {
-		if (i == argmin)
-		    printf("\t\e[0;32mÛ_%d = %d\e[0m", i, u[i]);
-		else
-		    printf("\tÛ_%d = %d", i, u[i]);
-		printf("\tsl : %d\tfb : %d\n", sl[i], fb[i]);
-	    }
-	}*/
-        next_number_of_workers = argmin;
-        number_of_results[next_number_of_workers]++;
-        set_number_of_workers(next_number_of_workers);
-        for (i = 0; i < MICRO_INVERSE; i++)
-            pause();
-        number_of_useful_schedulings++;
-        /* counting the number of cpu cycles since */
-        time_after = rdtscp();
-        time_quantum = time_after - time_before;
-        time_before = time_after;
-
-        //next_number_of_workers = compute_opt_workers();
-        //printf("next number of workers : %d\n", next_number_of_workers);
-        //printf("number of calls : %d\n", number_of_sl_calls + number_of_fallbacked_calls);
-    }
-}
-
 /* Code of a benchmarking thread */
 void *enclave_bench_thread(void *arg)
 {
     size_t i = *((size_t *)arg);
-    ecall_bench_thread(global_eid, switchless_buffers, &switchless_buffers[i % (CORES_NUM / 2)], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
+    //ecall_bench_thread(global_eid, switchless_buffers, &switchless_buffers[i % (CORES_NUM / 2)], shim_switchless_functions, shim_functions, (int *)&number_of_sl_calls, (int *)&number_of_fallbacked_calls, (int *)&number_of_workers);
     return NULL;
 }
 
@@ -635,83 +322,16 @@ int normal_run(int arg)
     return 0;
 }
 
-pthread_t scheduling_thread;
+//pthread_t scheduling_thread;
 
 /* Initializing the buffers */
 void init_switchless(void)
 {
-    int pthread_ret;
-    int i;
-    //get the number of logical cpus on the machine
-    //int ncores = get_nprocs();
-    //int half_cpu = ncores / 2;
-    struct worker_args wa[CORES_NUM / 2];
-    //struct worker_args *wa = malloc(sizeof(worker_args) * half_cpu);
-    //pyuhala: above should be free somewhere..causes memory leak
-
-    int ncores = CORES_NUM;
-    //ncores = getCpus();
-
-    for (i = 0; i < ncores / 2; i++)
-        if (init_switchless_buffer(&switchless_buffers[i]) != 0)
-        {
-            fprintf(stderr, "Error: unable to allocate memory for the buffer\n");
-            exit(1);
-        }
-
-    /* creating the worker threads */
-    for (i = 0; i < ncores / 2; i++)
-    {
-        wa[i].buffer = &switchless_buffers[i];
-        wa[i].worker_id = i;
-    }
-    for (i = 0; i < ncores / 2; i++)
-    {
-        if (pthread_create(&workers[i], 0, worker_thread_fn, &wa[i]) != 0)
-        {
-            fprintf(stderr, "Error creating worker thread number %d, exiting\n", i);
-            exit(1);
-        }
-    }
-
-    /* Creating the scheduling thread */
-    pthread_ret = pthread_create(&scheduling_thread, 0, scheduling_thread_fn, NULL);
-    if (pthread_ret != 0)
-    {
-        fprintf(stderr, "Error: scheduling thread initialization failed\n");
-        exit(1);
-    }
+    //removed due to linkage issues
 }
 
 void destroy_switchless(void)
 {
-    int i;
-    int ncores = get_nprocs();
-    //ncores = getCpus();
-
-    /* joining the workers */
-    printf("number of useful schedulings : %d\n", number_of_useful_schedulings);
-    printf("time_quantum : %d\n", time_quantum);
-    for (i = 0; i < ncores / 2 + 1; i++)
-        printf("number of %ds : %d\n", i, number_of_results[i]);
-    number_of_workers = ncores / 2;
-    for (i = 0; i < ncores / 2; i++)
-    {
-        switchless_buffers[i].status = BUFFER_EXIT;
-        pthread_kill(workers[i], SIGALRM);
-        if (pthread_join(workers[i], NULL) != 0)
-        {
-            fprintf(stderr, "Error joining worker thread number %d, exiting\n", i);
-            exit(1);
-        }
-    }
-
-    /* Freeing the allocated memory */
-    for (i = 0; i < ncores / 2; i++)
-    {
-        free(switchless_buffers[i].args);
-        free(switchless_buffers[i].ret);
-    }
 }
 
 void removeKissDbs()
@@ -758,11 +378,11 @@ void runTestMulti(int num_runs)
 void runKissdbBench(int num_runs)
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 5000;
-    int max_keys = 100000;
-    int step = 5000;
+    int min_keys = 100;
+    int max_keys = 1000;
+    int step = 100;
     int numWriters = 2;
-    int numReaders = 2;
+    //int numReaders = 2;
     //write_keys(numKeys, numWriters);
     //bool test = (numReaders == numWriters);
 
@@ -789,7 +409,7 @@ void runKissdbBench(int num_runs)
         avg_runtime = total_runtime / num_runs;
 
         registerKissResults(i, avg_runtime);
-        printf(">>>>>>>>>>>>>>>>> kissdb bench: %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
+        printf(">>>>>>>>>>>>>>>>> kissdb bench: PUT %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
     }
     printf(">>>>>>>>>>>>>>>>> kissdb bench END >>>>>>>>>>>>>>>>>\n");
 }
@@ -869,7 +489,7 @@ int main(int argc, char *argv[])
     {
         ret_zero = 0;
         //init_switchless();
-        init_zc(2);
+        init_zc();
 
         //return 0;
     }
@@ -896,13 +516,19 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    runKissdbBench(10);
+    runKissdbBench(1);
 
     //runTestMulti(10);
 
     if (zc_switchless)
     {
-        printf("<<<< COMPLETE ZC SWITCHLESS CALL: %d FALLBACK ZC SWITCHLESS CALLS: %d >>>>\n", zc_statistics->num_zc_swtless_calls, zc_statistics->num_zc_fallback_calls);
+        if (!use_zc_scheduler)
+        {
+            total_sl = zc_statistics->num_zc_swtless_calls;
+            total_fb = zc_statistics->num_zc_fallback_calls;
+        }
+        printf("<<<< COMPLETE ZC SWITCHLESS CALLS: %d FALLBACK ZC SWITCHLESS CALLS: %d >>>>\n", total_sl, total_fb);
+        showOcallLog(5);
     }
     else
     {

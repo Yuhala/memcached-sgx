@@ -25,7 +25,7 @@
 #define ZC_NO_FREE_POOL -1 /* if there is not free pool in the pool array return -1 index */
 
 #define POOL_SIZE 32 * 1024 * 1024 /* surely 64 mb should be enough for realistic tests/benchmarks */
-#define NUM_POOLS 4                /* the number of memory pools to create; == number max threads in enclave */
+#define NUM_POOLS 8              /* the number of memory pools to create; == number max threads in enclave */
 
 #define ZC_REQUEST_DONE 1
 
@@ -262,11 +262,14 @@ typedef struct zc_mpool zc_mpool;
 struct zc_mpool_array
 {
     zc_mpool **memory_pools;
+    int num_pools;
 };
 
 struct zc_worker_args
 {
     int pool_index;
+    zc_mpool *worker_pool;
+    int worker_id;
 };
 
 struct zc_stats
