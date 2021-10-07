@@ -76,3 +76,9 @@ void zc_fseeko_switchless(zc_req *request)
                                                          ((fseeko_arg_zc *)request->args)->offset,
                                                          ((fseeko_arg_zc *)request->args)->whence);
 }
+
+void zc_test_switchless(zc_req *request)
+{
+    ((test_arg_zc *)request->args)->ret = ocall_test(((test_arg_zc *)request->args)->a,
+                                                       ((test_arg_zc *)request->args)->b);
+}

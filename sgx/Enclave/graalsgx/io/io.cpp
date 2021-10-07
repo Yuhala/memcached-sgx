@@ -901,3 +901,32 @@ void perror(const char *m)
 {
     PERROR("ERROR");
 }
+
+int test_multi(int a, int b)
+{
+    int soln = a * b;
+    int ret = 0;
+
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
+    {
+
+        ret = zc_test(a, b, index);
+        ZC_ASSERT(ret == soln);
+    }
+    else
+    {
+        ocall_test(&ret, a, b);
+        ZC_ASSERT(ret == soln);
+    }
+    return ret;
+}
+
+void *untrusted_malloc(ssize_t siz)
+{
+
+    void *ret;
+    ocall_malloc(&ret, siz);
+    return ret;
+}

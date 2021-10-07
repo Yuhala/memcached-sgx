@@ -199,6 +199,10 @@ bool use_zc_switchless = false;
 
 extern zc_stats *zc_statistics;
 
+//pyuhala: forward declarations
+void runKissdbBench(int num_runs);
+void runTestMulti(int num_runs);
+
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
     printf("Caught signal: %d\n", sig);
@@ -718,18 +722,51 @@ void removeKissDbs()
     ZC_ASSERT(!ret);
 }
 
-void runKissdbBench()
+void runTestMulti(int num_runs)
+{
+
+    int min = 5000;
+    int max = 80000;
+    int step = 5000;
+
+    double total_runtime;
+    double avg_runtime;
+
+    int numThreads = 2;
+
+    for (int i = min; i <= max; i += step)
+    {
+        total_runtime = 0;
+        avg_runtime = 0;
+        for (int j = 0; j < num_runs; j++)
+        {
+            //printf("<--------------------- running test multi ----------------------->\n", i);
+            start_clock();
+            write_keys(i, numThreads);
+            //read_keys(i, numReaders);
+            stop_clock();
+            total_runtime += time_diff(&start, &stop, SEC);
+        }
+        avg_runtime = total_runtime / num_runs;
+
+        registerKissResults(i, avg_runtime);
+        printf(">>>>>>>>>>>>>>>>> test multi %d: COMPLETE >>>>>>>>>>>>>>>>>\n", i);
+    }
+    printf(">>>>>>>>>>>>>>>>> test multi bench END >>>>>>>>>>>>>>>>>\n");
+}
+
+void runKissdbBench(int num_runs)
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 10;
-    int max_keys = 100;
-    int step = 10;
+    int min_keys = 500;
+    int max_keys = 9000;
+    int step = 500;
     int numWriters = 2;
     int numReaders = 2;
     //write_keys(numKeys, numWriters);
-    bool test = (numReaders == numWriters);
+    //bool test = (numReaders == numWriters);
 
-    ZC_ASSERT(test);
+    //ZC_ASSERT(test);
 
     //printf("xxxxxxxxxxxxxxxx check num of writer and reader threads xxxxxxxxxxxxxxxxxxxx");
 
@@ -850,7 +887,10 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    runKissdbBench();
+    //runKissdbBench(10);
+
+    runTestMulti(5);
+
     if (zc_switchless)
     {
         printf("<<<< COMPLETE ZC SWITCHLESS CALL: %d FALLBACK ZC SWITCHLESS CALLS: %d >>>>\n", zc_statistics->num_zc_swtless_calls, zc_statistics->num_zc_fallback_calls);

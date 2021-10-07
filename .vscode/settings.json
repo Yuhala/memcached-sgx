@@ -80,6 +80,7 @@
         "typeinfo": "cpp",
         "valarray": "cpp",
         "charconv": "cpp",
-        "cerrno": "cpp"
+        "cerrno": "cpp",
+        "graal_sgx_shim.h": "c"
     }
 }

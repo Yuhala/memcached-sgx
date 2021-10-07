@@ -339,11 +339,11 @@ extern "C"
     int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
     int poll(struct pollfd *fds, nfds_t nfds, int timeout);
     int epoll_create(int size);
-    const char *inet_ntop(int af, const void *src,char *dst, socklen_t size);
+    const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
 
     ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
     ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
-    void* transmit_prepare(void);
+    void *transmit_prepare(void);
 
     ssize_t send(int sockfd, const void *buf, size_t len, int flags);
     ssize_t recv(int sockfd, void *buf, size_t len, int flags);
@@ -386,6 +386,10 @@ extern "C"
 
     //
     void perror(const char *m);
+
+    // test for zc switchless
+    int test_multi(int a, int b);
+    void *untrusted_malloc(ssize_t siz);
 
 #if defined(__cplusplus)
 }

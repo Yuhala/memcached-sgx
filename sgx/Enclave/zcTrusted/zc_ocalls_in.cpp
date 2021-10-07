@@ -28,14 +28,16 @@ ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
     request->is_done = 1;
     do_zc_switchless_request(request, pool_index);
 
+    ssize_t ret = ((read_arg_zc *)request->args)->ret;
+
     // copy response to enclave if needed
-    mempcpy(buf, arg->buf, count);
+    mempcpy(buf, arg->buf, ret);
 
     // release worker/memory pool
     release_worker(pool_index);
 
     // return
-    return ((read_arg_zc *)request->args)->ret;
+    return ret;
 }
 
 ssize_t zc_write(int fd, const void *buf, size_t count, int pool_index)
@@ -146,19 +148,21 @@ size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_
 
     do_zc_switchless_request(request, pool_index);
 
+    ssize_t ret = ((fread_arg_zc *)request->args)->ret;
+
     // copy response to enclave if needed
-    mempcpy(ptr, arg->buf, total_bytes);
+    mempcpy(ptr, arg->buf, ret);
 
     // release worker/memory pool
     release_worker(pool_index);
 
     // return
-    ssize_t ret = ((fread_arg_zc *)request->args)->ret;
-    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    //printf("--------------- zc fread expected: %d actually read: %d ---------------------\n", total_bytes, ret);
     return ret;
 }
 
-int zc_fseeko(SGX_FILE stream, off_t offset, int whence, int pool_index){
+int zc_fseeko(SGX_FILE stream, off_t offset, int whence, int pool_index)
+{
     //log_zc_routine(__func__);
     // allocate memory for args
     fseeko_arg_zc *arg = (fseeko_arg_zc *)zc_malloc(pool_index, sizeof(fseeko_arg_zc));
@@ -166,7 +170,6 @@ int zc_fseeko(SGX_FILE stream, off_t offset, int whence, int pool_index){
     arg->stream = stream;
     arg->offset = offset;
     arg->whence = whence;
-    
 
     // do request
     zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
@@ -177,12 +180,40 @@ int zc_fseeko(SGX_FILE stream, off_t offset, int whence, int pool_index){
     do_zc_switchless_request(request, pool_index);
 
     // copy response to enclave if needed
-    
+
     // release worker/memory pool
     release_worker(pool_index);
 
     // return
     int ret = ((fseeko_arg_zc *)request->args)->ret;
+    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    return ret;
+}
+
+int zc_test(int a, int b, int pool_index){
+    //log_zc_routine(__func__);
+    // allocate memory for args
+    test_arg_zc *arg = (test_arg_zc *)zc_malloc(pool_index, sizeof(test_arg_zc));
+    // copy args from enclave to untrusted memory
+    arg->a = a;
+    arg->b = b;
+    
+
+    // do request
+    zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
+    request->args = (void *)arg;
+    request->func_name = ZC_TEST;
+    request->is_done = 1;
+
+    do_zc_switchless_request(request, pool_index);
+
+    // copy response to enclave if needed
+
+    // release worker/memory pool
+    release_worker(pool_index);
+
+    // return
+    int ret = ((test_arg_zc *)request->args)->ret;
     //printf("---------------zc fread ret: %d ---------------------\n", ret);
     return ret;
 }

@@ -24,7 +24,7 @@
 
 #define ZC_NO_FREE_POOL -1 /* if there is not free pool in the pool array return -1 index */
 
-#define POOL_SIZE 32 * 1024 * 1024 /* surely 32 mb should be enough for realistic tests/benchmarks */
+#define POOL_SIZE 32 * 1024 * 1024 /* surely 64 mb should be enough for realistic tests/benchmarks */
 #define NUM_POOLS 4                /* the number of memory pools to create; == number max threads in enclave */
 
 #define ZC_REQUEST_DONE 1
@@ -95,12 +95,21 @@ struct fseeko_arg
     int ret;
 };
 
+struct test_arg
+{
+    int a;
+    int b;
+    int ret;
+};
+
 //Type definitions
 typedef struct fread_arg fread_arg_zc;
 typedef struct fwrite_arg fwrite_arg_zc;
 typedef struct read_arg read_arg_zc;
 typedef struct write_arg write_arg_zc;
 typedef struct fseeko_arg fseeko_arg_zc;
+
+typedef struct test_arg test_arg_zc;
 
 //Special types for each zc switchless routine
 enum zc_routine
@@ -110,7 +119,8 @@ enum zc_routine
     ZC_READ,
     ZC_WRITE,
     ZC_SENDMSG,
-    ZC_FSEEKO
+    ZC_FSEEKO,
+    ZC_TEST
 };
 typedef enum zc_routine zc_routine;
 

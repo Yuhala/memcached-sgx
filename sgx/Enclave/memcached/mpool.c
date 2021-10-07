@@ -34,6 +34,7 @@
 /* written by C99 style */
 
 #include "mpool.h"
+#include "Enclave.h"
 
 /**
  * private function
@@ -90,9 +91,9 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
     void *d = pool->begin;
     if (usiz > msiz)
     {
-        printf("------- CANNOT MEMPOOL EXTEND: USE AN OCALL OR INCREASE POOL SIZE --------\n");
-        return NULL;
-        /* if (!mpool_extend(pp, usiz * 2 + 1, pool))
+        printf("------- ! MEMPOOL EXTEND: USING AN OCALL TO INCREASE POOL SIZE --------\n");
+        
+         if (!mpool_extend(pp, usiz * 2 + 1, pool))
         {
             return NULL;
         }
@@ -100,7 +101,7 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
         pool->msiz = usiz * 2;
         d = pool->begin;
         pool->begin += mpool_align(siz);
-        *p = pp->next; */
+        *p = pp->next; 
     }
     else
     {
@@ -136,13 +137,13 @@ static inline bool mpool_extend(mpool_pool_t *p, size_t siz, mpool_t *pool)
     siz = mpool_decide_create_siz(siz);
     mpool_pool_t *pp;
 
-    pp = malloc(sizeof(*pp));
+    pp = untrusted_malloc(sizeof(*pp));
     if (pp == NULL)
     {
         return false;
     }
 
-    pp->pool = malloc(siz);
+    pp->pool = untrusted_malloc(siz);
     if (pp->pool == NULL)
     {
         return false;

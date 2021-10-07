@@ -21,4 +21,7 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
 size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_index);
 int zc_fseeko(SGX_FILE stream, off_t offset, int whence, int pool_index);
 
+//test
+int zc_test(int a, int b, int pool_index);
+
 #endif /* ZC_OCALLS_H */

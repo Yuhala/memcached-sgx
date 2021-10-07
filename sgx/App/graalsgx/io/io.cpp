@@ -21,8 +21,6 @@
 //#include <libexplain/libexplain.h>
 #include "io.h"
 
-
-
 using namespace std;
 //max num of file descriptors open at once
 #define MAX_FILE_DES 50000
@@ -209,13 +207,18 @@ size_t ocall_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
 {
     log_ocall(__func__);
     FILE *f = getFile(stream);
-    return fwrite(ptr, size, nmemb, f);
+    ssize_t ret = fwrite(ptr, size, nmemb, f);
+
+    return ret;
 }
 size_t ocall_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
 {
     log_ocall(__func__);
     FILE *f = getFile(stream);
-    return fread(ptr, size, nmemb, f);
+    ssize_t total_bytes = size * nmemb;
+    ssize_t ret = fread(ptr, size, nmemb, f);
+    //printf("--------------- fread expected: %d actually read: %d ---------------------\n", total_bytes, ret);
+    return ret;
 }
 
 int ocall_fseeko(SGX_FILE stream, off_t offset, int whence)
@@ -536,3 +539,11 @@ int ocall_putc(int c, SGX_FILE stream)
     FILE *f = getFile(stream);
     return putc(c, f);
 }
+
+//-------------------- test ocalls --------------------
+int ocall_test(int a, int b)
+{
+    log_ocall(__func__);
+    return a * b;
+}
+

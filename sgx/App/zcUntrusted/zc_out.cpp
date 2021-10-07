@@ -353,6 +353,8 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
         break;
     case ZC_FSEEKO:
         zc_fseeko_switchless(request);
+    case ZC_TEST:
+        zc_test_switchless(request);
 
     default:
         //printf("----------- cannot handle zc switchless request -------------\n");

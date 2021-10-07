@@ -14,4 +14,8 @@ void zc_fwrite_switchless(zc_req *request);
 void zc_fread_switchless(zc_req *request);
 void zc_fseeko_switchless(zc_req *request);
 
+
+//for benchmarking
+void zc_test_switchless(zc_req* request);
+
 #endif /* ZC_OCALLS_OUT_H */

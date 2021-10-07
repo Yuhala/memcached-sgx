@@ -47,7 +47,6 @@
 #include "memcached/test.h"
 #include "memcached/memcached.h"
 
-
 #include "zcTrusted/zc_in.h"
 
 /* Global variables */
@@ -71,9 +70,6 @@ SGX_FILE stderr = SGX_STDERR;
 // by default do not use zc switchless, ie return_zero = 1
 int return_zero = 1;
 
-
-
-
 /**
  * For kissdb
  * pyuhala: this global handle causes race issues
@@ -83,6 +79,9 @@ static sgx_spinlock_t writer_lock = SGX_SPINLOCK_INITIALIZER;
 
 void readKissdb(int n, int storeId);
 void writeKissdb(int n, int storeId);
+
+
+void runTestMulti(int n);
 
 /**
  * pyuhala: generic ecall for testing enclave routines.
@@ -265,8 +264,6 @@ void ecall_graal_main_args(int id, int arg1, struct buffer *bs, struct buffer *b
     //run_main(2, argv);
 }
 
-
-
 void ecall_run_main(int id)
 {
     global_eid = id;
@@ -380,10 +377,12 @@ void readKissdb(int n, int storeId)
 
     for (i = 0; i < n; ++i)
     {
-        if ((q = KISSDB_get(&db, &i, v)))
+        q = KISSDB_get(&db, &i, v);
+        if (q)
         {
             printf("KISSDB_get (2) failed (%" PRIu64 ") (%d)\n", i, q);
-            return;
+            //return;
+            continue;
         }
         /*
         for (j = 0; j < 8; ++j)
@@ -440,6 +439,16 @@ void writeKissdb(int n, int storeId)
             printf("KISSDB_put failed (%" PRIu64 ")\n", i);
             return;
         }
+
+        /*  memset(v, 0, sizeof(v));
+        q = KISSDB_get(&writes_db, &i, v);
+        if (q)
+        {
+            printf("KISSDB_get (2) failed (%" PRIu64 ") (%d)\n", i, q);
+            //return;
+            continue;
+        } */
+
         /*
         memset(v, 0, sizeof(v));
         if ((q = KISSDB_get(&writes_db, &i, v)))
@@ -471,7 +480,8 @@ void ecall_readKissdb(int n, int storeId)
 
 void ecall_writeKissdb(int n, int storeId)
 {
-    writeKissdb(n, storeId);
+    //writeKissdb(n, storeId);
+    runTestMulti(n);
 }
 
 void ecall_kissdb_test()
@@ -585,4 +595,12 @@ void ecall_kissdb_test()
     KISSDB_close(&db);
 
     printf("All tests OK!\n");
+}
+
+void runTestMulti(int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        test_multi(i, i);
+    }
 }

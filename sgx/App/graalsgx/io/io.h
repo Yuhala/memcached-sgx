@@ -18,12 +18,11 @@ extern "C"
     size_t ocall_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream);
     ssize_t ocall_read(int fd, void *buf, size_t count);
     ssize_t ocall_write(int fd, const void *buf, size_t count);
-    
-
 
     int ocall_fseeko(SGX_FILE stream, off_t offset, int whence);
     off_t ocall_ftello(SGX_FILE stream);
 
+    int ocall_test(int a, int b);
 
 #if defined(__cplusplus)
 }
