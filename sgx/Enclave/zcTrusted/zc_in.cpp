@@ -195,7 +195,7 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
      * The worker thread will eventually change the status of the request to done, 
      * and we will leave the waiting loop
      */
-    ZC_REQUEST_WAIT(&req->is_done);
+    ZC_REQUEST_WAIT(req);
 }
 
 /**
@@ -204,7 +204,7 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
  * implementation of this "wait" may/would change depending on perfs.
  * For now we could use an asm pause to free some CPU time. 
  */
-void ZC_REQUEST_WAIT(volatile int *isDone)
+void ZC_REQUEST_WAIT(zc_req *request)
 {
     log_zc_routine(__func__);
     volatile int done;
@@ -213,7 +213,7 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
      * pyuhala: using spinlock
      */
     // worker thread will unlock, will wait until it does
-    spin_lock(isDone);
+    spin_lock(&request->is_done);
 
     /**
      * pyuhala: w/o atomics
@@ -266,8 +266,6 @@ void release_worker(unsigned int pool_index)
      * TODO: we should free this memory at some point. For now the memory pool is used and only freed at the end of the program
      */
 
-    
-
     mem_pools->memory_pools[pool_index]->request = NULL;
 
     /**
@@ -275,7 +273,6 @@ void release_worker(unsigned int pool_index)
      */
 
     __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
-    
 
     //ZC_POOL_UNLOCK();
 

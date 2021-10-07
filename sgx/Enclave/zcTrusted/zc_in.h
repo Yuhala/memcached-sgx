@@ -17,16 +17,13 @@
 void do_zc_switchless_request(zc_req *request, unsigned int pool_index);
 int reserve_worker();
 void release_worker(unsigned int pool_index);
-void ZC_REQUEST_WAIT(volatile int *isDone);
+void ZC_REQUEST_WAIT(zc_req *request);
 int get_free_pool();
-
 
 //__atomic_store_n(&, val, __ATOMIC_RELAXED);
 
 //logging
 void log_zc_routine(const char *func);
-
-
 
 #if defined(__cplusplus)
 extern "C"
