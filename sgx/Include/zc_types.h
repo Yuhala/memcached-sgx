@@ -232,7 +232,7 @@ struct zc_mpool
     volatile int curr_user_id; /* temp unique identifier added by caller/enclave thread using this pool atm */
     unsigned int active;       /* is this pool allocated to a worker (1) or not (0) */
     volatile int pool_status;
-    unsigned int volatile pool_lock; /* used by spin locks for a thread changing pool status */
+    volatile int pool_lock; /* used by spin locks for a thread changing pool status */
 
     zc_req *request; /* caller request */
 };

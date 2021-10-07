@@ -22,6 +22,8 @@
 #include "memcached/mpool.h"
 #include "zc_ocalls_out.h"
 
+#include "zc_locks.h"
+
 //zc_arg_list *main_arg_list;
 
 //pyuhala: some useful global variables
@@ -198,8 +200,13 @@ static void zc_worker_loop(int index)
             {
                 goto resume;
             }
+            
+            
             handle_zc_switchless_request(req, pool_index);
-            //remove this request from this pool
+            // caller thread is waiting for this unlock
+            zc_spin_unlock(&req->is_done);
+
+            //TODO:remove this request from this pool; maybe do inside
         }
         break;
 
@@ -311,7 +318,7 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      */
 
     //request->is_done = ZC_REQUEST_DONE; /* w/o atomic store */
-    __atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_SEQ_CST); /* with atomic store */
+    //__atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_SEQ_CST); /* with atomic store */
 
     if (pool_index != -1)
     {

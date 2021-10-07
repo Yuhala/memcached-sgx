@@ -505,22 +505,23 @@ int unlink(const char *pathname)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    log_ocall(FN_TOKEN_UNLINK);
+    /* log_ocall(FN_TOKEN_UNLINK);
     if (should_be_switchless(FN_TOKEN_UNLINK))
         ret = unlink_switchless(pathname);
-    else
-        ocall_unlink(&ret, pathname);
+    else */
+
+    ocall_unlink(&ret, pathname);
     return ret;
 }
 int rmdir(const char *pathname)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    log_ocall(FN_TOKEN_RMDIR);
+    /* log_ocall(FN_TOKEN_RMDIR);
     if (should_be_switchless(FN_TOKEN_RMDIR))
         rmdir_switchless(pathname);
-    else
-        ocall_rmdir(&ret, pathname);
+    else */
+    ocall_rmdir(&ret, pathname);
     return ret;
 }
 clock_t times(struct tms *buf)
@@ -700,11 +701,11 @@ off64_t lseek64(int fd, off64_t offset, int whence)
 {
     GRAAL_SGX_INFO();
     off64_t ret = 0;
-    log_ocall(FN_TOKEN_LSEEK64);
+    /*  log_ocall(FN_TOKEN_LSEEK64);
     if (should_be_switchless(FN_TOKEN_LSEEK64))
         ret = lseek64_switchless(fd, offset, whence);
-    else
-        ocall_lseek64(&ret, fd, offset, whence);
+    else */
+    ocall_lseek64(&ret, fd, offset, whence);
     return ret;
 }
 int fflush(SGX_FILE *stream)

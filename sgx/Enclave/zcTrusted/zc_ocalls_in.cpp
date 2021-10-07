@@ -25,7 +25,7 @@ ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
     zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
     request->args = (void *)arg;
     request->func_name = ZC_READ;
-    request->is_done = 0;
+    request->is_done = 1;
     do_zc_switchless_request(request, pool_index);
 
     // copy response to enclave if needed
@@ -54,7 +54,7 @@ ssize_t zc_write(int fd, const void *buf, size_t count, int pool_index)
     zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
     request->args = (void *)arg;
     request->func_name = ZC_WRITE;
-    request->is_done = 0;
+    request->is_done = 1;
     do_zc_switchless_request(request, pool_index);
 
     // copy response to enclave if needed
@@ -77,7 +77,7 @@ ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags, int pool_ind
     zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
     //request->args = (void*)arg;
     request->func_name = ZC_SENDMSG;
-    request->is_done = 0;
+    request->is_done = 1;
     //TODO: not complete
     do_zc_switchless_request(request, pool_index);
 
@@ -108,7 +108,7 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
     zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
     request->args = (void *)arg;
     request->func_name = ZC_FWRITE;
-    request->is_done = 0;
+    request->is_done = 1;
     do_zc_switchless_request(request, pool_index);
 
     // copy response to enclave if needed
@@ -142,7 +142,7 @@ size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_
     zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
     request->args = (void *)arg;
     request->func_name = ZC_FREAD;
-    request->is_done = 0;
+    request->is_done = 1;
 
     do_zc_switchless_request(request, pool_index);
 

@@ -205,13 +205,19 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
     volatile int done;
 
     /**
+     * pyuhala: using spinlock
+     */
+    // worker thread will unlock, will wait until it does
+    spin_lock(isDone);
+
+    /**
      * pyuhala: w/o atomics
      */
 
-    while (*isDone != ZC_REQUEST_DONE)
+    /* while (*isDone != ZC_REQUEST_DONE)
     {
         //ZC_PAUSE();
-    }
+    }*/
 
     /**
      * pyuhala: with atomics
