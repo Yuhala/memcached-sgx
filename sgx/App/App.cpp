@@ -768,19 +768,28 @@ void runKissdbBench(int num_runs)
 
     //ZC_ASSERT(test);
 
-    //printf("xxxxxxxxxxxxxxxx check num of writer and reader threads xxxxxxxxxxxxxxxxxxxx");
+    double total_runtime;
+    double avg_runtime;
 
     for (int i = min_keys; i <= max_keys; i += step)
     {
-        //printf("<--------------------- running kissdb bench for: %d keys ----------------------->\n", i);
-        start_clock();
-        write_keys(i, numWriters);
-        //read_keys(i, numReaders);
-        stop_clock();
-        double runTime = time_diff(&start, &stop, SEC);
-        registerKissResults(i, runTime);
+
+        total_runtime = 0;
+        avg_runtime = 0;
+        for (int j = 0; j < num_runs; j++)
+        {
+            //printf("<--------------------- running test multi ----------------------->\n", i);
+            start_clock();
+            write_keys(i, numWriters);
+            //read_keys(i, numReaders);
+            stop_clock();
+            total_runtime += time_diff(&start, &stop, SEC);
+            removeKissDbs();
+        }
+        avg_runtime = total_runtime / num_runs;
+
+        registerKissResults(i, avg_runtime);
         printf(">>>>>>>>>>>>>>>>> kissdb bench: %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
-        removeKissDbs();
     }
     printf(">>>>>>>>>>>>>>>>> kissdb bench END >>>>>>>>>>>>>>>>>\n");
 }
