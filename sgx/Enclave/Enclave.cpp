@@ -385,6 +385,7 @@ void readKissdb(int n, int storeId)
             printf("KISSDB_get (2) failed (%" PRIu64 ") (%d)\n", i, q);
             return;
         }
+        /*
         for (j = 0; j < 8; ++j)
         {
             if (v[j] != i)
@@ -392,7 +393,7 @@ void readKissdb(int n, int storeId)
                 printf("KISSDB_get (2) failed, bad data (%" PRIu64 ")\n", i);
                 return;
             }
-        }
+        }*/
     }
 
     //printf("Closing database...\n");
@@ -439,6 +440,7 @@ void writeKissdb(int n, int storeId)
             printf("KISSDB_put failed (%" PRIu64 ")\n", i);
             return;
         }
+        /*
         memset(v, 0, sizeof(v));
         if ((q = KISSDB_get(&writes_db, &i, v)))
         {
@@ -452,7 +454,7 @@ void writeKissdb(int n, int storeId)
                 printf("KISSDB_get (1) failed, bad data (%" PRIu64 ")\n", i);
                 return;
             }
-        }
+        }*/
     }
 
     //printf("Closing database...\n");
