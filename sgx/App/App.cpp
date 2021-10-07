@@ -738,7 +738,7 @@ void runKissdbBench()
         //printf("<--------------------- running kissdb bench for: %d keys ----------------------->\n", i);
         start_clock();
         write_keys(i, numWriters);
-        read_keys(i, numReaders);
+        //read_keys(i, numReaders);
         stop_clock();
         double runTime = time_diff(&start, &stop, SEC);
         registerKissResults(i, runTime);
@@ -851,7 +851,15 @@ int main(int argc, char *argv[])
      */
 
     runKissdbBench();
-    printf("<<<< COMPLETE ZC SWITCHLESS CALL: %d FALLBACK ZC SWITCHLESS CALLS: %d >>>>\n", zc_statistics->num_zc_swtless_calls, zc_statistics->num_zc_fallback_calls);
+    if (zc_switchless)
+    {
+        printf("<<<< COMPLETE ZC SWITCHLESS CALL: %d FALLBACK ZC SWITCHLESS CALLS: %d >>>>\n", zc_statistics->num_zc_swtless_calls, zc_statistics->num_zc_fallback_calls);
+    }
+    else
+    {
+        showOcallLog(5);
+    }
+
     //finalize_zc();
     return 0;
 

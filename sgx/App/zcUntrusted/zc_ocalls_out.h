@@ -12,5 +12,6 @@ void zc_write_switchless(zc_req *request);
 void zc_sendmsg_switchless(zc_req *request);
 void zc_fwrite_switchless(zc_req *request);
 void zc_fread_switchless(zc_req *request);
+void zc_fseeko_switchless(zc_req *request);
 
 #endif /* ZC_OCALLS_OUT_H */

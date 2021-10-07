@@ -104,11 +104,11 @@ void init_zc(int numWorkers)
     zc_statistics->num_zc_fallback_calls = 0;
 
     //allocate memory pools
-    init_pools();    
+    init_pools();
 
     //init locks
     pthread_mutex_init(&pool_index_lock, NULL);
-        
+
     //create zc switchless worker threads
     create_zc_worker_threads(numWorkers);
 }
@@ -128,7 +128,6 @@ static void init_pools()
     //send main_arg_list and memory pools handle to the enclave
     ecall_init_mem_pools(global_eid, (void *)pools, (void *)zc_statistics);
 }
-
 
 /**
  * Preallocate untrusted  memory that will be used by enclave threads
@@ -173,12 +172,10 @@ static void init_mem_pools()
     }
 }
 
-
 static void init_zc_scheduler(int num_workers)
 {
     //TODO
 }
-
 
 void *zc_scheduler_thread(void *input)
 {
@@ -354,6 +351,8 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     case ZC_SENDMSG:
         zc_sendmsg_switchless(request);
         break;
+    case ZC_FSEEKO:
+        zc_fseeko_switchless(request);
 
     default:
         //printf("----------- cannot handle zc switchless request -------------\n");
@@ -380,8 +379,6 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
         // we do not do this for the queue system; callers find any free pools for arg allocation, independent of workers
         //__atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_RELAXED);
     }
-
-    
 }
 
 static int getOptimalWorkers(int numWorkers)
@@ -389,7 +386,6 @@ static int getOptimalWorkers(int numWorkers)
     //TODO
     return numWorkers;
 }
-
 
 static void free_mem_pools()
 {

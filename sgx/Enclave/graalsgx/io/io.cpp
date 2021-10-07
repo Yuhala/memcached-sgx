@@ -187,7 +187,18 @@ int fseeko(SGX_FILE file, off_t offset, int whence)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    ocall_fseeko(&ret, file, offset, whence);
+
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
+    {
+
+        ret = zc_fseeko(file, offset, whence, index);
+    }
+    else
+    {
+        ocall_fseeko(&ret, file, offset, whence);
+    }
     return ret;
 }
 

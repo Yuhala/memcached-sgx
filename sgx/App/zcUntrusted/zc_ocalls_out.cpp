@@ -68,3 +68,11 @@ void zc_fread_switchless(zc_req *request)
                                                        ((fread_arg_zc *)request->args)->nmemb,
                                                        ((fread_arg_zc *)request->args)->stream);
 }
+
+void zc_fseeko_switchless(zc_req *request)
+{
+    // call real ocall (no enclave transition since we are already outside)
+    ((fseeko_arg_zc *)request->args)->ret = ocall_fseeko(((fseeko_arg_zc *)request->args)->stream,
+                                                         ((fseeko_arg_zc *)request->args)->offset,
+                                                         ((fseeko_arg_zc *)request->args)->whence);
+}

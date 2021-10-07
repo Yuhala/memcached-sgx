@@ -157,3 +157,32 @@ size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_
     //printf("---------------zc fread ret: %d ---------------------\n", ret);
     return ret;
 }
+
+int zc_fseeko(SGX_FILE stream, off_t offset, int whence, int pool_index){
+    //log_zc_routine(__func__);
+    // allocate memory for args
+    fseeko_arg_zc *arg = (fseeko_arg_zc *)zc_malloc(pool_index, sizeof(fseeko_arg_zc));
+    // copy args from enclave to untrusted memory
+    arg->stream = stream;
+    arg->offset = offset;
+    arg->whence = whence;
+    
+
+    // do request
+    zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
+    request->args = (void *)arg;
+    request->func_name = ZC_FSEEKO;
+    request->is_done = 1;
+
+    do_zc_switchless_request(request, pool_index);
+
+    // copy response to enclave if needed
+    
+    // release worker/memory pool
+    release_worker(pool_index);
+
+    // return
+    int ret = ((fseeko_arg_zc *)request->args)->ret;
+    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    return ret;
+}

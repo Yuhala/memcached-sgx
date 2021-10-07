@@ -182,9 +182,11 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
     else
     {
         //use worker thread buffers for request
+
         mem_pools->memory_pools[pool_index]->request = req;
         //pyuhala: I don't think atomic store is necessary here.. but lets keep it
         __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_SEQ_CST);
+
         //mem_pools->memory_pools[pool_index]->pool_status = (int)PROCESSING;
     }
 
@@ -263,6 +265,9 @@ void release_worker(unsigned int pool_index)
      * 
      * TODO: we should free this memory at some point. For now the memory pool is used and only freed at the end of the program
      */
+
+    
+
     mem_pools->memory_pools[pool_index]->request = NULL;
 
     /**
@@ -270,6 +275,7 @@ void release_worker(unsigned int pool_index)
      */
 
     __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
+    
 
     //ZC_POOL_UNLOCK();
 

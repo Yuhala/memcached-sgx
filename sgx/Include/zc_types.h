@@ -87,11 +87,20 @@ struct write_arg
     ssize_t ret;
 };
 
+struct fseeko_arg
+{
+    SGX_FILE stream;
+    off_t offset;
+    int whence;
+    int ret;
+};
+
 //Type definitions
 typedef struct fread_arg fread_arg_zc;
 typedef struct fwrite_arg fwrite_arg_zc;
 typedef struct read_arg read_arg_zc;
 typedef struct write_arg write_arg_zc;
+typedef struct fseeko_arg fseeko_arg_zc;
 
 //Special types for each zc switchless routine
 enum zc_routine
@@ -100,7 +109,8 @@ enum zc_routine
     ZC_FWRITE,
     ZC_READ,
     ZC_WRITE,
-    ZC_SENDMSG
+    ZC_SENDMSG,
+    ZC_FSEEKO
 };
 typedef enum zc_routine zc_routine;
 

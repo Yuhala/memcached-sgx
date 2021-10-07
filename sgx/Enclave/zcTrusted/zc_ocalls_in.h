@@ -19,5 +19,6 @@ ssize_t zc_write(int fd, const void *buf, size_t count, int pool_index);
 ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags, int pool_index);
 size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_index);
 size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_index);
+int zc_fseeko(SGX_FILE stream, off_t offset, int whence, int pool_index);
 
 #endif /* ZC_OCALLS_H */
