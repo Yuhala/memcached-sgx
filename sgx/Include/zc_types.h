@@ -249,6 +249,14 @@ struct zc_worker_args
     int pool_index;
 };
 
+struct zc_stats
+{
+    int num_zc_swtless_calls;
+    int num_zc_fallback_calls;
+};
+
+typedef zc_stats zc_stats;
+
 typedef struct zc_worker_args zc_worker_args;
 
 typedef struct zc_mpool_array zc_mpool_array;

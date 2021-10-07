@@ -44,8 +44,7 @@ static int enclave_request_counter = 0;
 sgx_thread_mutex_t counter_setter_lock;
 bool zc_switchless_active = false;
 
-volatile int num_zc_switchless_calls = 0;
-volatile int num_fallback_calls = 0;
+zc_stats *switchless_stats;
 
 /**
  * initialize request and response queues inside the enclave
@@ -61,13 +60,16 @@ void ecall_init_mpmc_queues_inside(void *req_q, void *resp_q)
     //use_zc_test();
 }
 
-void ecall_init_mem_pools(void *pools)
+void ecall_init_mem_pools(void *pools, void *statistics)
 {
     log_zc_routine(__func__);
 
     //init pools
     mem_pools = (zc_mpool_array *)pools;
     //zc_malloc_test();
+
+    //set address of num fallback requests
+    switchless_stats = (zc_stats *)statistics;
 
     //init locks
     init_zc_pool_lock();
@@ -142,8 +144,8 @@ int get_free_pool()
             // lock, test again, and change status
             spin_lock(&mem_pools->memory_pools[i]->pool_lock);
 
-             res = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
-                                                   &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+            __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
+                                        &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 
             spin_unlock(&mem_pools->memory_pools[i]->pool_lock);
         }
@@ -151,13 +153,14 @@ int get_free_pool()
         if (res)
         {
             // this call will be switchless; increment num zc switchless
-            __atomic_fetch_add(&num_zc_switchless_calls, 1, __ATOMIC_RELAXED);
+            __atomic_fetch_add(&switchless_stats->num_zc_swtless_calls, 1, __ATOMIC_RELAXED);
             return i;
         }
     }
 
     //this call will fallback; increment number of fallbacks
-    __atomic_fetch_add(&num_fallback_calls, 1, __ATOMIC_RELAXED);
+
+    __atomic_fetch_add(&switchless_stats->num_zc_fallback_calls, 1, __ATOMIC_RELAXED);
 
     return ZC_NO_FREE_POOL;
 }
@@ -227,7 +230,8 @@ void ZC_REQUEST_WAIT(volatile int *isDone)
     {
        ZC_PAUSE();
     }
-    ZC_ASSERT(*isDone == ZC_REQUEST_DONE);*/
+    */
+    //ZC_ASSERT(*isDone == ZC_REQUEST_DONE);
 }
 
 /**

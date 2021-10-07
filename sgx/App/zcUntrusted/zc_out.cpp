@@ -32,8 +32,8 @@ extern sgx_enclave_id_t global_eid;
 //zc switchless worker thread ids
 pthread_t *worker_ids;
 
-//number of completed switchless requests
-unsigned int completed_switchless_requests = 0;
+// statistics of the switchless run
+zc_stats *zc_statistics;
 
 //number of initialized workers
 static unsigned int num_init_worker = 0;
@@ -88,19 +88,31 @@ void init_zc(int numWorkers)
 
     int opt_worker = getOptimalWorkers(numWorkers);
 
+    // make sure num of default pools >= num of workers
+    ZC_ASSERT(numWorkers <= NUM_POOLS);
+
     //init_arg_buffers_out(opt_worker);
 
     if (use_queues)
     {
         init_zc_mpmc_queues();
     }
+
+    // initialize zc stats
+    zc_statistics = (zc_stats *)malloc(sizeof(zc_stats));
+    zc_statistics->num_zc_swtless_calls = 0;
+    zc_statistics->num_zc_fallback_calls = 0;
+
     //allocate memory pools
     init_pools();
+
+    
+
     //init locks
     pthread_mutex_init(&pool_index_lock, NULL);
-    //launch scheduler thread
-    create_zc_worker_threads(numWorkers);
+        
     //create zc switchless worker threads
+    create_zc_worker_threads(numWorkers);
 }
 
 static void init_zc_scheduler(int num_workers)
@@ -121,7 +133,7 @@ static void init_pools()
     init_mem_pools();
 
     //send main_arg_list and memory pools handle to the enclave
-    ecall_init_mem_pools(global_eid, (void *)pools);
+    ecall_init_mem_pools(global_eid, (void *)pools, (void *)zc_statistics);
 }
 
 void *zc_scheduler_thread(void *input)
@@ -200,8 +212,7 @@ static void zc_worker_loop(int index)
             {
                 goto resume;
             }
-            
-            
+
             handle_zc_switchless_request(req, pool_index);
             // caller thread is waiting for this unlock
             zc_spin_unlock(&req->is_done);
@@ -331,7 +342,7 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     //request->req_pool_index = pool_index;
 
     //count switchless calls
-    int val = __atomic_add_fetch(&completed_switchless_requests, 1, __ATOMIC_RELAXED);
+    //int val = __atomic_add_fetch(&zc_statistics->num_zc_swtless_calls, 1, __ATOMIC_RELAXED);
     //print for every 10 switchless requests
     /*
     if (!(val % 10))

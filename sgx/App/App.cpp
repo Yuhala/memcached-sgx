@@ -93,6 +93,8 @@
 //for get_nprocs()
 #include <sys/sysinfo.h>
 
+#include "zc_types.h"
+
 /* Benchmarking */
 #include "bench/benchtools.h"
 #include <time.h>
@@ -195,7 +197,7 @@ std::map<std::string, int> ocall_map;
 
 bool use_zc_switchless = false;
 
-extern unsigned int completed_switchless_requests;
+extern zc_stats *zc_statistics;
 
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
@@ -849,7 +851,7 @@ int main(int argc, char *argv[])
      */
 
     runKissdbBench();
-    printf("--------------- Total number of completed zc switchless calls: %d -------------------\n", completed_switchless_requests);
+    printf("<<<< COMPLETE ZC SWITCHLESS CALL: %d FALLBACK ZC SWITCHLESS CALLS: %d >>>>\n", zc_statistics->num_zc_swtless_calls, zc_statistics->num_zc_fallback_calls);
     //finalize_zc();
     return 0;
 
