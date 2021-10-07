@@ -44,6 +44,9 @@ static int enclave_request_counter = 0;
 sgx_thread_mutex_t counter_setter_lock;
 bool zc_switchless_active = false;
 
+volatile int num_zc_switchless_calls = 0;
+volatile int num_fallback_calls = 0;
+
 /**
  * initialize request and response queues inside the enclave
  */
@@ -117,6 +120,7 @@ int get_free_pool()
 
     int unused = (int)UNUSED;
     int reserved = (int)RESERVED;
+    bool res = false;
 
     for (int i = 0; i < NUM_POOLS; i++)
     {
@@ -132,35 +136,29 @@ int get_free_pool()
          * pyuhala: i used release memory order here in the caller and acquire in the 
          * worker outside so the latter sees the changes
          */
-        bool res = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
-                                               &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+
+        if (mem_pools->memory_pools[i]->pool_status == unused)
+        {
+            // lock, test again, and change status
+            spin_lock(&mem_pools->memory_pools[i]->pool_lock);
+
+             res = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
+                                                   &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+
+            spin_unlock(&mem_pools->memory_pools[i]->pool_lock);
+        }
 
         if (res)
         {
+            // this call will be switchless; increment num zc switchless
+            __atomic_fetch_add(&num_fallback_calls, 1, __ATOMIC_RELAXED);
             return i;
         }
-
-        //if (mem_pools->memory_pools[i]->active && status == (int)UNUSED)
-        //{
-        //pyuhala: we may have concurrency issues here..well not really
-        //ZC_POOL_LOCK();
-        //mem_pools->memory_pools[i]->pool_status = (int)RESERVED;
-        //__atomic_store_n(&mem_pools->memory_pools[i]->pool_status, (int)RESERVED, __ATOMIC_RELAXED);
-        //mem_pools->memory_pools[i]->curr_user_id = req_num;
-        //__atomic_store_n(&mem_pools->memory_pools[i]->curr_user_id, req_num, __ATOMIC_RELAXED);
-
-        //ZC_POOL_UNLOCK();
-
-        //make sure it is you who reserved here,
-        //b/c a diff thread could have found this free pool at the same time as you,
-        //and you should continue checking for an unused slot
-
-        //if (mem_pools->memory_pools[i]->curr_user_id == req_num)
-        //{
-        //return i;
-        //}
-        //continue;
     }
+
+    //this call will fallback; increment number of fallbacks
+    __atomic_fetch_add(&num_fallback_calls, 1, __ATOMIC_RELAXED);
+
     return ZC_NO_FREE_POOL;
 }
 
@@ -256,7 +254,6 @@ void release_worker(unsigned int pool_index)
      * TODO: we should free this memory at some point. For now the memory pool is used and only freed at the end of the program
      */
     mem_pools->memory_pools[pool_index]->request = NULL;
-    
 
     /**
      * changed status of buffer to unused

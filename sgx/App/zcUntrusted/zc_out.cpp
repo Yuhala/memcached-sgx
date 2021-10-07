@@ -357,6 +357,7 @@ static void init_mem_pools()
         pools->memory_pools[i] = (zc_mpool *)malloc(sizeof(zc_mpool));
         pools->memory_pools[i]->pool = mpool_create(POOL_SIZE);
         pools->memory_pools[i]->pool_id = i;
+        pools->memory_pools[i]->pool_lock = 0;
 
         if (use_queues)
         {
