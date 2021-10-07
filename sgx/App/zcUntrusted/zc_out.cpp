@@ -104,20 +104,13 @@ void init_zc(int numWorkers)
     zc_statistics->num_zc_fallback_calls = 0;
 
     //allocate memory pools
-    init_pools();
-
-    
+    init_pools();    
 
     //init locks
     pthread_mutex_init(&pool_index_lock, NULL);
         
     //create zc switchless worker threads
     create_zc_worker_threads(numWorkers);
-}
-
-static void init_zc_scheduler(int num_workers)
-{
-    //TODO
 }
 
 /**
@@ -135,6 +128,57 @@ static void init_pools()
     //send main_arg_list and memory pools handle to the enclave
     ecall_init_mem_pools(global_eid, (void *)pools, (void *)zc_statistics);
 }
+
+
+/**
+ * Preallocate untrusted  memory that will be used by enclave threads
+ * to allocate requests and pass arguments.
+ */
+
+static void init_mem_pools()
+{
+    pools = (zc_mpool_array *)malloc(sizeof(zc_mpool_array));
+    pools->memory_pools = (zc_mpool **)malloc(sizeof(zc_mpool *) * NUM_POOLS);
+
+    //initializing memory pools
+    printf("<<<<<<<<<<<<<<< initializing memory pools >>>>>>>>>>>>>>>>\n");
+
+    for (int i = 0; i < NUM_POOLS; i++)
+    {
+        pools->memory_pools[i] = (zc_mpool *)malloc(sizeof(zc_mpool));
+        pools->memory_pools[i]->pool = mpool_create(POOL_SIZE);
+        pools->memory_pools[i]->pool_id = i;
+        pools->memory_pools[i]->pool_lock = 0;
+
+        if (use_queues)
+        {
+            /**
+             * pyuhala: when using queues, the memory pools are simply used by
+             * in-enclave threads for untrusted mem allocation independent of 
+             * worker threads. The worker threads only dequeue and handle requests.
+             * So activate all the pools.
+             */
+            pools->memory_pools[i]->active = 1;
+        }
+        else
+        {
+            /**
+             * when using our per-worker buffer/pool system, each worker 
+             * "owns" a pool and this active status will be set only when a 
+             * corresponding worker is created, so we don't have caller threads
+             * using pools w/o a worker.
+             */
+            pools->memory_pools[i]->active = 0;
+        }
+    }
+}
+
+
+static void init_zc_scheduler(int num_workers)
+{
+    //TODO
+}
+
 
 void *zc_scheduler_thread(void *input)
 {
@@ -337,18 +381,7 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
         //__atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_RELAXED);
     }
 
-    //pools->memory_pools[pool_index]->pool_status = (int)WAITING;
-    //pyuhala: doing below for debug reasons..something's not alright
-    //request->req_pool_index = pool_index;
-
-    //count switchless calls
-    //int val = __atomic_add_fetch(&zc_statistics->num_zc_swtless_calls, 1, __ATOMIC_RELAXED);
-    //print for every 10 switchless requests
-    /*
-    if (!(val % 10))
-    {
-        printf(">>>>>>>>>>>>>>>> num complete switchless calls: %d >>>>>>>>>>>>>>>>>>>>>\n", val);
-    }*/
+    
 }
 
 static int getOptimalWorkers(int numWorkers)
@@ -357,48 +390,6 @@ static int getOptimalWorkers(int numWorkers)
     return numWorkers;
 }
 
-/**
- * Preallocate untrusted  memory that will be used by enclave threads
- * to allocate requests and pass arguments.
- */
-
-static void init_mem_pools()
-{
-    pools = (zc_mpool_array *)malloc(sizeof(zc_mpool_array));
-    pools->memory_pools = (zc_mpool **)malloc(sizeof(zc_mpool *) * NUM_POOLS);
-
-    //initializing memory pools
-    printf("<<<<<<<<<<<<<<< initializing memory pools >>>>>>>>>>>>>>>>\n");
-
-    for (int i = 0; i < NUM_POOLS; i++)
-    {
-        pools->memory_pools[i] = (zc_mpool *)malloc(sizeof(zc_mpool));
-        pools->memory_pools[i]->pool = mpool_create(POOL_SIZE);
-        pools->memory_pools[i]->pool_id = i;
-        pools->memory_pools[i]->pool_lock = 0;
-
-        if (use_queues)
-        {
-            /**
-             * pyuhala: when using queues, the memory pools are simply used by
-             * in-enclave threads for untrusted mem allocation independent of 
-             * worker threads. The worker threads only dequeue and handle requests.
-             * So activate all the pools.
-             */
-            pools->memory_pools[i]->active = 1;
-        }
-        else
-        {
-            /**
-             * when using our per-worker buffer/pool system, each worker 
-             * "owns" a pool and this active status will be set only when a 
-             * corresponding worker is created, so we don't have caller threads
-             * using pools w/o a worker.
-             */
-            pools->memory_pools[i]->active = 0;
-        }
-    }
-}
 
 static void free_mem_pools()
 {

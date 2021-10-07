@@ -724,8 +724,8 @@ void runKissdbBench()
     int min_keys = 10;
     int max_keys = 100;
     int step = 10;
-    int numWriters = 1;
-    int numReaders = 1;
+    int numWriters = 2;
+    int numReaders = 2;
     //write_keys(numKeys, numWriters);
     bool test = (numReaders == numWriters);
 
@@ -823,7 +823,7 @@ int main(int argc, char *argv[])
     {
         ret_zero = 0;
         //init_switchless();
-        init_zc(4);
+        init_zc(2);
 
         //return 0;
     }

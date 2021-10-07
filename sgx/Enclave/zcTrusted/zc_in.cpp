@@ -144,8 +144,8 @@ int get_free_pool()
             // lock, test again, and change status
             spin_lock(&mem_pools->memory_pools[i]->pool_lock);
 
-            __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
-                                        &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+            res = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
+                                              &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 
             spin_unlock(&mem_pools->memory_pools[i]->pool_lock);
         }
