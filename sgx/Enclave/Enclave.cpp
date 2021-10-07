@@ -480,8 +480,8 @@ void ecall_readKissdb(int n, int storeId)
 
 void ecall_writeKissdb(int n, int storeId)
 {
-    //writeKissdb(n, storeId);
-    runTestMulti(n);
+    writeKissdb(n, storeId);
+    //runTestMulti(n);
 }
 
 void ecall_kissdb_test()

@@ -29,7 +29,7 @@ set xlabel offset 0,1,0
 
 #------------------------------------------Plots-------------------------------------------------
 # set title "Run time for writing+reading kv pairs in kissdb" font "Helvetica-bold,16" offset 0,0.65
-set title "Run time for doing ocall multi" font "Helvetica-bold,16" offset 0,0.65
+set title "Run time for 2 callers doing ocall multi" font "Helvetica-bold,16" offset 0,0.65
 
 set xrange [0:100000]
 set datafile separator ","
