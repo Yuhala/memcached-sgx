@@ -151,7 +151,7 @@ int get_free_pool()
         if (res)
         {
             // this call will be switchless; increment num zc switchless
-            __atomic_fetch_add(&num_fallback_calls, 1, __ATOMIC_RELAXED);
+            __atomic_fetch_add(&num_zc_switchless_calls, 1, __ATOMIC_RELAXED);
             return i;
         }
     }
