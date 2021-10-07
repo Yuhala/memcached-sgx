@@ -889,7 +889,7 @@ int main(int argc, char *argv[])
 
     //runKissdbBench(10);
 
-    runTestMulti(5);
+    runTestMulti(10);
 
     if (zc_switchless)
     {
