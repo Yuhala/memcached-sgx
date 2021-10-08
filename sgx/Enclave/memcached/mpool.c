@@ -92,8 +92,8 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
     if (usiz > msiz)
     {
         printf("------- ! MEMPOOL EXTEND: USING AN OCALL TO INCREASE POOL SIZE --------\n");
-        
-         if (!mpool_extend(pp, usiz * 2 + 1, pool))
+        //pyuhala: original code: if (!mpool_extend(pp, usiz * 2 + 1, pool))
+        if (!mpool_extend(pp, usiz + 1, pool))
         {
             return NULL;
         }
@@ -101,7 +101,7 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
         pool->msiz = usiz * 2;
         d = pool->begin;
         pool->begin += mpool_align(siz);
-        *p = pp->next; 
+        *p = pp->next;
     }
     else
     {
