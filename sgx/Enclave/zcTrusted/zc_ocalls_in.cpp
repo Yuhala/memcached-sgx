@@ -182,7 +182,7 @@ ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags, int pool_ind
 {
     log_zc_routine(__func__);
     // allocate memory for args
-    sendmsg_arg_zc *arg = (sendmsg_arg_zc *)zc_malloc(sizeof(sendmsg_arg_zc));
+    sendmsg_arg_zc *arg = (sendmsg_arg_zc *)zc_malloc(pool_index, sizeof(sendmsg_arg_zc));
     // copy args from enclave to untrusted memory
     arg->sockfd = sockfd;
     arg->msg_header = (void *)msg;

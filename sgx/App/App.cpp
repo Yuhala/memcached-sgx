@@ -510,8 +510,8 @@ int main(int argc, char *argv[])
 
     int id = global_eid;
 
-    //init_memcached(num_mcd_workers);
-    //return 0;
+    init_memcached(num_mcd_workers);
+    return 0;
 
     //ecall_create_enclave_isolate(global_eid);
     /**
@@ -519,7 +519,7 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    runKissdbBench(5);
+    //runKissdbBench(5);
     //ecall_kissdb_test(global_eid);
 
     //runTestMulti(10);

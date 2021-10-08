@@ -44,7 +44,7 @@ YCSB_PROPS = YCSB_BASE + "/memcached/conf/memcached.properties"
 WORKLOAD = YCSB_BASE + "/workloads/workloada"
 BASH_PATH = "/bin/bash"
 
-MCD_HOST_IP = "127.0.0.1"
+#MCD_HOST_IP = "127.0.0.1"
 MCD_HOST_IP = "172.28.30.136"  # eiger-10.maas ip
 
 # minimum target throughput
@@ -78,7 +78,8 @@ OVERALL_RUNTIME = "[OVERALL], RunTime(ms)"
 
 # sample ycsb commands
 # ./bin/ycsb load memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1
-# ./bin/ycsb run memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads 4 -target 1000 > output.txt
+# ./bin/ycsb run memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 > output.txt
+# ./bin/ycsb run memcached -s -P workloads/workloada -p memcached.hosts=127.0.0.1 -threads 2 -target 1000 > output.txt
 
 
 # run memcached sgx
