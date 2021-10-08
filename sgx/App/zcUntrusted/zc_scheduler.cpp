@@ -74,7 +74,7 @@ void zc_create_scheduling_thread()
 
 void zc_set_number_of_workers(int m)
 {
-    printf("------------- zc-schd setting num of workers to: %d ---------------\n",m);
+    //printf("------------- zc-schd setting num of workers to: %d ---------------\n",m);
     int tmp;
     int i;
 
