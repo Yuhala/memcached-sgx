@@ -106,6 +106,8 @@ extern std::map<pthread_t, pthread_attr_t *> attr_map;
 extern int total_sl; /* total # of switchless calls at runtime */
 extern int total_fb; /* total # of fallback calls */
 
+extern pthread_mutex_t ocall_counter_lock;
+
 /* Macro for this value which is in the config file of the enclave because I
  * don't know how to do better
  */
@@ -147,8 +149,8 @@ graal_isolatethread_t *global_app_iso;
 pthread_t main_thread_id;
 
 /* Ocall counter */
-unsigned int ocall_count = 0;
-std::map<std::string, int> ocall_map;
+extern std::map<std::string, int> ocall_map;
+extern unsigned int ocall_count;
 
 //pyuhala: for intel sdk switchless calls
 //#define SL_DEFAULT_FALLBACK_RETRIES 20000
@@ -378,9 +380,9 @@ void runTestMulti(int num_runs)
 void runKissdbBench(int num_runs)
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 100;
-    int max_keys = 1000;
-    int step = 100;
+    int min_keys = 500;
+    int max_keys = 10000;
+    int step = 500;
     int numWriters = 2;
     //int numReaders = 2;
     //write_keys(numKeys, numWriters);
@@ -438,6 +440,7 @@ int main(int argc, char *argv[])
     //return ret;
 
     setMainAttribs();
+    pthread_mutex_init(&ocall_counter_lock, NULL);
 
     attr_map.insert(pair<pthread_t, pthread_attr_t *>(0, NULL));
 
@@ -516,7 +519,7 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    runKissdbBench(1);
+    runKissdbBench(5);
 
     //runTestMulti(10);
 
@@ -527,8 +530,9 @@ int main(int argc, char *argv[])
             total_sl = zc_statistics->num_zc_swtless_calls;
             total_fb = zc_statistics->num_zc_fallback_calls;
         }
-        printf("<<<< COMPLETE ZC SWITCHLESS CALLS: %d FALLBACK ZC SWITCHLESS CALLS: %d >>>>\n", total_sl, total_fb);
+        printf("<<<< COMPLETE ZC SWITCHLESS CALLS: %d FALLBACK ZC SWITCHLESS CALLS: %d >>>>\n", zc_statistics->num_zc_swtless_calls, zc_statistics->num_zc_fallback_calls);
         showOcallLog(5);
+        printf("Total OCALLS (switchless + not) = %d\n", ocall_count);
     }
     else
     {

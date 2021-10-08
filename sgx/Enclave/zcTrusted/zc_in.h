@@ -20,8 +20,6 @@ void release_worker(unsigned int pool_index);
 void ZC_REQUEST_WAIT(zc_req *request);
 int get_free_pool();
 
-//__atomic_store_n(&, val, __ATOMIC_RELAXED);
-
 //logging
 void log_zc_routine(const char *func);
 

@@ -45,10 +45,18 @@ void zc_write_switchless(zc_req *request)
                                                        ((write_arg_zc *)request->args)->count);
 }
 
+void zc_transmit_prepare(zc_req *request)
+{
+    ((transmit_prepare_arg_zc *)request->args)->ret = transmit_prepare();
+}
+
 void zc_sendmsg_switchless(zc_req *request)
 {
     // call real ocall (no enclave transition since we are already outside)
-    //TODO
+    struct msghdr *header = (struct msghdr *)((sendmsg_arg_zc *)request->args)->msg_header;
+    ((sendmsg_arg_zc *)request->args)->ret = ocall_sendmsg(((sendmsg_arg_zc *)request->args)->sockfd,
+                                                           header,
+                                                           ((sendmsg_arg_zc *)request->args)->flags);
 }
 
 void zc_fwrite_switchless(zc_req *request)
@@ -80,5 +88,5 @@ void zc_fseeko_switchless(zc_req *request)
 void zc_test_switchless(zc_req *request)
 {
     ((test_arg_zc *)request->args)->ret = ocall_test(((test_arg_zc *)request->args)->a,
-                                                       ((test_arg_zc *)request->args)->b);
+                                                     ((test_arg_zc *)request->args)->b);
 }

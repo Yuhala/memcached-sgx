@@ -12,8 +12,10 @@
 #include <map>
 
 using namespace std;
-extern std::map<std::string, int> ocall_map;
-extern unsigned int ocall_count;
+unsigned int ocall_count = 0;
+std::map<std::string, int> ocall_map;
+
+pthread_mutex_t ocall_counter_lock;
 
 // Comparator function to sort pairs in ascending order
 bool cmp(pair<string, int> &a,
@@ -24,7 +26,13 @@ bool cmp(pair<string, int> &a,
 
 void log_ocall(const char *func)
 {
+    /**
+     * lock is important when we have multiple 
+     * workers calling this routine
+     */
+    pthread_mutex_lock(&ocall_counter_lock);
     ocall_count++;
+
     std::string name = std::string(func);
 
     if (ocall_map.find(name) != ocall_map.end())
@@ -37,7 +45,7 @@ void log_ocall(const char *func)
         //kv pair does not exist yet
         ocall_map.insert(std::make_pair(name, 1));
     }
-
+    pthread_mutex_unlock(&ocall_counter_lock);
     //printf("Calling ocall is: %s\n", name);
 }
 
@@ -48,7 +56,7 @@ void showOcallLog(int num)
 {
     //create vector with map kv pairs
     vector<pair<string, int>> vect;
-   
+
     for (auto &it : ocall_map)
     {
         vect.push_back(it);
@@ -58,7 +66,7 @@ void showOcallLog(int num)
     sort(vect.begin(), vect.end(), cmp);
     int count = 0;
     //print first num elements in the vector
-    printf("----------------------- OCALL STATS: Top %d ---------------------------\n",num);
+    printf("----------------------- OCALL STATS: Top %d ---------------------------\n", num);
     for (auto &it : vect)
     {
         printf("Ocall: %s Count: %d\n", it.first.c_str(), it.second);

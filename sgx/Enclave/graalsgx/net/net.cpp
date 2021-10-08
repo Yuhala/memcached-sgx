@@ -7,6 +7,7 @@
 #include "../../Enclave.h"
 #include "inet_pton.h"
 #include "ocall_manager.h"
+#include "zcTrusted/zc_in.h"
 
 long timezone = 0; //TODO
 
@@ -250,25 +251,52 @@ ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct 
     ocall_sendto(&ret, sockfd, buf, len, flags, dest_addr, addrlen);
     return ret;
 }
+
 ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags)
 {
     GRAAL_SGX_INFO();
     ssize_t ret;
-    if (should_be_switchless(FN_TOKEN_SENDMSG))
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
+    {
+
+        ret = zc_sendmsg(sockfd, msg, flags, index);
+    }
+    else
+    {
+        ocall_sendmsg(&ret, sockfd, msg, flags);
+    }
+
+    /* if (should_be_switchless(FN_TOKEN_SENDMSG))
         ret = sendmsg_switchless(sockfd, msg, flags);
     else
-	ocall_sendmsg(&ret, sockfd, msg, flags);
+        ocall_sendmsg(&ret, sockfd, msg, flags);
+    return ret; */
     return ret;
 }
 
-void* transmit_prepare(void)
+void *transmit_prepare(void)
 {
     GRAAL_SGX_INFO();
-    void* ret;
-    if (should_be_switchless(FN_TOKEN_TRANSMIT_PREPARE))
-	ret = transmit_prepare_switchless();
+    void *ret;
+
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
+    {
+
+        ret = zc_transmit_prepare(index);
+    }
     else
-	ocall_transmit_prepare(&ret);
+    {
+        ocall_transmit_prepare(&ret);
+    }
+
+    /*   if (should_be_switchless(FN_TOKEN_TRANSMIT_PREPARE))
+        ret = transmit_prepare_switchless();
+    else
+        ocall_transmit_prepare(&ret); */
     return ret;
 }
 

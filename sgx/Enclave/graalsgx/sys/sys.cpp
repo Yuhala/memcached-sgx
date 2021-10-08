@@ -153,11 +153,11 @@ unsigned int sleep(unsigned int secs)
 {
     GRAAL_SGX_INFO();
     unsigned int ret;
-    log_ocall(FN_TOKEN_FSYNC);
+    /* log_ocall(FN_TOKEN_FSYNC);
     if (should_be_switchless(FN_TOKEN_FSYNC))
         ret = sleep_switchless(secs);
-    else
-        ocall_sleep(&ret, secs);
+    else */
+    ocall_sleep(&ret, secs);
     return ret;
 }
 
@@ -448,7 +448,6 @@ int execvp(const char *file, char *const argv[])
     //TODO
     return ret;
 }
-
 
 void _exit(int status)
 {

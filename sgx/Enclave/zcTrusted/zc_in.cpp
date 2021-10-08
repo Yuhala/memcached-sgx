@@ -102,8 +102,7 @@ int reserve_worker()
     }
     else
     {
-        //* reserve the worker/pool */
-        //mem_pools->memory_pools[index]->pool_status = (int)RESERVED;
+
         return index;
     }
 }
@@ -148,19 +147,28 @@ int get_free_pool()
                                               &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 
             spin_unlock(&mem_pools->memory_pools[i]->pool_lock);
-        }
-
-        if (res)
-        {
-            // this call will be switchless; increment num zc switchless
-            __atomic_fetch_add(&switchless_stats->num_zc_swtless_calls, 1, __ATOMIC_RELAXED);
-            return i;
+            if (res)
+            {
+                // this call will be switchless; increment num zc switchless
+                /**
+                 * pyuhala: this should be locked; same with below. 
+                 * I noticed double counting of sl and fb calls,
+                 * and this is most probably the reason.
+                 *
+                 */
+                sgx_thread_mutex_lock(&counter_setter_lock);
+                __atomic_fetch_add(&switchless_stats->num_zc_swtless_calls, 1, __ATOMIC_RELAXED);
+                sgx_thread_mutex_unlock(&counter_setter_lock);
+                return i;
+            }
         }
     }
 
     //this call will fallback; increment number of fallbacks
-
+    //printf("----------------- call falling back: %d  -----------------------\n",switchless_stats->num_zc_fallback_calls);
+    sgx_thread_mutex_lock(&counter_setter_lock);
     __atomic_fetch_add(&switchless_stats->num_zc_fallback_calls, 1, __ATOMIC_RELAXED);
+    sgx_thread_mutex_unlock(&counter_setter_lock);
 
     return ZC_NO_FREE_POOL;
 }
@@ -266,6 +274,7 @@ void release_worker(unsigned int pool_index)
      * TODO: we should free this memory at some point. For now the memory pool is used and only freed at the end of the program
      */
 
+    mem_pools->memory_pools[pool_index]->request->req_status = STALE_REQUEST;
     mem_pools->memory_pools[pool_index]->request = NULL;
 
     /**

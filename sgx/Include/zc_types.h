@@ -25,11 +25,13 @@
 #define ZC_NO_FREE_POOL -1 /* if there is not free pool in the pool array return -1 index */
 
 #define POOL_SIZE 32 * 1024 * 1024 /* surely 64 mb should be enough for realistic tests/benchmarks */
-#define NUM_POOLS 8              /* the number of memory pools to create; == number max threads in enclave */
+#define NUM_POOLS 8                /* the number of memory pools to create; == number max threads in enclave */
 
 #define ZC_REQUEST_DONE 1
 
 #define ZC_SPINLOCK 0
+
+#define STALE_REQUEST -1234 /* magic number to detect stale requests in pools */
 
 /**
  * structure containing pointers to argument buffers. 
@@ -95,6 +97,19 @@ struct fseeko_arg
     int ret;
 };
 
+struct sendmsg_arg
+{
+    int sockfd;
+    void *msg_header;
+    int flags;
+    ssize_t ret;
+};
+
+struct transmit_prepare_arg
+{
+    void *ret;
+};
+
 struct test_arg
 {
     int a;
@@ -108,6 +123,8 @@ typedef struct fwrite_arg fwrite_arg_zc;
 typedef struct read_arg read_arg_zc;
 typedef struct write_arg write_arg_zc;
 typedef struct fseeko_arg fseeko_arg_zc;
+typedef struct sendmsg_arg sendmsg_arg_zc;
+typedef struct transmit_prepare_arg transmit_prepare_arg_zc;
 
 typedef struct test_arg test_arg_zc;
 
@@ -119,6 +136,7 @@ enum zc_routine
     ZC_READ,
     ZC_WRITE,
     ZC_SENDMSG,
+    ZC_TRANSMIT_PREPARE,
     ZC_FSEEKO,
     ZC_TEST
 };
@@ -130,7 +148,7 @@ struct zc_request
 {
     void *args;
     zc_routine func_name;
-    unsigned int req_id;
+    int req_status;
     //volatile int is_done;        /* do not cache this int */
     volatile int is_done;        /* do not cache this int */
     unsigned int req_pool_index; /* pool index of worker thread */

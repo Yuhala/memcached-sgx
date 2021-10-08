@@ -19,7 +19,7 @@
 
 void empty(int repeats)
 {
-    log_ocall(FN_TOKEN_EMPTY);
+    //log_ocall(FN_TOKEN_EMPTY);
     if (should_be_switchless(FN_TOKEN_EMPTY))
         empty_switchless(repeats);
     else

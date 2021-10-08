@@ -39,6 +39,7 @@ zc_stats *zc_statistics;
 
 //number of initialized workers
 unsigned int num_workers = 0;
+unsigned int num_initialized_workers = 0;
 
 //number of requests on the request queue
 extern volatile unsigned int num_items;
@@ -89,7 +90,7 @@ static bool use_queues = false;
 
 void init_zc()
 {
-    use_zc_scheduler = true;
+    //use_zc_scheduler = true;
 
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
@@ -220,12 +221,16 @@ static void zc_worker_loop(zc_worker_args *args)
 
     struct sched_param param;
     /* setting the worker's priority to a high priority */
-    param.sched_priority = 50;
-    if (sched_setscheduler(0, SCHED_RR, &param) == -1)
+
+    if (use_zc_scheduler)
     {
-        printf("Unable to change the policy of a worker thread to SCHED_RR\n");
-        //perror("Unable to change the policy of a worker thread to SCHED_RR");
-        //exit(1);
+        param.sched_priority = 50;
+        if (sched_setscheduler(0, SCHED_RR, &param) == -1)
+        {
+            printf("Unable to change the policy of a worker thread to SCHED_RR\n");
+            //perror("Unable to change the policy of a worker thread to SCHED_RR");
+            //exit(1);
+        }
     }
 
     int unused = (int)UNUSED;
@@ -243,7 +248,7 @@ static void zc_worker_loop(zc_worker_args *args)
     bool exit = false;
 
     // worker initialization complete
-    int val = __atomic_fetch_add(&num_workers, 1, __ATOMIC_RELAXED);
+    int val = __atomic_fetch_add(&num_initialized_workers, 1, __ATOMIC_RELAXED);
 
     for (;;)
     {
@@ -277,8 +282,9 @@ static void zc_worker_loop(zc_worker_args *args)
             /**
              * pyuhala: if req = NULL, pause and try again
              */
-            if (req == NULL)
+            if (req == NULL || (req != NULL && req->req_status == STALE_REQUEST))
             {
+                //printf("------------ null or stale request -------------\n");
                 goto resume;
             }
 
@@ -304,28 +310,32 @@ static void zc_worker_loop(zc_worker_args *args)
         } //end switch case
 
         // test for unused buffers
-        if (worker_id >= num_workers && pools->memory_pools[pool_index]->pool_status == (int)UNUSED)
+
+        if (use_zc_scheduler)
         {
-            // lock, test again, and change status
-            zc_spin_lock(&pools->memory_pools[pool_index]->pool_lock);
-
-            res = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
-                                              &unused, paused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-
-            if (!res)
+            if (worker_id >= num_workers && pools->memory_pools[pool_index]->pool_status == (int)UNUSED)
             {
-                //could not change status of buffer.. resume loop
-                zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
-                goto resume;
-            }
+                // lock, test again, and change status
+                zc_spin_lock(&pools->memory_pools[pool_index]->pool_lock);
 
-            pause();
-            if (pools->memory_pools[pool_index]->pool_status == (int)PAUSED)
-            {
                 res = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
-                                                  &paused, unused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+                                                  &unused, paused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+
+                if (!res)
+                {
+                    //could not change status of buffer.. resume loop
+                    zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
+                    goto resume;
+                }
+
+                pause();
+                if (pools->memory_pools[pool_index]->pool_status == (int)PAUSED)
+                {
+                    res = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
+                                                      &paused, unused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+                }
+                zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
             }
-            zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
         }
 
     resume:;
@@ -405,9 +415,15 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     case ZC_SENDMSG:
         zc_sendmsg_switchless(request);
         break;
+
     case ZC_FSEEKO:
         zc_fseeko_switchless(request);
         break;
+
+    case ZC_TRANSMIT_PREPARE:
+        zc_transmit_prepare(request);
+        break;
+
     case ZC_TEST:
         zc_test_switchless(request);
         break;
@@ -456,6 +472,7 @@ static void create_zc_worker_threads()
     workers = (pthread_t *)malloc(sizeof(pthread_t) * num_workers);
 
     ZC_ASSERT(num_workers <= NUM_POOLS);
+    printf("--------------- Num of ZC worker threads: %d ----------------\n", num_workers);
 
     zc_worker_args *args;
     for (int i = 0; i < num_workers; i++)
@@ -468,12 +485,15 @@ static void create_zc_worker_threads()
         pthread_create(workers + i, NULL, zc_worker_thread, (void *)args);
     }
 
-    // wait for workers to initialize
-    /*while (num_init_workers < num_workers)
+    /**
+     * pyuhala: wait for workers to initialize.
+     * I don't want the main thread spawning callers when workers are 
+     * not yet set
+     */
+    while (num_initialized_workers < num_workers)
     {
         ZC_PAUSE();
-    }*/
-    ZC_PAUSE();
+    }
 }
 
 void finalize_zc()
