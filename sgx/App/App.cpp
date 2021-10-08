@@ -380,9 +380,9 @@ void runTestMulti(int num_runs)
 void runKissdbBench(int num_runs)
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 500;
-    int max_keys = 10000;
-    int step = 500;
+    int min_keys = 1000;
+    int max_keys = 20000;
+    int step = 1000;
     int numWriters = 2;
     //int numReaders = 2;
     //write_keys(numKeys, numWriters);

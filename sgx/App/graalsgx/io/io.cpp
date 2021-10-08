@@ -205,7 +205,7 @@ int ocall_fclose(SGX_FILE stream)
 
 size_t ocall_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
 {
-    log_ocall(__func__);
+    log_ocall(__func__);    
     FILE *f = getFile(stream);
     ssize_t ret = fwrite(ptr, size, nmemb, f);
 
@@ -546,4 +546,3 @@ int ocall_test(int a, int b)
     log_ocall(__func__);
     return a * b;
 }
-

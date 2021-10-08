@@ -282,16 +282,24 @@ static void zc_worker_loop(zc_worker_args *args)
             /**
              * pyuhala: if req = NULL, pause and try again
              */
-            if (req == NULL || (req != NULL && req->req_status == STALE_REQUEST))
+            if (req == NULL)
             {
                 //printf("------------ null or stale request -------------\n");
-                goto resume;
+                //goto resume;
+                break;
             }
-
-            handle_zc_switchless_request(req, pool_index);
-            // caller thread is waiting for this unlock
-            zc_spin_unlock(&req->is_done);
-            sl_calls_treated++;
+            //don't treat stale request
+            else
+            {
+                if (req->req_status != STALE_REQUEST)
+                {
+                    handle_zc_switchless_request(req, pool_index);
+                    // caller thread is waiting for this unlock
+                    zc_spin_unlock(&req->is_done);
+                    req->req_status = STALE_REQUEST;
+                    sl_calls_treated++;
+                }
+            }
         }
         break;
 
