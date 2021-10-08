@@ -90,7 +90,7 @@ static bool use_queues = false;
 
 void init_zc()
 {
-    //use_zc_scheduler = true;
+    use_zc_scheduler = true;
 
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
@@ -335,6 +335,7 @@ static void zc_worker_loop(zc_worker_args *args)
                     zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
                     goto resume;
                 }
+                zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
 
                 pause();
                 if (pools->memory_pools[pool_index]->pool_status == (int)PAUSED)
@@ -342,7 +343,6 @@ static void zc_worker_loop(zc_worker_args *args)
                     res = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
                                                       &paused, unused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
                 }
-                zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
             }
         }
 
