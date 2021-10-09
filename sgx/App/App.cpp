@@ -382,7 +382,7 @@ void runKissdbBench(int num_runs)
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
     int min_keys = 5000;
     int max_keys = 80000;
-    int step = 500;
+    int step = 5000;
     int numWriters = 2;
     int numReaders = 2;
     //write_keys(numKeys, numWriters);
@@ -510,8 +510,8 @@ int main(int argc, char *argv[])
 
     int id = global_eid;
 
-    init_memcached(num_mcd_workers);
-    return 0;
+    //init_memcached(num_mcd_workers);
+    //return 0;
 
     //ecall_create_enclave_isolate(global_eid);
     /**
@@ -519,7 +519,7 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    //runKissdbBench(5);
+    runKissdbBench(5);
     //ecall_kissdb_test(global_eid);
 
     //runTestMulti(10);

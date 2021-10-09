@@ -68,6 +68,7 @@ static void init_pools();
 static void free_mem_pools();
 static void init_zc_scheduler();
 static void zc_worker_loop_q();
+static bool could_have_pending_request(int pool_index);
 
 //for scheduler
 void zc_create_scheduling_thread();
@@ -90,7 +91,7 @@ static bool use_queues = false;
 
 void init_zc()
 {
-    //use_zc_scheduler = true;
+    use_zc_scheduler = true;
 
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
@@ -337,6 +338,18 @@ static void zc_worker_loop(zc_worker_args *args)
                 }
                 zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
 
+                /**
+                 * pyuhala: more testing to ensure this worker does not 
+                 * have a pending request just in case; else caller
+                 * will be waiting for a paused worker
+                 */
+
+                if (could_have_pending_request(pool_index))
+                {
+                    //resume worker loop and check the buffer's request again
+                    goto resume;
+                }
+
                 pause();
                 if (pools->memory_pools[pool_index]->pool_status == (int)PAUSED)
                 {
@@ -355,6 +368,24 @@ static void zc_worker_loop(zc_worker_args *args)
         }
     }
     printf("\e[0;31mnumber of switchless calls treated by worker %d : %d\e[0m\n", worker_id, sl_calls_treated);
+}
+
+/**
+ * Check if there is a request (even if its stale) in the buffer;
+ * maybe not the best thing to use locks extensively but we will 
+ * optimize once things work correctly.
+ */
+static bool could_have_pending_request(int pool_index)
+{
+    bool test = false;
+    zc_spin_lock(&pools->memory_pools[pool_index]->pool_lock);
+    if (pools->memory_pools[pool_index]->request != NULL)
+    {
+        test = true;
+    }
+    zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
+
+    return test;
 }
 
 /**
