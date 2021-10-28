@@ -7,7 +7,6 @@
 #include "Enclave_u.h"
 #include "sgx_urts.h"
 
-#include <time.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +23,13 @@
 
 #include "zc_locks.h"
 
-//#include "zc_scheduler.h"
+#include "scheduler.h"
+
+#define _BSD_SOURCE
+#include <sys/time.h>
+#include <time.h>
+
+#define NANO (1000 * 1000 * 1000)
 
 //zc_arg_list *main_arg_list;
 
@@ -41,12 +46,15 @@ zc_stats *zc_statistics;
 unsigned int num_workers = 0;
 unsigned int num_initialized_workers = 0;
 
+// cpu frequency in MHz
+int cpu_freq;
+
 //number of requests on the request queue
 extern volatile unsigned int num_items;
 
 //globals from scheduler module
-extern int time_quantum;
-extern int number_of_useful_schedulings;
+//extern int time_quantum;
+//extern int number_of_useful_schedulings;
 
 bool use_zc_scheduler = false;
 
@@ -66,9 +74,9 @@ void *zc_scheduler_thread(void *input);
 static void init_mem_pools();
 static void init_pools();
 static void free_mem_pools();
-static void init_zc_scheduler();
 static void zc_worker_loop_q();
 static bool could_have_pending_request(int pool_index);
+static void refresh_paused_worker(int index);
 
 //for scheduler
 void zc_create_scheduling_thread();
@@ -91,7 +99,7 @@ static bool use_queues = false;
 
 void init_zc()
 {
-    use_zc_scheduler = true;
+    //use_zc_scheduler = true;
 
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
@@ -104,6 +112,10 @@ void init_zc()
 
     printf("<<<<<<<<<<<<<<<<< number of cores found: %d >>>>>>>>>>>>>>>>>>>\n", num_cores);
     num_workers = num_cores / 2;
+
+    cpu_freq = get_cpu_freq();
+
+    printf("CPU frequency: %d MHz >>>>>>>>>>>>>\n", cpu_freq);
 
     // make sure num of default pools >= num of workers
     //ZC_ASSERT(numWorkers <= NUM_POOLS);
@@ -119,6 +131,7 @@ void init_zc()
     zc_statistics = (zc_stats *)malloc(sizeof(zc_stats));
     zc_statistics->num_zc_swtless_calls = 0;
     zc_statistics->num_zc_fallback_calls = 0;
+    zc_statistics->max_workers = num_workers;
 
     //allocate memory pools
     init_pools();
@@ -132,7 +145,8 @@ void init_zc()
     //create scheduling thread
     if (use_zc_scheduler)
     {
-        zc_create_scheduling_thread();
+        //zc_create_scheduling_thread();
+        init_zc_scheduler();
     }
 }
 
@@ -201,16 +215,30 @@ void *zc_worker_thread(void *input)
 {
     log_zc_routine(__func__);
 
-    if (use_queues)
+    //register signal handler
+    signal(SIGUSR1, zc_signal_handler);
+
+    /*  if (use_queues)
     {
         zc_worker_loop_q();
-    }
-    else
-    {
-        //use worker thread buffers/pool system
-        zc_worker_args *args = (zc_worker_args *)input;
-        zc_worker_loop(args);
-    }
+    } */
+
+    //use worker thread buffers/pool system
+    zc_worker_args *args = (zc_worker_args *)input;
+    zc_worker_loop(args);
+}
+
+/**
+ * This function "refreshes" a paused worker. That is:
+ * the worker resets the necessary variables (e.g buffer status etc) to make it
+ * available again to callers
+ */
+static void refresh_paused_worker(int index)
+{
+    printf("refreshing paused worker >>>>>>>>>>>>>>>>>\n");
+    pools->memory_pools[index]->active = 1; /* pool assigned to this thread */
+    pools->memory_pools[index]->scheduler_pause = 0;
+    pools->memory_pools[index]->pool_status = (int)UNUSED;
 }
 
 /**
@@ -219,7 +247,7 @@ void *zc_worker_thread(void *input)
 static void zc_worker_loop(zc_worker_args *args)
 {
     log_zc_routine(__func__);
-
+    printf("-------------------beginning thread worker loop ------------------->>>>>>>>>>>>>\n");
     struct sched_param param;
     /* setting the worker's priority to a high priority */
 
@@ -241,12 +269,16 @@ static void zc_worker_loop(zc_worker_args *args)
     int worker_id = args->worker_id;
 
     int pool_index = args->pool_index;
-    pools->memory_pools[pool_index]->active = 1; /* pool is assigned to this thread */
     pools->memory_pools[pool_index]->request = NULL;
     pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
+
+    pools->memory_pools[pool_index]->active = 1; /* pool is assigned to this thread */
+
+    pools->memory_pools[pool_index]->scheduler_pause = 0;
     volatile zc_pool_status pool_state;
     volatile int status;
     bool exit = false;
+    int test;
 
     // worker initialization complete
     int val = __atomic_fetch_add(&num_initialized_workers, 1, __ATOMIC_RELAXED);
@@ -259,6 +291,46 @@ static void zc_worker_loop(zc_worker_args *args)
         //status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_SEQ_CST);
         pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
         //pool_state = (zc_pool_status)status;
+
+        /**
+         * pyuhala: more testing to ensure this worker does not 
+         * have a pending request just in case; else caller
+         * will be waiting for a paused worker
+         */
+
+        /**
+         * A scheduler could have needed to pause a worker treating a request but could not.
+         * So check for scheduler message and pause if needed. We put this b4 the check on 
+         * PROCESSING.
+         */
+
+        test = __atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_SEQ_CST);
+        if (test == 1)
+        {
+            //printf("Scheduler asked me to pause while I was working. Finished my work, will now pause()\n");
+            pools->memory_pools[pool_index]->pool_status = (int)PAUSED;
+            pools->memory_pools[pool_index]->active = 0;
+
+            int status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_RELAXED);
+            if (status == (int)PAUSED)
+            {
+                /**
+                 * Check for any pending requests. If there is a possibility of
+                 * a pending request, go back to checking states. Will pause
+                 * at a later stage if scheduler_pause is still = 1
+                 */
+                if (could_have_pending_request(pool_index))
+                {
+                    //resume worker loop and check the buffer's request again
+                    goto check_states;
+                }
+                pause();
+                // I'm done pausing; refresh my state
+                refresh_paused_worker(pool_index);
+            }
+        }
+
+    check_states:;
 
         /**
          * using per thread memory pools
@@ -276,6 +348,7 @@ static void zc_worker_loop(zc_worker_args *args)
             /* do nothing, but a caller is setting up a switchless request */
         }
         break;
+
         case PROCESSING: /* caller is done setting up request, call the corresponding routine */
         {
             //printf("------zc worker handling a request--------\n");
@@ -296,7 +369,7 @@ static void zc_worker_loop(zc_worker_args *args)
                 {
                     handle_zc_switchless_request(req, pool_index);
                     // caller thread is waiting for this unlock
-                    zc_spin_unlock(&req->is_done);
+                    //zc_spin_unlock(&req->is_done);
                     req->req_status = STALE_REQUEST;
                     sl_calls_treated++;
                 }
@@ -304,11 +377,41 @@ static void zc_worker_loop(zc_worker_args *args)
         }
         break;
 
-        case WAITING:
+        case PAUSED:
         {
-            /* do nothing.. probably should not be here */
+
+            /**
+             * pyuhala: we do all these checks to prevent "working worker" from being paused.
+             * Check for any pending requests. If there is such a request, resume loop
+             * and check buffer states again. Will pause at a later stage once request is done
+             * and I'm free.
+             */
+            if (could_have_pending_request(pool_index))
+            {
+                //resume worker loop and check the buffer's request again
+                goto resume_loop;
+            }
+
+            /**
+             * We are in a scheduling phase and the scheduler wants me to pause.
+             * I will resume upon reception of SIGUSR1
+             */
+            pause();
+            // I'm done pausing, refresh my state
+            refresh_paused_worker(pool_index);
         }
         break;
+
+        case MICRO_PAUSED:
+        {
+            /**
+             * We are in a configuration phase and the scheduler wants me to pause.
+             * I will resume upon reception of SIGUSR1
+             */
+            pause();
+            // I'm done pausing, refresh my state
+            refresh_paused_worker(pool_index);
+        }
         case EXIT:
 
         {
@@ -318,72 +421,42 @@ static void zc_worker_loop(zc_worker_args *args)
         break;
         } //end switch case
 
-        // test for unused buffers
-
-        if (use_zc_scheduler)
-        {
-            if (worker_id >= num_workers && pools->memory_pools[pool_index]->pool_status == (int)UNUSED)
-            {
-                // lock, test again, and change status
-                zc_spin_lock(&pools->memory_pools[pool_index]->pool_lock);
-
-                res = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
-                                                  &unused, paused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-
-                if (!res)
-                {
-                    //could not change status of buffer.. resume loop
-                    zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
-                    goto resume;
-                }
-                zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
-
-                /**
-                 * pyuhala: more testing to ensure this worker does not 
-                 * have a pending request just in case; else caller
-                 * will be waiting for a paused worker
-                 */
-
-                if (could_have_pending_request(pool_index))
-                {
-                    //resume worker loop and check the buffer's request again
-                    goto resume;
-                }
-
-                pause();
-                if (pools->memory_pools[pool_index]->pool_status == (int)PAUSED)
-                {
-                    res = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
-                                                      &paused, unused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-                }
-            }
-        }
-
-    resume:;
-
         if (exit)
         {
             //leave while loop
             break;
         }
+
+    resume_loop:;
     }
     printf("\e[0;31mnumber of switchless calls treated by worker %d : %d\e[0m\n", worker_id, sl_calls_treated);
 }
 
 /**
- * Check if there is a request (even if its stale) in the buffer;
- * maybe not the best thing to use locks extensively but we will 
- * optimize once things work correctly.
+ * signal handler to wake sleeping threads
+ */
+void zc_signal_handler(int sig)
+{
+    printf("Thread caught signal %d\n", sig);
+}
+
+/**
+ * Check if there is a pending request in the buffer
  */
 static bool could_have_pending_request(int pool_index)
 {
     bool test = false;
-    zc_spin_lock(&pools->memory_pools[pool_index]->pool_lock);
+    // pyuhala: I don't think there is any use for locks here.
+    //zc_spin_lock(&pools->memory_pools[pool_index]->pool_lock);
     if (pools->memory_pools[pool_index]->request != NULL)
     {
-        test = true;
+        if (pools->memory_pools[pool_index]->request->req_status != STALE_REQUEST)
+        {
+            // This is a real pending request and is not stale
+            test = true;
+        }
     }
-    zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
+    //zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
 
     return test;
 }
@@ -477,15 +550,8 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
      * 
      */
 
-    /**
-     * pyuhala: from cpp ref
-     * you can look at this store as a producer updating the request state so 
-     * i use a mem order release. The caller in the enclave will use mem order acquire
-     * and so is guaranteed to see this change... this is my understanding
-     */
-
     //request->is_done = ZC_REQUEST_DONE; /* w/o atomic store */
-    //__atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_SEQ_CST); /* with atomic store */
+    __atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_SEQ_CST); /* with atomic store */
 
     if (pool_index != -1)
     {
@@ -538,8 +604,8 @@ static void create_zc_worker_threads()
 void finalize_zc()
 {
     //print stats
-    printf("number of useful schedulings : %d\n", number_of_useful_schedulings);
-    printf("time_quantum : %d\n", time_quantum);
+    //printf("number of useful schedulings : %d\n", number_of_useful_schedulings);
+    //printf("time_quantum : %d\n", time_quantum);
 
     //stop all zc threads
     for (int i = 0; i < num_cores / 2; i++)
@@ -555,6 +621,49 @@ void finalize_zc()
 
     //deallocate mem pools
     free_mem_pools();
+}
+
+/**
+ * estimate cpu frequency
+ */
+int get_cpu_freq()
+{
+    struct timezone tz;
+    struct timeval tvstart, tvstop;
+    struct timespec start, stop;
+    unsigned long long int cycles[2];
+    unsigned long microseconds;
+    unsigned long nanoseconds;
+    double val;
+    int cpu_freq_mhz = DEFAULT_CPU_FREQ;
+
+    //memset(&tz, 0, sizeof(tz));
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    //gettimeofday(&tvstart, NULL);
+    cycles[0] = rdtscp();
+    //gettimeofday(&tvstart, NULL);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
+    usleep(250000);
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &stop);
+    //gettimeofday(&tvstop, NULL);
+    cycles[1] = rdtscp();
+    //gettimeofday(&tvstop, NULL);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &stop);
+
+    //microseconds = ((tvstop.tv_sec - tvstart.tv_sec) * 1000000) + (tvstop.tv_usec - tvstart.tv_usec);
+
+    nanoseconds = ((stop.tv_sec - start.tv_sec) * 1.0e9) + (stop.tv_nsec - start.tv_nsec);
+
+    val = (double)(cycles[1] - cycles[0]) / (nanoseconds / 1.0e3);
+
+    //printf("%f MHz\n", val);
+
+    cpu_freq_mhz = (int)val;
+
+    return cpu_freq_mhz;
 }
 
 #define ZC_LOGGING 1

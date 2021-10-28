@@ -44,6 +44,9 @@ static int enclave_request_counter = 0;
 sgx_thread_mutex_t counter_setter_lock;
 bool zc_switchless_active = false;
 
+// maximum number of workers
+static unsigned int max_num_workers = 0;
+
 zc_stats *switchless_stats;
 
 /**
@@ -71,6 +74,9 @@ void ecall_init_mem_pools(void *pools, void *statistics)
     //set address of num fallback requests
     switchless_stats = (zc_stats *)statistics;
 
+    //set max workers
+    max_num_workers = switchless_stats->max_workers;
+
     //init locks
     init_zc_pool_lock();
     sgx_thread_mutex_init(&counter_setter_lock, NULL);
@@ -95,16 +101,8 @@ int reserve_worker()
 
     //log_zc_routine(__func__);
     int index = get_free_pool();
-    if (index == ZC_NO_FREE_POOL)
-    {
-        /* there is no free worker..hence pool, do regular ocall */
-        return ZC_NO_FREE_POOL;
-    }
-    else
-    {
 
-        return index;
-    }
+    return index;
 }
 
 /**
@@ -123,15 +121,21 @@ int get_free_pool()
     int reserved = (int)RESERVED;
     bool res = false;
 
-    for (int i = 0; i < NUM_POOLS; i++)
+    for (int i = 0; i < max_num_workers; i++)
     {
         //status = mem_pools->memory_pools[i]->pool_status;
         //status = __atomic_load_n(&mem_pools->memory_pools[i]->pool_status, __ATOMIC_RELAXED);
 
-        if (!mem_pools->memory_pools[i]->active)
+        int to_be_paused = __atomic_load_n(&mem_pools->memory_pools[i]->scheduler_pause, __ATOMIC_RELAXED);
+        /**
+         * do not reserve if buffer is not active or corresponding worker 
+         * is getting to a paused state.
+         */
+        if (!mem_pools->memory_pools[i]->active || to_be_paused == 1)
         {
             continue;
         }
+
         //if pool status is unused, reserve it.
         /**
          * pyuhala: i used release memory order here in the caller and acquire in the 
@@ -150,15 +154,11 @@ int get_free_pool()
             if (res)
             {
                 // this call will be switchless; increment num zc switchless
-                /**
-                 * pyuhala: this should be locked; same with below. 
-                 * I noticed double counting of sl and fb calls,
-                 * and this is most probably the reason.
-                 *
-                 */
-                sgx_thread_mutex_lock(&counter_setter_lock);
+
+                //sgx_thread_mutex_lock(&counter_setter_lock);
                 __atomic_fetch_add(&switchless_stats->num_zc_swtless_calls, 1, __ATOMIC_RELAXED);
-                sgx_thread_mutex_unlock(&counter_setter_lock);
+                //sgx_thread_mutex_unlock(&counter_setter_lock);
+                //printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>> caller reserved free pool %d >>>>>>>>>>>>>>>\n", i);
                 return i;
             }
         }
@@ -166,10 +166,11 @@ int get_free_pool()
 
     //this call will fallback; increment number of fallbacks
     //printf("----------------- call falling back: %d  -----------------------\n",switchless_stats->num_zc_fallback_calls);
-    sgx_thread_mutex_lock(&counter_setter_lock);
+    //sgx_thread_mutex_lock(&counter_setter_lock);
     __atomic_fetch_add(&switchless_stats->num_zc_fallback_calls, 1, __ATOMIC_RELAXED);
-    sgx_thread_mutex_unlock(&counter_setter_lock);
+    //sgx_thread_mutex_unlock(&counter_setter_lock);
 
+    //printf("caller falling back, no available worker xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx >>>>>>>>>>>>>>>\n");
     return ZC_NO_FREE_POOL;
 }
 
@@ -221,7 +222,12 @@ void ZC_REQUEST_WAIT(zc_req *request)
      * pyuhala: using spinlock
      */
     // worker thread will unlock, will wait until it does
-    spin_lock(&request->is_done);
+    //spin_lock(&request->is_done);
+
+    while (__atomic_load_n(&request->is_done, __ATOMIC_SEQ_CST) != ZC_REQUEST_DONE)
+    {
+        ZC_PAUSE();
+    }
 
     /**
      * pyuhala: w/o atomics

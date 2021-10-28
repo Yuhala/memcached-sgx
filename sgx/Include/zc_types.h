@@ -33,6 +33,8 @@
 
 #define STALE_REQUEST -1234 /* magic number to detect stale requests in pools */
 
+#define SCHED_PAUSE 1
+
 /**
  * structure containing pointers to argument buffers. 
  * Some of these structures will be "cross-enclave data structures".
@@ -259,7 +261,8 @@ typedef enum
     RESERVED,
     PROCESSING,
     WAITING,
-    PAUSED,
+    PAUSED,      /* sleep corresponding worker for quantum time .. or just pause */
+    MICRO_PAUSED, /* sleep corresponding worker for micro quantum time .. or just pause*/
     EXIT
 } zc_pool_status;
 
@@ -271,6 +274,7 @@ struct zc_mpool
     unsigned int active;       /* is this pool allocated to a worker (1) or not (0) */
     volatile int pool_status;
     volatile int pool_lock; /* used by spin locks for a thread changing pool status */
+    volatile int scheduler_pause; /* scheduler changes this value to 1 so thread pauses after treating request */
 
     zc_req *request; /* caller request */
 };
@@ -292,8 +296,9 @@ struct zc_worker_args
 
 struct zc_stats
 {
-    int num_zc_swtless_calls;
-    int num_zc_fallback_calls;
+    unsigned int num_zc_swtless_calls;
+    unsigned int num_zc_fallback_calls;
+    unsigned int max_workers;
 };
 
 typedef zc_stats zc_stats;

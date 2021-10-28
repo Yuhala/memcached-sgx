@@ -15,7 +15,8 @@
 void init_zc();
 void handle_zc_switchless_request(zc_req *request, int pool_index);
 void finalize_zc();
-
+int get_cpu_freq();
+void zc_signal_handler(int sig);
 
 #define ZC_RET_OK 1    /* zc call passed */
 #define ZC_RET_ERROR 2 /* zc call failed */

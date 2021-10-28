@@ -380,9 +380,9 @@ void runTestMulti(int num_runs)
 void runKissdbBench(int num_runs)
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 5000;
-    int max_keys = 80000;
-    int step = 5000;
+    int min_keys = 100;
+    int max_keys = 1000;
+    int step = 100;
     int numWriters = 2;
     int numReaders = 2;
     //write_keys(numKeys, numWriters);
@@ -419,6 +419,7 @@ void runKissdbBench(int num_runs)
 /* Application entry */
 int main(int argc, char *argv[])
 {
+
     (void)(argc);
     (void)(argv);
 
@@ -519,7 +520,7 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    runKissdbBench(5);
+    runKissdbBench(1);
     //ecall_kissdb_test(global_eid);
 
     //runTestMulti(10);
