@@ -263,7 +263,8 @@ typedef enum
     WAITING,
     PAUSED,      /* sleep corresponding worker for quantum time .. or just pause */
     MICRO_PAUSED, /* sleep corresponding worker for micro quantum time .. or just pause*/
-    EXIT
+    EXIT,
+    INACTIVE /* pool status at start of program */
 } zc_pool_status;
 
 struct zc_mpool

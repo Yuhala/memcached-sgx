@@ -61,6 +61,8 @@ int optimum_workers;
 
 pthread_t scheduling_thread;
 
+extern bool use_zc_scheduler;
+
 //forward declarations
 
 static void set_num_workers(int desired_workers);
@@ -75,6 +77,8 @@ static void activate_worker(int index);
 static void deactivate_worker(int index);
 //scheduling thread routine
 void *scheduling_thread_func(void *arg);
+//caculates optimum # workers for the next scheduling phase
+static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, vector<double> &sl_ratios, int num_micro_q);
 
 /* function definitions */
 
@@ -104,6 +108,16 @@ void *scheduling_thread_func(void *arg)
 {
     //start scheduler with optimum workers = num workers
     optimum_workers = num_workers;
+
+    //use_zc_scheduler = false;
+    
+    //Test workers w/o scheduler: set to true if you don't want any scheduling
+    if (!use_zc_scheduler)
+    {
+        set_num_workers(optimum_workers);
+        return NULL;
+    }
+
     //scheduler loop
     for (;;)
     {
@@ -123,13 +137,13 @@ void *scheduling_thread_func(void *arg)
  */
 static void do_scheduling(int desired_workers)
 {
-    printf("doing scheduling: nThreads = %d >>>>>>>>>\n", desired_workers);
+
     static int count = 0;
     set_num_workers(desired_workers);
     count++;
-    if (count % 10 == 0)
+    if (count % COUNTER == 0)
     {
-        //printf("sheduling %d workers >>>> \n", desired_workers);
+        printf("doing scheduling: nThreads = %d >>>>>>>>>\n", desired_workers);
     }
 }
 /**
@@ -138,13 +152,19 @@ static void do_scheduling(int desired_workers)
  */
 static void do_configuration()
 {
-    printf("doing configuration >>>>>>>>>>>>>\n");
+    static unsigned int counter = 0;
+
+    //printf("doing configuration >>>>>>>>>>>>>\n");
     /**
      * micro quantums will vary as follows: 0, 1, 3, ... , num_workers
      */
     int num_micro_q = num_workers + 1;
     // list of Uis (ie wasted cpu cycles) for micro quantums.
-    vector<unsigned long long int> zcU(num_micro_q);
+    vector<unsigned long long int> wasted_cycles(num_micro_q);
+
+    // list of sl_ratios
+    vector<double> sl_ratios(num_micro_q);
+
     // number of wasted cycles for a micro quantum
     unsigned long long int wasted_cycles_mq;
 
@@ -156,6 +176,9 @@ static void do_configuration()
 
     // index for micro quantum
     int micro_q_index = 0;
+
+    // ratio of sl to fb calls for micro quantum
+    double sl_ratio_mq = 0.0;
 
     // vary the number of active workers for the different micro quanta
     while (micro_q_index < num_micro_q)
@@ -177,26 +200,95 @@ static void do_configuration()
         // calculate wasted cycles for this micro quantum: Ui = F.Tes + i.u.Q.cpu_freq
         wasted_cycles_mq = (num_fb_mq * TIME_ENCLAVE_SWITCH) + (micro_q_index * MICRO_QUANTUM * cpu_freq * MEGA);
 
+        // calculate sl ratio
+        if (num_fb_mq == 0)
+        {
+            sl_ratio_mq = (double)num_sl_mq / SMALL_NUM;
+        }
+        else
+        {
+            sl_ratio_mq = (double)num_sl_mq / num_fb_mq;
+        }
+
+        // add ratio to vector
+        sl_ratios[micro_q_index] = sl_ratio_mq;
+
         // add Ui to vector
-        zcU[micro_q_index] = wasted_cycles_mq;
-        printf("config nThreads: %d num num sl calls: %d num fb calls: %d wasted cycles: %lld >>>>>>>>>>>>>>>\n",
-               micro_q_index, num_sl_mq, num_fb_mq, wasted_cycles_mq);
+        wasted_cycles[micro_q_index] = wasted_cycles_mq;
+
+        // print config every 100 calls
+        if (counter % COUNTER == 0)
+        {
+            //printf("config nThreads: %d num num sl calls: %d num fb calls: %d wasted cycles: %lld sl_ratio: %f >>>>>>>>>>>>>>>\n",
+            //      micro_q_index, num_sl_mq, num_fb_mq, wasted_cycles_mq, sl_ratio_mq);
+        }
         micro_q_index++;
     }
 
-    // compute num_workers that minimizes Ui for this configuration phase
-    unsigned long long int min_index = 0;
-    for (int i = 0; i < num_micro_q; i++)
+    // compute optimum number of workers
+    optimum_workers = get_optimum_workers(wasted_cycles, sl_ratios, num_micro_q);
+
+    counter++;
+}
+
+/**
+ * Funtion to get the optimum number
+ * of workers for our scheduling policy.
+ * pyuhala: my new policy -- opt workers = workers with highest sl/fb ratio
+ */
+static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, vector<double> &sl_ratios, int num_micro_q)
+{
+    int ret_index = 0;
+
+    /* policy used for getting optimum workers */
+    typedef enum
     {
-        //TODO: change to <
-        //pyuhala: should be < (i'm testing stuff ...)
-        if (zcU[i] > zcU[min_index])
+        WASTED_CYCLES,
+        SL_FB_RATIO
+    } optimum_worker_policy;
+
+    optimum_worker_policy policy = WASTED_CYCLES;
+
+    switch (policy)
+    {
+    case WASTED_CYCLES:
+    {
+        // policy 1: get # workers corresponding to min wasted cycles
+        int min_index = 0;
+        for (int i = 0; i < num_micro_q; i++)
         {
-            min_index = i;
+            //pyuhala: my observation: the min almost always (or always!) corresponds to i = 0
+            //TODO: change to < (just testing to see what > gets)
+            if (wasted_cycles[i] > wasted_cycles[min_index])
+            {
+                min_index = i;
+            }
         }
+        ret_index = min_index;
+    }
+    break;
+    case SL_FB_RATIO:
+    {
+        // policy 2: get # workers corresponding to max sl/fb ratio
+        int max_index = 0;
+        for (int j = 0; j < num_micro_q; j++)
+        {
+
+            if (sl_ratios[j] > sl_ratios[max_index])
+            {
+                max_index = j;
+            }
+        }
+        ret_index = max_index;
+    }
+    break;
+
+    default:
+        ret_index = num_workers;
+        break;
     }
 
-    optimum_workers = min_index;
+    return ret_index;
 }
 
 /**
@@ -240,9 +332,24 @@ static void activate_worker(int index)
     // if worker is already active and not scheduled to pause, return.
     int status = __atomic_load_n(&pools->memory_pools[index]->pool_status, __ATOMIC_SEQ_CST);
     int to_be_paused = __atomic_load_n(&pools->memory_pools[index]->scheduler_pause, __ATOMIC_SEQ_CST);
+
     bool test = (pools->memory_pools[index]->active == 1) && (status != (int)PAUSED) && (to_be_paused != 1);
     if (test)
     {
+        return;
+    }
+
+    if (status == (int)INACTIVE)
+    {
+        /* we are at program start, activate the pool and return */
+        printf("-->>>>>>>>>>> activating inactive pool >>>>>>>>>>>>>>>>\n");
+        // pools->memory_pools[index]->pool_status = (int)UNUSED;
+        __atomic_store_n(&pools->memory_pools[index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
+        // pools->memory_pools[index]->active = 1;
+        __atomic_store_n(&pools->memory_pools[index]->active, 1, __ATOMIC_SEQ_CST);
+
+        // pools->memory_pools[index]->scheduler_pause = 0;
+        __atomic_store_n(&pools->memory_pools[index]->scheduler_pause, 0, __ATOMIC_SEQ_CST);
         return;
     }
 
@@ -254,12 +361,20 @@ static void activate_worker(int index)
     if (res)
     {
         /**
-         * We should be here only if worker is actually paused
-         */
-        //pools->memory_pools[index]->active = 1;
+        * Activate worker and corresponding pool.
+        * We should be here only if worker is actually paused
+        */
+
         //pools->memory_pools[index]->scheduler_pause = 0;
+        __atomic_store_n(&pools->memory_pools[index]->scheduler_pause, 0, __ATOMIC_SEQ_CST);
 
         pthread_kill(workers[index], SIGUSR1);
+
+        //pools->memory_pools[index]->active = 0;
+        __atomic_store_n(&pools->memory_pools[index]->active, 1, __ATOMIC_SEQ_CST);
+
+        //pools->memory_pools[index]->pool_status = (int)UNUSED;
+        __atomic_store_n(&pools->memory_pools[index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
     }
 }
 /**
@@ -281,13 +396,15 @@ static void deactivate_worker(int index)
          * a worker/buffer with a pending request b4 it treats it. In such a case we need to safely tell the 
          * worker to pause after treating the request.
          */
-        pools->memory_pools[index]->scheduler_pause = 1;
+        //pools->memory_pools[index]->scheduler_pause = 1;
+        __atomic_store_n(&pools->memory_pools[index]->scheduler_pause, 1, __ATOMIC_SEQ_CST);
     }
     else
     {
         //deactivate buffer
         __atomic_store_n(&pools->memory_pools[index]->pool_status, int(PAUSED), __ATOMIC_SEQ_CST);
-        pools->memory_pools[index]->active = 0;
+        //pools->memory_pools[index]->active = 0;
+        __atomic_store_n(&pools->memory_pools[index]->active, 0, __ATOMIC_SEQ_CST);
         //printf("scheduler deactivated pool %d >>>>>>>>>>> \n", index);
         //at some point worker will pause after seeing buffer state = PAUSED
     }

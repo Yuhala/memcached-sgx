@@ -99,7 +99,7 @@ static bool use_queues = false;
 
 void init_zc()
 {
-    //use_zc_scheduler = true;
+    use_zc_scheduler = true;
 
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
@@ -173,7 +173,7 @@ static void init_pools()
 
 static void init_mem_pools()
 {
-    int n = NUM_POOLS;
+    int n = num_workers;
     pools = (zc_mpool_array *)malloc(sizeof(zc_mpool_array));
     pools->memory_pools = (zc_mpool **)malloc(sizeof(zc_mpool *) * n);
     pools->num_pools = n;
@@ -187,6 +187,7 @@ static void init_mem_pools()
         pools->memory_pools[i]->pool = mpool_create(POOL_SIZE);
         pools->memory_pools[i]->pool_id = i;
         pools->memory_pools[i]->pool_lock = 0;
+        pools->memory_pools[i]->pool_status = (int)INACTIVE;
 
         if (use_queues)
         {
@@ -235,10 +236,10 @@ void *zc_worker_thread(void *input)
  */
 static void refresh_paused_worker(int index)
 {
-    printf("refreshing paused worker >>>>>>>>>>>>>>>>>\n");
-    pools->memory_pools[index]->active = 1; /* pool assigned to this thread */
-    pools->memory_pools[index]->scheduler_pause = 0;
-    pools->memory_pools[index]->pool_status = (int)UNUSED;
+    //printf("refreshing paused worker >>>>>>>>>>>>>>>>>\n");
+    //pools->memory_pools[index]->active = 1; /* pool assigned to this thread */
+    //pools->memory_pools[index]->scheduler_pause = 0;
+    //pools->memory_pools[index]->pool_status = (int)UNUSED;
 }
 
 /**
@@ -270,15 +271,16 @@ static void zc_worker_loop(zc_worker_args *args)
 
     int pool_index = args->pool_index;
     pools->memory_pools[pool_index]->request = NULL;
-    pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
 
-    pools->memory_pools[pool_index]->active = 1; /* pool is assigned to this thread */
+    //pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
+    //pools->memory_pools[pool_index]->active = 1; /* pool is assigned to this thread */
 
-    pools->memory_pools[pool_index]->scheduler_pause = 0;
+    //pools->memory_pools[pool_index]->scheduler_pause = 0;
     volatile zc_pool_status pool_state;
     volatile int status;
+    volatile int state;
     bool exit = false;
-    int test;
+    volatile int pause_test;
 
     // worker initialization complete
     int val = __atomic_fetch_add(&num_initialized_workers, 1, __ATOMIC_RELAXED);
@@ -288,15 +290,9 @@ static void zc_worker_loop(zc_worker_args *args)
 
         //ZC_PAUSE();
         //printf("xxxxxxxxxxxxxxxxx in worker loop xxxxxxxxxxxxxxxxxxxx\n");
-        //status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_SEQ_CST);
-        pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
-        //pool_state = (zc_pool_status)status;
-
-        /**
-         * pyuhala: more testing to ensure this worker does not 
-         * have a pending request just in case; else caller
-         * will be waiting for a paused worker
-         */
+        state = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_SEQ_CST);
+        //pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
+        pool_state = (zc_pool_status)state;
 
         /**
          * A scheduler could have needed to pause a worker treating a request but could not.
@@ -304,12 +300,15 @@ static void zc_worker_loop(zc_worker_args *args)
          * PROCESSING.
          */
 
-        test = __atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_SEQ_CST);
-        if (test == 1)
+        pause_test = __atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_SEQ_CST);
+        if (pause_test == 1)
         {
             //printf("Scheduler asked me to pause while I was working. Finished my work, will now pause()\n");
-            pools->memory_pools[pool_index]->pool_status = (int)PAUSED;
-            pools->memory_pools[pool_index]->active = 0;
+            //pools->memory_pools[pool_index]->pool_status = (int)PAUSED;
+            //pools->memory_pools[pool_index]->active = 0;
+
+            __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)PAUSED, __ATOMIC_SEQ_CST);
+            __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
 
             int status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_RELAXED);
             if (status == (int)PAUSED)
@@ -337,9 +336,9 @@ static void zc_worker_loop(zc_worker_args *args)
          */
         switch (pool_state)
         {
-        case UNUSED:
+        case INACTIVE:
         {
-            /* do nothing.. no caller needs me */
+            /* do nothing.. scheduler still to activate this pool */
         }
         break;
 
@@ -381,7 +380,7 @@ static void zc_worker_loop(zc_worker_args *args)
         {
 
             /**
-             * pyuhala: we do all these checks to prevent "working worker" from being paused.
+             * pyuhala: additional checks to prevent "working worker" from being paused.
              * Check for any pending requests. If there is such a request, resume loop
              * and check buffer states again. Will pause at a later stage once request is done
              * and I'm free.
@@ -393,7 +392,7 @@ static void zc_worker_loop(zc_worker_args *args)
             }
 
             /**
-             * We are in a scheduling phase and the scheduler wants me to pause.
+             * The scheduler wants me to pause.
              * I will resume upon reception of SIGUSR1
              */
             pause();
@@ -437,7 +436,8 @@ static void zc_worker_loop(zc_worker_args *args)
  */
 void zc_signal_handler(int sig)
 {
-    printf("Thread caught signal %d\n", sig);
+    //printf("Thread caught signal %d\n", sig);
+    //do nothing
 }
 
 /**

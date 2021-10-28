@@ -119,19 +119,21 @@ int get_free_pool()
 
     int unused = (int)UNUSED;
     int reserved = (int)RESERVED;
-    bool res = false;
+    bool reserve_success;
 
     for (int i = 0; i < max_num_workers; i++)
     {
+        reserve_success = false;
         //status = mem_pools->memory_pools[i]->pool_status;
         //status = __atomic_load_n(&mem_pools->memory_pools[i]->pool_status, __ATOMIC_RELAXED);
 
         int to_be_paused = __atomic_load_n(&mem_pools->memory_pools[i]->scheduler_pause, __ATOMIC_RELAXED);
+        int is_active = __atomic_load_n(&mem_pools->memory_pools[i]->active, __ATOMIC_RELAXED);
         /**
          * do not reserve if buffer is not active or corresponding worker 
          * is getting to a paused state.
          */
-        if (!mem_pools->memory_pools[i]->active || to_be_paused == 1)
+        if (is_active == 0 || to_be_paused == 1)
         {
             continue;
         }
@@ -147,11 +149,11 @@ int get_free_pool()
             // lock, test again, and change status
             spin_lock(&mem_pools->memory_pools[i]->pool_lock);
 
-            res = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
+            reserve_success = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
                                               &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 
             spin_unlock(&mem_pools->memory_pools[i]->pool_lock);
-            if (res)
+            if (reserve_success)
             {
                 // this call will be switchless; increment num zc switchless
 
