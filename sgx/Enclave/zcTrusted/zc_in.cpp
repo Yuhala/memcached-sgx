@@ -125,32 +125,29 @@ int get_free_pool()
     {
         reserve_success = false;
         //status = mem_pools->memory_pools[i]->pool_status;
-        //status = __atomic_load_n(&mem_pools->memory_pools[i]->pool_status, __ATOMIC_RELAXED);
 
-        int to_be_paused = __atomic_load_n(&mem_pools->memory_pools[i]->scheduler_pause, __ATOMIC_RELAXED);
-        int is_active = __atomic_load_n(&mem_pools->memory_pools[i]->active, __ATOMIC_RELAXED);
         /**
-         * do not reserve if buffer is not active or corresponding worker 
-         * is getting to a paused state.
+         * do not reserve if buffer is not active 
          */
-        if (is_active == 0 || to_be_paused == 1)
+        if (__atomic_load_n(&mem_pools->memory_pools[i]->active, __ATOMIC_RELAXED) == 0)
         {
             continue;
         }
 
+        status = __atomic_load_n(&mem_pools->memory_pools[i]->pool_status, __ATOMIC_RELAXED);
         //if pool status is unused, reserve it.
         /**
          * pyuhala: i used release memory order here in the caller and acquire in the 
          * worker outside so the latter sees the changes
          */
 
-        if (mem_pools->memory_pools[i]->pool_status == unused)
+        if (status == unused)
         {
             // lock, test again, and change status
             spin_lock(&mem_pools->memory_pools[i]->pool_lock);
 
             reserve_success = __atomic_compare_exchange_n(&mem_pools->memory_pools[i]->pool_status,
-                                              &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+                                                          &unused, reserved, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 
             spin_unlock(&mem_pools->memory_pools[i]->pool_lock);
             if (reserve_success)
@@ -158,7 +155,12 @@ int get_free_pool()
                 // this call will be switchless; increment num zc switchless
 
                 //sgx_thread_mutex_lock(&counter_setter_lock);
-                __atomic_fetch_add(&switchless_stats->num_zc_swtless_calls, 1, __ATOMIC_RELAXED);
+
+                //test
+                //return ZC_NO_FREE_POOL;
+
+                __atomic_fetch_add(&switchless_stats->num_zc_swtless_calls, 1, __ATOMIC_SEQ_CST);
+
                 //sgx_thread_mutex_unlock(&counter_setter_lock);
                 //printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>> caller reserved free pool %d >>>>>>>>>>>>>>>\n", i);
                 return i;
@@ -169,7 +171,7 @@ int get_free_pool()
     //this call will fallback; increment number of fallbacks
     //printf("----------------- call falling back: %d  -----------------------\n",switchless_stats->num_zc_fallback_calls);
     //sgx_thread_mutex_lock(&counter_setter_lock);
-    __atomic_fetch_add(&switchless_stats->num_zc_fallback_calls, 1, __ATOMIC_RELAXED);
+    __atomic_fetch_add(&switchless_stats->num_zc_fallback_calls, 1, __ATOMIC_SEQ_CST);
     //sgx_thread_mutex_unlock(&counter_setter_lock);
 
     //printf("caller falling back, no available worker xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx >>>>>>>>>>>>>>>\n");
@@ -195,10 +197,8 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
         //use worker thread buffers for request
 
         mem_pools->memory_pools[pool_index]->request = req;
-        //pyuhala: I don't think atomic store is necessary here.. but lets keep it
-        __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_SEQ_CST);
 
-        //mem_pools->memory_pools[pool_index]->pool_status = (int)PROCESSING;
+        __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_SEQ_CST);
     }
 
     // wait for response
@@ -221,15 +221,18 @@ void ZC_REQUEST_WAIT(zc_req *request)
     volatile int done;
 
     /**
+     * w/ atomics
+     */
+    while (__atomic_load_n(&request->is_done, __ATOMIC_RELAXED) != ZC_REQUEST_DONE)
+    {
+        ZC_PAUSE();
+    }
+
+    /**
      * pyuhala: using spinlock
      */
     // worker thread will unlock, will wait until it does
     //spin_lock(&request->is_done);
-
-    while (__atomic_load_n(&request->is_done, __ATOMIC_SEQ_CST) != ZC_REQUEST_DONE)
-    {
-        ZC_PAUSE();
-    }
 
     /**
      * pyuhala: w/o atomics
@@ -240,15 +243,6 @@ void ZC_REQUEST_WAIT(zc_req *request)
         //ZC_PAUSE();
     }*/
 
-    /**
-     * pyuhala: with atomics
-     */
-
-    /* while (__atomic_load_n(isDone, __ATOMIC_SEQ_CST) != ZC_REQUEST_DONE)
-    {
-       ZC_PAUSE();
-    }
-    */
     //ZC_ASSERT(*isDone == ZC_REQUEST_DONE);
 }
 
@@ -260,7 +254,7 @@ static unsigned int get_counter()
     //log_zc_routine(__func__);
 
     //sgx_thread_mutex_lock(&counter_setter_lock);
-    int val = __atomic_fetch_add(&enclave_request_counter, 1, __ATOMIC_RELAXED);
+    int val = __atomic_fetch_add(&enclave_request_counter, 1, __ATOMIC_SEQ_CST);
     //val = enclave_request_counter;
     //enclave_request_counter++;
     //sgx_thread_mutex_unlock(&counter_setter_lock);
@@ -282,18 +276,16 @@ void release_worker(unsigned int pool_index)
      * TODO: we should free this memory at some point. For now the memory pool is used and only freed at the end of the program
      */
 
-    mem_pools->memory_pools[pool_index]->request->req_status = STALE_REQUEST;
+    //mem_pools->memory_pools[pool_index]->request->req_status = STALE_REQUEST;
+    __atomic_store_n(&mem_pools->memory_pools[pool_index]->request->req_status, STALE_REQUEST, __ATOMIC_SEQ_CST);
+
     mem_pools->memory_pools[pool_index]->request = NULL;
 
     /**
-     * changed status of buffer to unused
+     * pyuhala: set buffer state to DONE. Only worker can then set state to unused again.
      */
 
-    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
-
-    //ZC_POOL_UNLOCK();
-
-    //printf("---------------released pool/worker ---------------\n");
+    __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)DONE, __ATOMIC_SEQ_CST);
 }
 static inline void asm_pause(void)
 {

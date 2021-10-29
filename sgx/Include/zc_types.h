@@ -257,14 +257,15 @@ typedef struct zc_arg_slot zc_arg_slot;
 
 typedef enum
 {
-    UNUSED = 0,
+    UNUSED = 0, /* buffer can be used by callers; only set by worker */
     RESERVED,
     PROCESSING,
     WAITING,
-    PAUSED,      /* sleep corresponding worker for quantum time .. or just pause */
-    MICRO_PAUSED, /* sleep corresponding worker for micro quantum time .. or just pause*/
+    PAUSED, /* pause worker */
+    DONE, /* state immediately after a caller completes its request */
     EXIT,
     INACTIVE /* pool status at start of program */
+
 } zc_pool_status;
 
 struct zc_mpool
@@ -274,7 +275,7 @@ struct zc_mpool
     volatile int curr_user_id; /* temp unique identifier added by caller/enclave thread using this pool atm */
     unsigned int active;       /* is this pool allocated to a worker (1) or not (0) */
     volatile int pool_status;
-    volatile int pool_lock; /* used by spin locks for a thread changing pool status */
+    volatile int pool_lock;       /* used by spin locks for a thread changing pool status */
     volatile int scheduler_pause; /* scheduler changes this value to 1 so thread pauses after treating request */
 
     zc_req *request; /* caller request */

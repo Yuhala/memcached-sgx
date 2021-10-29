@@ -103,8 +103,8 @@ double diff;
 using namespace std;
 extern std::map<pthread_t, pthread_attr_t *> attr_map;
 
-extern int total_sl; /* total # of switchless calls at runtime */
-extern int total_fb; /* total # of fallback calls */
+extern unsigned long int total_sl; /* total # of switchless calls at runtime */
+extern unsigned long int total_fb; /* total # of fallback calls at runtime */
 
 extern pthread_mutex_t ocall_counter_lock;
 
@@ -527,12 +527,27 @@ int main(int argc, char *argv[])
 
     if (zc_switchless)
     {
-        if (!use_zc_scheduler)
+        unsigned long int sl, fb;
+        if (use_zc_scheduler)
         {
-            total_sl = zc_statistics->num_zc_swtless_calls;
-            total_fb = zc_statistics->num_zc_fallback_calls;
+            /**
+             * The scheduler reinitializes zc_stats, 
+             * but tracks the totals in these variables.
+             */
+            sl = total_sl;
+            fb = total_fb;
         }
-        printf("<<<< COMPLETE ZC SWITCHLESS CALLS: %d FALLBACK ZC SWITCHLESS CALLS: %d >>>>\n", zc_statistics->num_zc_swtless_calls, zc_statistics->num_zc_fallback_calls);
+        else
+        {
+            /**
+             * We didn't use scheduler so these values are 
+             * valid
+             */
+            sl = zc_statistics->num_zc_swtless_calls;
+            fb = zc_statistics->num_zc_fallback_calls;
+        }
+
+        printf("<<<< COMPLETE ZC SWITCHLESS CALLS: %ld ZC FALLBACK CALLS: %ld >>>>\n", sl, fb);
         showOcallLog(5);
         printf("Total OCALLS (switchless + not) = %d\n", ocall_count);
     }

@@ -99,7 +99,7 @@ static bool use_queues = false;
 
 void init_zc()
 {
-    use_zc_scheduler = true;
+    use_zc_scheduler = false;
 
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
@@ -232,14 +232,14 @@ void *zc_worker_thread(void *input)
 /**
  * This function "refreshes" a paused worker. That is:
  * the worker resets the necessary variables (e.g buffer status etc) to make it
- * available again to callers
+ * available again to callers. Only called by workers. 
  */
 static void refresh_paused_worker(int index)
 {
-    //printf("refreshing paused worker >>>>>>>>>>>>>>>>>\n");
-    //pools->memory_pools[index]->active = 1; /* pool assigned to this thread */
-    //pools->memory_pools[index]->scheduler_pause = 0;
-    //pools->memory_pools[index]->pool_status = (int)UNUSED;
+
+    __atomic_store_n(&pools->memory_pools[index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
+    __atomic_store_n(&pools->memory_pools[index]->active, 1, __ATOMIC_SEQ_CST);
+    __atomic_store_n(&pools->memory_pools[index]->scheduler_pause, 0, __ATOMIC_SEQ_CST);
 }
 
 /**
@@ -288,63 +288,51 @@ static void zc_worker_loop(zc_worker_args *args)
     for (;;)
     {
 
-        //ZC_PAUSE();
-        //printf("xxxxxxxxxxxxxxxxx in worker loop xxxxxxxxxxxxxxxxxxxx\n");
-        state = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_SEQ_CST);
+        state = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_RELAXED);
         //pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
         pool_state = (zc_pool_status)state;
 
         /**
-         * A scheduler could have needed to pause a worker treating a request but could not.
-         * So check for scheduler message and pause if needed. We put this b4 the check on 
-         * PROCESSING.
+         * Check for pause signal from scheduler. Compare and swap
+         * atomically in case the buffer is unused. Atomic compare and swap important
+         * to prevent caller inside from reserving at the same time.
+         *
          */
-
-        pause_test = __atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_SEQ_CST);
-        if (pause_test == 1)
+        if (__atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_RELAXED) == 1)
         {
-            //printf("Scheduler asked me to pause while I was working. Finished my work, will now pause()\n");
-            //pools->memory_pools[pool_index]->pool_status = (int)PAUSED;
-            //pools->memory_pools[pool_index]->active = 0;
-
-            __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)PAUSED, __ATOMIC_SEQ_CST);
-            __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
-
-            int status = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_RELAXED);
-            if (status == (int)PAUSED)
+            printf("--------------------------- worker scheduled to  pause ------------------------\n");
+            bool success = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
+                                                       &unused, paused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+            /**
+             * Pause worker only if we succeeded in setting the pool status to PAUSED.
+             * Otherwise, maybe a caller already reserved atomically. We will/may only
+             * pause after it sets the status to DONE.
+             */
+            if (success)
             {
-                /**
-                 * Check for any pending requests. If there is a possibility of
-                 * a pending request, go back to checking states. Will pause
-                 * at a later stage if scheduler_pause is still = 1
-                 */
-                if (could_have_pending_request(pool_index))
-                {
-                    //resume worker loop and check the buffer's request again
-                    goto check_states;
-                }
+                __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
+
                 pause();
                 // I'm done pausing; refresh my state
                 refresh_paused_worker(pool_index);
             }
         }
 
-    check_states:;
-
         /**
-         * using per thread memory pools
+         * Check pool states
          */
         switch (pool_state)
         {
         case INACTIVE:
         {
-            /* do nothing.. scheduler still to activate this pool */
-        }
-        break;
 
-        case RESERVED:
-        {
-            /* do nothing, but a caller is setting up a switchless request */
+            /* we are at program start, activate the pool*/
+            printf("-->>>>>>>>>>> activating inactive pool >>>>>>>>>>>>>>>>\n");
+
+            __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
+            __atomic_store_n(&pools->memory_pools[pool_index]->active, 1, __ATOMIC_SEQ_CST);
+            __atomic_store_n(&pools->memory_pools[pool_index]->scheduler_pause, 0, __ATOMIC_SEQ_CST);
+            
         }
         break;
 
@@ -376,41 +364,37 @@ static void zc_worker_loop(zc_worker_args *args)
         }
         break;
 
-        case PAUSED:
+        case DONE:
         {
-
             /**
-             * pyuhala: additional checks to prevent "working worker" from being paused.
-             * Check for any pending requests. If there is such a request, resume loop
-             * and check buffer states again. Will pause at a later stage once request is done
-             * and I'm free.
+             * A caller has released this buffer. Check for pause signal from signal.
+             * If pause is set, pause. Otherwise set the state to UNUSED so other callers
+             * can use this buffer. Only callers set this. Pausing/activating in here is safe b/c we 
+             * are 100% sure the last caller using this buffer completed its work.
              */
-            if (could_have_pending_request(pool_index))
+
+            if (__atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_RELAXED) == 1)
             {
-                //resume worker loop and check the buffer's request again
-                goto resume_loop;
-            }
 
-            /**
-             * The scheduler wants me to pause.
-             * I will resume upon reception of SIGUSR1
-             */
-            pause();
-            // I'm done pausing, refresh my state
-            refresh_paused_worker(pool_index);
+                __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)PAUSED, __ATOMIC_SEQ_CST);
+                __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
+
+                pause();
+                // I'm done pausing; refresh my state
+                refresh_paused_worker(pool_index);
+            }
+            else
+            {
+                /**
+                 * Worker not scheduled to pause, set buffer state to UNUSED and resume loop.
+                 * resume loop.
+                 */
+                __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
+                //goto resume_loop;
+            }
         }
         break;
 
-        case MICRO_PAUSED:
-        {
-            /**
-             * We are in a configuration phase and the scheduler wants me to pause.
-             * I will resume upon reception of SIGUSR1
-             */
-            pause();
-            // I'm done pausing, refresh my state
-            refresh_paused_worker(pool_index);
-        }
         case EXIT:
 
         {
@@ -418,6 +402,7 @@ static void zc_worker_loop(zc_worker_args *args)
             exit = true;
         }
         break;
+
         } //end switch case
 
         if (exit)

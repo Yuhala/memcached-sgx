@@ -34,8 +34,8 @@
 using namespace std;
 
 // global variables
-int total_sl = 0; /* total # of switchless calls at runtime */
-int total_fb = 0; /* total # of fallback calls */
+unsigned long int total_sl = 0; /* total # of switchless calls at runtime */
+unsigned long int total_fb = 0; /* total # of fallback calls */
 
 pthread_mutex_t stats_lock;
 
@@ -110,7 +110,7 @@ void *scheduling_thread_func(void *arg)
     optimum_workers = num_workers;
 
     //use_zc_scheduler = false;
-    
+
     //Test workers w/o scheduler: set to true if you don't want any scheduling
     if (!use_zc_scheduler)
     {
@@ -118,6 +118,7 @@ void *scheduling_thread_func(void *arg)
         return NULL;
     }
 
+  
     //scheduler loop
     for (;;)
     {
@@ -217,10 +218,10 @@ static void do_configuration()
         wasted_cycles[micro_q_index] = wasted_cycles_mq;
 
         // print config every 100 calls
-        if (counter % COUNTER == 0)
+        if (counter % COUNTER == 0 && false)
         {
-            //printf("config nThreads: %d num num sl calls: %d num fb calls: %d wasted cycles: %lld sl_ratio: %f >>>>>>>>>>>>>>>\n",
-            //      micro_q_index, num_sl_mq, num_fb_mq, wasted_cycles_mq, sl_ratio_mq);
+            printf("config nThreads: %d num num sl calls: %d num fb calls: %d wasted cycles: %lld sl_ratio: %f >>>>>>>>>>>>>>>\n",
+                   micro_q_index, num_sl_mq, num_fb_mq, wasted_cycles_mq, sl_ratio_mq);
         }
         micro_q_index++;
     }
@@ -326,94 +327,46 @@ static void activate_worker(int index)
 
     // buffer state
     int paused = (int)PAUSED;
-    int micro_paused = (int)MICRO_PAUSED;
     int unused = (int)UNUSED;
 
-    // if worker is already active and not scheduled to pause, return.
-    int status = __atomic_load_n(&pools->memory_pools[index]->pool_status, __ATOMIC_SEQ_CST);
-    int to_be_paused = __atomic_load_n(&pools->memory_pools[index]->scheduler_pause, __ATOMIC_SEQ_CST);
+    int status = __atomic_load_n(&pools->memory_pools[index]->pool_status, __ATOMIC_RELAXED);
+    int active = __atomic_load_n(&pools->memory_pools[index]->active, __ATOMIC_RELAXED);
+    int to_be_paused = __atomic_load_n(&pools->memory_pools[index]->scheduler_pause, __ATOMIC_RELAXED);
 
-    bool test = (pools->memory_pools[index]->active == 1) && (status != (int)PAUSED) && (to_be_paused != 1);
+    bool test = (active == 1) && (status != paused && (to_be_paused != 1));
     if (test)
     {
+        // Worker is already active and not scheduled to pause, return.
         return;
     }
 
-    if (status == (int)INACTIVE)
+    /**
+     * Activate worker if it is paused. The worker may not be already 
+     * sleeping/paused but it cannot be treating a request at this point.
+     */
+    if (status == paused)
     {
-        /* we are at program start, activate the pool and return */
-        printf("-->>>>>>>>>>> activating inactive pool >>>>>>>>>>>>>>>>\n");
-        // pools->memory_pools[index]->pool_status = (int)UNUSED;
-        __atomic_store_n(&pools->memory_pools[index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
-        // pools->memory_pools[index]->active = 1;
-        __atomic_store_n(&pools->memory_pools[index]->active, 1, __ATOMIC_SEQ_CST);
-
-        // pools->memory_pools[index]->scheduler_pause = 0;
-        __atomic_store_n(&pools->memory_pools[index]->scheduler_pause, 0, __ATOMIC_SEQ_CST);
-        return;
-    }
-
-    // activate buffer
-    bool res = __atomic_compare_exchange_n(&pools->memory_pools[index]->pool_status,
-                                           &paused, unused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-
-    // activate/wake paused worker
-    if (res)
-    {
-        /**
-        * Activate worker and corresponding pool.
-        * We should be here only if worker is actually paused
-        */
-
-        //pools->memory_pools[index]->scheduler_pause = 0;
-        __atomic_store_n(&pools->memory_pools[index]->scheduler_pause, 0, __ATOMIC_SEQ_CST);
-
         pthread_kill(workers[index], SIGUSR1);
-
-        //pools->memory_pools[index]->active = 0;
-        __atomic_store_n(&pools->memory_pools[index]->active, 1, __ATOMIC_SEQ_CST);
-
-        //pools->memory_pools[index]->pool_status = (int)UNUSED;
-        __atomic_store_n(&pools->memory_pools[index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
     }
 }
 /**
- * Deactivates the corresponding worker + buffer/pool
- * by setting the pool state to PAUSED. The worker thread 
- * will eventually sleep after it sees its state is PAUSED.
+ * Sets pause field in corresponding buffer.
+ * The worker will pause once it sees this value is set.
  * 
  */
 static void deactivate_worker(int index)
 {
-
-    int status = __atomic_load_n(&pools->memory_pools[index]->pool_status, __ATOMIC_SEQ_CST);
-
-    if (status == (int)PROCESSING || status == (int)RESERVED)
-    {
-        /**
-         * we check for pool state RESERVED/PR0CESSING to prevent a situation where we deactivate a worker/buffer 
-         * just after it has been reserved by caller. This will lead to us "probably" (may not happen) pausing
-         * a worker/buffer with a pending request b4 it treats it. In such a case we need to safely tell the 
-         * worker to pause after treating the request.
-         */
-        //pools->memory_pools[index]->scheduler_pause = 1;
-        __atomic_store_n(&pools->memory_pools[index]->scheduler_pause, 1, __ATOMIC_SEQ_CST);
-    }
-    else
-    {
-        //deactivate buffer
-        __atomic_store_n(&pools->memory_pools[index]->pool_status, int(PAUSED), __ATOMIC_SEQ_CST);
-        //pools->memory_pools[index]->active = 0;
-        __atomic_store_n(&pools->memory_pools[index]->active, 0, __ATOMIC_SEQ_CST);
-        //printf("scheduler deactivated pool %d >>>>>>>>>>> \n", index);
-        //at some point worker will pause after seeing buffer state = PAUSED
-    }
+    __atomic_store_n(&pools->memory_pools[index]->scheduler_pause, 1, __ATOMIC_SEQ_CST);
 }
 
 //reinitize statistics
 void reinitialize_stats()
 {
     //pthread_mutex_lock(&stats_lock);
+    //update global totals b4 zeroing
+    total_sl += __atomic_load_n(&zc_statistics->num_zc_swtless_calls, __ATOMIC_RELAXED);
+    total_fb += __atomic_load_n(&zc_statistics->num_zc_fallback_calls, __ATOMIC_RELAXED);
+
     __atomic_store_n(&zc_statistics->num_zc_fallback_calls, 0, __ATOMIC_SEQ_CST);
     __atomic_store_n(&zc_statistics->num_zc_swtless_calls, 0, __ATOMIC_SEQ_CST);
 
