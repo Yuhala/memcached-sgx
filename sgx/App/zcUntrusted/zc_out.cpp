@@ -77,6 +77,9 @@ static void free_mem_pools();
 static void zc_worker_loop_q();
 static bool could_have_pending_request(int pool_index);
 static void refresh_paused_worker(int index);
+static void wait_for_pool_release(int index);
+
+static inline void asm_pause(void);
 
 //for scheduler
 void zc_create_scheduling_thread();
@@ -99,7 +102,7 @@ static bool use_queues = false;
 
 void init_zc()
 {
-    use_zc_scheduler = false;
+    use_zc_scheduler = true;
 
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
@@ -243,6 +246,17 @@ static void refresh_paused_worker(int index)
 }
 
 /**
+ * Waits for a caller to release the buffer
+ */
+static void wait_for_pool_release(int index)
+{
+    while (__atomic_load_n(&pools->memory_pools[index]->pool_status, __ATOMIC_RELAXED) != (int)DONE)
+    {
+        asm_pause();
+    }
+}
+
+/**
  * Each worker thread loops in here for sometime waiting for pending requests.
  */
 static void zc_worker_loop(zc_worker_args *args)
@@ -300,7 +314,7 @@ static void zc_worker_loop(zc_worker_args *args)
          */
         if (__atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_RELAXED) == 1)
         {
-            printf("--------------------------- worker scheduled to  pause ------------------------\n");
+            //printf("--------------------------- worker scheduled to  pause ------------------------\n");
             bool success = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
                                                        &unused, paused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
             /**
@@ -332,7 +346,6 @@ static void zc_worker_loop(zc_worker_args *args)
             __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
             __atomic_store_n(&pools->memory_pools[pool_index]->active, 1, __ATOMIC_SEQ_CST);
             __atomic_store_n(&pools->memory_pools[pool_index]->scheduler_pause, 0, __ATOMIC_SEQ_CST);
-            
         }
         break;
 
@@ -359,6 +372,11 @@ static void zc_worker_loop(zc_worker_args *args)
                     //zc_spin_unlock(&req->is_done);
                     req->req_status = STALE_REQUEST;
                     sl_calls_treated++;
+                    /**
+                     * Wait for caller to complete.
+                     * pyuhala: to be remove.. not really needed
+                     */
+                    //wait_for_pool_release(pool_index);
                 }
             }
         }
@@ -649,6 +667,14 @@ int get_cpu_freq()
     cpu_freq_mhz = (int)val;
 
     return cpu_freq_mhz;
+}
+
+static inline void asm_pause(void)
+{
+    __asm__ __volatile__("pause"
+                         :
+                         :
+                         : "memory");
 }
 
 #define ZC_LOGGING 1

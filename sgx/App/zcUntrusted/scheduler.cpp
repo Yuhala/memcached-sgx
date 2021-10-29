@@ -142,7 +142,7 @@ static void do_scheduling(int desired_workers)
     static int count = 0;
     set_num_workers(desired_workers);
     count++;
-    if (count % COUNTER == 0)
+    if (count % COUNTER == 0 && false)
     {
         printf("doing scheduling: nThreads = %d >>>>>>>>>\n", desired_workers);
     }
@@ -218,11 +218,11 @@ static void do_configuration()
         wasted_cycles[micro_q_index] = wasted_cycles_mq;
 
         // print config every 100 calls
-        if (counter % COUNTER == 0 && false)
+        /* if (counter % COUNTER == 0)
         {
             printf("config nThreads: %d num num sl calls: %d num fb calls: %d wasted cycles: %lld sl_ratio: %f >>>>>>>>>>>>>>>\n",
                    micro_q_index, num_sl_mq, num_fb_mq, wasted_cycles_mq, sl_ratio_mq);
-        }
+        } */
         micro_q_index++;
     }
 
@@ -248,7 +248,7 @@ static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, ve
         SL_FB_RATIO
     } optimum_worker_policy;
 
-    optimum_worker_policy policy = WASTED_CYCLES;
+    optimum_worker_policy policy = SL_FB_RATIO;
 
     switch (policy)
     {
