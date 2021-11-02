@@ -266,7 +266,7 @@ static void zc_worker_loop(zc_worker_args *args)
     struct sched_param param;
     /* setting the worker's priority to a high priority */
 
-    if (use_zc_scheduler)
+    if (use_zc_scheduler && false)
     {
         param.sched_priority = 50;
         if (sched_setscheduler(0, SCHED_RR, &param) == -1)
@@ -307,36 +307,48 @@ static void zc_worker_loop(zc_worker_args *args)
         pool_state = (zc_pool_status)state;
 
         /**
+         * Check pool states
+         */
+        switch (pool_state)
+        {
+
+        case UNUSED:
+        {
+            /**
+             * TODO: pyuhala: this case causes issues at the level of pause. i.e sometimes a worker treating a request is paused.
+             * I avoid this by just short-circuiting the whole test for now.
+             */
+
+            goto leave;
+        /**
          * Check for pause signal from scheduler. Compare and swap
          * atomically in case the buffer is unused. Atomic compare and swap important
          * to prevent caller inside from reserving at the same time.
          *
          */
-        if (__atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_RELAXED) == 1)
-        {
-            //printf("--------------------------- worker scheduled to  pause ------------------------\n");
-            bool success = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
-                                                       &unused, paused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-            /**
+            if (__atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_RELAXED) == 1)
+            {
+                //printf("--------------------------- worker scheduled to  pause ------------------------\n");
+                bool success = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
+                                                           &unused, paused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+                /**
              * Pause worker only if we succeeded in setting the pool status to PAUSED.
              * Otherwise, maybe a caller already reserved atomically. We will/may only
              * pause after it sets the status to DONE.
              */
-            if (success)
-            {
-                __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
+                if (success)
+                {
+                    __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
 
-                pause();
-                // I'm done pausing; refresh my state
-                refresh_paused_worker(pool_index);
+                    pause();
+                    // I'm done pausing; refresh my state
+                    refresh_paused_worker(pool_index);
+                }
             }
+        leave:;
         }
 
-        /**
-         * Check pool states
-         */
-        switch (pool_state)
-        {
+        break;
         case INACTIVE:
         {
 

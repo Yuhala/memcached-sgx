@@ -118,7 +118,6 @@ void *scheduling_thread_func(void *arg)
         return NULL;
     }
 
-  
     //scheduler loop
     for (;;)
     {
@@ -142,7 +141,7 @@ static void do_scheduling(int desired_workers)
     static int count = 0;
     set_num_workers(desired_workers);
     count++;
-    if (count % COUNTER == 0 && false)
+    if (count % COUNTER == 0)
     {
         printf("doing scheduling: nThreads = %d >>>>>>>>>\n", desired_workers);
     }
@@ -193,10 +192,12 @@ static void do_configuration()
         sleep(MICRO_QUANTUM);
 
         // get num of fallback calls for this micro quantum
-        num_fb_mq = zc_statistics->num_zc_fallback_calls;
+        //num_fb_mq = zc_statistics->num_zc_fallback_calls;
+        num_fb_mq = __atomic_load_n(&zc_statistics->num_zc_fallback_calls, __ATOMIC_RELAXED);
 
         // get num of fallback calls for this micro quantum
-        num_sl_mq = zc_statistics->num_zc_swtless_calls;
+        //num_sl_mq = zc_statistics->num_zc_swtless_calls;
+        num_sl_mq = __atomic_load_n(&zc_statistics->num_zc_swtless_calls, __ATOMIC_RELAXED);
 
         // calculate wasted cycles for this micro quantum: Ui = F.Tes + i.u.Q.cpu_freq
         wasted_cycles_mq = (num_fb_mq * TIME_ENCLAVE_SWITCH) + (micro_q_index * MICRO_QUANTUM * cpu_freq * MEGA);
@@ -218,11 +219,11 @@ static void do_configuration()
         wasted_cycles[micro_q_index] = wasted_cycles_mq;
 
         // print config every 100 calls
-        /* if (counter % COUNTER == 0)
+        if (counter % COUNTER == 0 && false)
         {
-            printf("config nThreads: %d num num sl calls: %d num fb calls: %d wasted cycles: %lld sl_ratio: %f >>>>>>>>>>>>>>>\n",
+            printf("config nThreads: %d num sl calls: %d num fb calls: %d wasted cycles: %lld sl_ratio: %f >>>>>>>>>>>>>>>\n",
                    micro_q_index, num_sl_mq, num_fb_mq, wasted_cycles_mq, sl_ratio_mq);
-        } */
+        }
         micro_q_index++;
     }
 
@@ -233,7 +234,7 @@ static void do_configuration()
 }
 
 /**
- * Funtion to get the optimum number
+ * Function to get the optimum number
  * of workers for our scheduling policy.
  * pyuhala: my new policy -- opt workers = workers with highest sl/fb ratio
  */
@@ -248,7 +249,7 @@ static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, ve
         SL_FB_RATIO
     } optimum_worker_policy;
 
-    optimum_worker_policy policy = SL_FB_RATIO;
+    optimum_worker_policy policy = WASTED_CYCLES;
 
     switch (policy)
     {
@@ -260,7 +261,7 @@ static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, ve
         {
             //pyuhala: my observation: the min almost always (or always!) corresponds to i = 0
             //TODO: change to < (just testing to see what > gets)
-            if (wasted_cycles[i] > wasted_cycles[min_index])
+            if (wasted_cycles[i] < wasted_cycles[min_index])
             {
                 min_index = i;
             }

@@ -25,10 +25,10 @@ void reinitialize_stats();
 #define TIME_ENCLAVE_SWITCH 13500
 
 // mu: % of QUANTUM time for micro quantum
-#define u 0.75
+#define u 0.001
 
 // scheduler quantum in seconds (10ms --> 0.01)
-#define QUANTUM 0.02
+#define QUANTUM 0.000001
 
 // estimated time for micro quantum
 #define MICRO_QUANTUM (u * QUANTUM)
@@ -40,7 +40,9 @@ void reinitialize_stats();
 #define SMALL_NUM 0.000000001
 
 // custom counter for prints
-#define COUNTER 1000
+#define COUNTER 100
+
+
 
 
 #ifdef __i386
