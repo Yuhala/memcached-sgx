@@ -19,7 +19,7 @@ script_path=$(pwd)
 # SGX version tag
 sgx_sdk_version="sgx_2.14"
 # SGX driver version tag
-sgx_driver_version="sgx_driver_2.14"
+sgx_driver_version="sgx_diver_2.14"
 # Debug info
 debug_info=1
 
