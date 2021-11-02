@@ -17,9 +17,9 @@ OS_REL=$(lsb_release -sr)
 # Current working directory
 script_path=$(pwd)
 # SGX version tag
-sgx_sdk_version="sgx_2.11"
+sgx_sdk_version="sgx_2.13"
 # SGX driver version tag
-sgx_driver_version="sgx_driver_2.11"
+sgx_driver_version="sgx_driver_2.13"
 # Debug info
 debug_info=1
 
@@ -82,12 +82,13 @@ echo "SGX driver succesfully installed"
 # ----------------------------------------------------------------------
 echo "[ Building Yuhala modified SGX SDK ]"
 cd $script_path
-#git clone https://github.com/intel/linux-sgx.git
-git clone https://gitlab.com/Yuhala/sgx-sdk-modified.git
+git clone https://github.com/intel/linux-sgx.git
+#git clone https://gitlab.com/Yuhala/sgx-sdk-modified.git
 
-cd sgx-sdk-modified/linux-sgx
-#git fetch --all --tags
-#git checkout tags/$sgx_sdk_version
+#cd sgx-sdk-modified/linux-sgx
+cd linux-sgx
+git fetch --all --tags
+git checkout tags/$sgx_sdk_version
 
 # Prepare submodules and prebuilt binaries
 make preparation
