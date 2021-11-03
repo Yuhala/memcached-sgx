@@ -526,7 +526,7 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    runKissdbBench(5);
+    runKissdbBench(2);
     //ecall_kissdb_test(global_eid);
 
     //runTestMulti(10);
