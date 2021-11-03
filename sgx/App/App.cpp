@@ -157,6 +157,8 @@ extern unsigned int ocall_count;
 
 bool use_zc_switchless = false;
 
+
+extern unsigned int num_workers;
 extern zc_stats *zc_statistics;
 
 //pyuhala: forward declarations
@@ -380,9 +382,9 @@ void runTestMulti(int num_runs)
 void runKissdbBench(int num_runs)
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 5000;
-    int max_keys = 100000;
-    int step = 5000;
+    int min_keys = 2000;
+    int max_keys = 28000;
+    int step = 2000;
     int numWriters = 2;
     int numReaders = 2;
     //write_keys(numKeys, numWriters);
@@ -430,6 +432,8 @@ int main(int argc, char *argv[])
     int sdk_switchless = 0;
     int zc_switchless = 0;
     int ret_zero = 1;
+
+    use_zc_scheduler = true;
     if (argc == 3)
     {
 
@@ -474,7 +478,7 @@ int main(int argc, char *argv[])
     {
         //use intel sdk switchless
         printf("########################## running in INTEL-SDK-SWITCHLESS mode ##########################");
-        us_config.num_uworkers = 2;
+        us_config.num_uworkers = num_workers;
         //pyuhala: we are not concerned with switchless ecalls so no trusted workers
         us_config.num_tworkers = 0;
         if (initialize_enclave(&us_config) < 0)

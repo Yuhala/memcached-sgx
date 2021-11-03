@@ -102,7 +102,7 @@ static bool use_queues = false;
 
 void init_zc()
 {
-    use_zc_scheduler = true;
+    
 
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
