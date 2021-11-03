@@ -434,7 +434,7 @@ int main(int argc, char *argv[])
 
     use_zc_scheduler = true;
 
-    int num_intel_workers = get_nprocs() / 2;
+    int num_intel_workers = 1;//get_nprocs() / 2;
 
     if (argc == 3)
     {
