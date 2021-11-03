@@ -40,7 +40,7 @@ void reinitialize_stats();
 #define SMALL_NUM 0.000000001
 
 // custom counter for prints
-#define COUNTER 100
+#define COUNTER 5000
 
 
 
