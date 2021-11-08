@@ -12,7 +12,7 @@
 #include "zc_types.h"
 #include "zc_queues_out.h"
 
-void init_zc();
+void init_zc(int num_sl_workers);
 void handle_zc_switchless_request(zc_req *request, int pool_index);
 void finalize_zc();
 int get_cpu_freq();
