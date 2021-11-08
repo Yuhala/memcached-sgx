@@ -347,7 +347,7 @@ static void activate_worker(int index)
      */
     if (status == paused)
     {
-        pthread_kill(workers[index], SIGUSR1);
+        pthread_kill(workers[index], ZC_SIGNAL);
     }
 }
 /**

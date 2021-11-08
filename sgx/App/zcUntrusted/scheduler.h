@@ -42,6 +42,9 @@ void reinitialize_stats();
 // custom counter for prints
 #define COUNTER 5000
 
+// zc signal: do not use sigusr1 (already used by memcached)
+#define ZC_SIGNAL SIGUSR2
+
 
 
 

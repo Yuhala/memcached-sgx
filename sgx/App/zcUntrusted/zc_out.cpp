@@ -220,7 +220,7 @@ void *zc_worker_thread(void *input)
     log_zc_routine(__func__);
 
     //register signal handler
-    signal(SIGUSR1, zc_signal_handler);
+    signal(ZC_SIGNAL, zc_signal_handler);
 
     /*  if (use_queues)
     {
