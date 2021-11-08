@@ -456,7 +456,7 @@ void run_zc_micro(int num_runs)
             //read_keys(i, numReaders);
             stop_clock();
             total_runtime += time_diff(&start, &stop, SEC);
-            //remove_zc_files();
+            remove_zc_files();
         }
         avg_runtime = total_runtime / num_runs;
 
