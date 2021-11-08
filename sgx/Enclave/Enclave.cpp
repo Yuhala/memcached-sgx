@@ -80,6 +80,8 @@ static sgx_spinlock_t writer_lock = SGX_SPINLOCK_INITIALIZER;
 void readKissdb(int n, int storeId);
 void writeKissdb(int n, int storeId);
 
+void read_micro(int num_reads, int storeId);
+void write_micro(int num_writes, int storeId);
 
 void runTestMulti(int n);
 
@@ -381,10 +383,10 @@ void readKissdb(int n, int storeId)
         if (q)
         {
             printf("KISSDB_get (2) failed (%" PRIu64 ") (%d)\n", i, q);
-            //return;
-            continue;
+            return;
+            //continue;
         }
-        /*
+
         for (j = 0; j < 8; ++j)
         {
             if (v[j] != i)
@@ -392,7 +394,7 @@ void readKissdb(int n, int storeId)
                 printf("KISSDB_get (2) failed, bad data (%" PRIu64 ")\n", i);
                 return;
             }
-        }*/
+        }
     }
 
     //printf("Closing database...\n");
@@ -447,23 +449,8 @@ void writeKissdb(int n, int storeId)
             printf("KISSDB_get (2) failed (%" PRIu64 ") (%d)\n", i, q);
             //return;
             continue;
-        } */
-
-        /*
-        memset(v, 0, sizeof(v));
-        if ((q = KISSDB_get(&writes_db, &i, v)))
-        {
-            printf("KISSDB_get (1) failed (%" PRIu64 ") (%d)\n", i, q);
-            return;
         }
-        for (j = 0; j < 8; ++j)
-        {
-            if (v[j] != i)
-            {
-                printf("KISSDB_get (1) failed, bad data (%" PRIu64 ")\n", i);
-                return;
-            }
-        }*/
+        */
     }
 
     //printf("Closing database...\n");
@@ -475,13 +462,54 @@ void writeKissdb(int n, int storeId)
 
 void ecall_readKissdb(int n, int storeId)
 {
-    readKissdb(n, storeId);
+    //readKissdb(n, storeId);
+    read_micro(n, storeId);
 }
 
 void ecall_writeKissdb(int n, int storeId)
 {
-    writeKissdb(n, storeId);
+    //writeKissdb(n, storeId);
     //runTestMulti(n);
+    write_micro(n, storeId);
+}
+
+/**
+ * pyuhala: micro-bench using single fwrite/fread calls
+ */
+
+void read_micro(int num_reads, int storeId)
+{
+    const char storeFile[16];
+    snprintf(storeFile, 16, "zcstore%d.db", storeId);
+
+    SGX_FILE readFile = fopen(storeFile, "r");
+
+    char buffer[28];
+
+    for (int i = 0; i < num_reads; i++)
+    {
+        int count = fread(&buffer, sizeof(char), 28, readFile);
+        printf("Data read: %s\n", buffer);
+    }
+
+    fclose(readFile);
+}
+
+void write_micro(int num_writes, int storeId)
+{
+    const char storeFile[16];
+    snprintf(storeFile, 16, "zcstore%d.db", storeId);
+
+    char str[] = "Testing zc switchless calls";
+
+    SGX_FILE writeFile = fopen(storeFile, "w");
+
+    for (int i = 0; i < num_writes; i++)
+    {
+        fwrite(str, 1, sizeof(str), writeFile);
+    }
+
+    fclose(writeFile);
 }
 
 void ecall_kissdb_test()

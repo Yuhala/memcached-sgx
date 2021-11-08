@@ -163,6 +163,7 @@ extern zc_stats *zc_statistics;
 //pyuhala: forward declarations
 void runKissdbBench(int num_runs);
 void runTestMulti(int num_runs);
+void run_zc_micro(int num_runs);
 
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
@@ -345,6 +346,12 @@ void removeKissDbs()
     ZC_ASSERT(!ret);
 }
 
+void remove_zc_files(){
+     int ret = system("rm zcstore*");
+    //WEXITSTATUS(ret);
+    ZC_ASSERT(!ret);
+}
+
 void runTestMulti(int num_runs)
 {
 
@@ -381,9 +388,9 @@ void runTestMulti(int num_runs)
 void runKissdbBench(int num_runs)
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 2000;
-    int max_keys = 28000;
-    int step = 2000;
+    int min_keys = 10;
+    int max_keys = 100;
+    int step = 10;
     int numWriters = 2;
     int numReaders = 2;
     //write_keys(numKeys, numWriters);
@@ -417,6 +424,48 @@ void runKissdbBench(int num_runs)
     printf(">>>>>>>>>>>>>>>>> kissdb bench END >>>>>>>>>>>>>>>>>\n");
 }
 
+/**
+ * micro benchmark that writes and reads text to file from within enclave
+ */
+void run_zc_micro(int num_runs)
+{
+    printf(">>>>>>>>>>>>>>>>> zc micro-bench START >>>>>>>>>>>>>>>>>\n");
+    int min_keys = 10;
+    int max_keys = 10;
+    int step = 10;
+    int numWriters = 2;
+    int numReaders = 2;
+    //write_keys(numKeys, numWriters);
+    //bool test = (numReaders == numWriters);
+
+    //ZC_ASSERT(test);
+
+    double total_runtime;
+    double avg_runtime;
+
+    for (int i = min_keys; i <= max_keys; i += step)
+    {
+
+        total_runtime = 0;
+        avg_runtime = 0;
+        for (int j = 0; j < num_runs; j++)
+        {
+            //printf("<--------------------- running test multi ----------------------->\n", i);
+            start_clock();
+            write_keys(i, numWriters);
+            //read_keys(i, numReaders);
+            stop_clock();
+            total_runtime += time_diff(&start, &stop, SEC);
+            //remove_zc_files();
+        }
+        avg_runtime = total_runtime / num_runs;
+
+        registerKissResults(i, avg_runtime);
+        printf(">>>>>>>>>>>>>>>>> zc micro bench: writing %d lines COMPLETE >>>>>>>>>>>>>>>>>\n", i);
+    }
+    printf(">>>>>>>>>>>>>>>>> zc micro bench END >>>>>>>>>>>>>>>>>\n");
+}
+
 /* Application entry */
 int main(int argc, char *argv[])
 {
@@ -432,7 +481,7 @@ int main(int argc, char *argv[])
     int zc_switchless = 0;
     int ret_zero = 1;
 
-    use_zc_scheduler = true;
+    use_zc_scheduler = false;//true;
 
     // number of switchless worker threads
     int num_sl_workers = 2;//get_nprocs() / 2;
@@ -518,7 +567,10 @@ int main(int argc, char *argv[])
 
     int id = global_eid;
 
-    init_memcached(num_mcd_workers);
+    //init_memcached(num_mcd_workers);
+    //runKissdbBench(1);
+    run_zc_micro(1);
+
     //return 0;
 
     //ecall_create_enclave_isolate(global_eid);
@@ -527,7 +579,7 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    //runKissdbBench(2);
+   
     //ecall_kissdb_test(global_eid);
 
     //runTestMulti(10);
