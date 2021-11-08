@@ -100,21 +100,22 @@ static bool use_queues = false;
  * to service ocalls. Future work: implement zc for ecalls.
  */
 
-void init_zc()
+void init_zc(int num_sl_workers)
 {
-    
 
     log_zc_routine(__func__);
     //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
     num_cores = get_nprocs();
-    if (num_cores < 1)
+    /* if (num_cores < 1)
     {
         fprintf(stderr, "Insufficient number of CPUs for zc switchless:\n%s\n", strerror(errno));
         exit(EXIT_FAILURE);
-    }
+    } */
 
     printf("<<<<<<<<<<<<<<<<< number of cores found: %d >>>>>>>>>>>>>>>>>>>\n", num_cores);
-    num_workers = num_cores / 2;
+    //num_workers = num_cores / 2;
+
+    num_workers = num_sl_workers;
 
     cpu_freq = get_cpu_freq();
 
@@ -320,7 +321,7 @@ static void zc_worker_loop(zc_worker_args *args)
              */
 
             goto leave;
-        /**
+            /**
          * Check for pause signal from scheduler. Compare and swap
          * atomically in case the buffer is unused. Atomic compare and swap important
          * to prevent caller inside from reserving at the same time.

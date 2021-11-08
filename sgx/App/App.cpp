@@ -434,7 +434,8 @@ int main(int argc, char *argv[])
 
     use_zc_scheduler = true;
 
-    int num_intel_workers = get_nprocs() / 2;
+    // number of switchless worker threads
+    int num_sl_workers = 2;//get_nprocs() / 2;
 
     if (argc == 3)
     {
@@ -480,7 +481,7 @@ int main(int argc, char *argv[])
     {
         //use intel sdk switchless
         printf("########################## running in INTEL-SDK-SWITCHLESS mode ##########################");
-        us_config.num_uworkers = num_intel_workers;
+        us_config.num_uworkers = num_sl_workers;
         //pyuhala: we are not concerned with switchless ecalls so no trusted workers
         us_config.num_tworkers = 0;
         if (initialize_enclave(&us_config) < 0)
@@ -499,7 +500,7 @@ int main(int argc, char *argv[])
     {
         ret_zero = 0;
         //init_switchless();
-        init_zc();
+        init_zc(num_sl_workers);
 
         //return 0;
     }
