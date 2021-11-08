@@ -481,10 +481,10 @@ int main(int argc, char *argv[])
     int zc_switchless = 0;
     int ret_zero = 1;
 
-    use_zc_scheduler = false;//true;
+    use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 2;//get_nprocs() / 2;
+    int num_sl_workers = get_nprocs() / 2;
 
     if (argc == 3)
     {
