@@ -141,7 +141,7 @@ static void do_scheduling(int desired_workers)
     static int count = 0;
     set_num_workers(desired_workers);
     count++;
-    if (count % COUNTER == 0)
+    if (false && count % COUNTER == 0)
     {
         printf("doing scheduling: nThreads = %d >>>>>>>>>\n", desired_workers);
     }

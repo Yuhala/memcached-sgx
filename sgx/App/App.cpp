@@ -434,7 +434,7 @@ int main(int argc, char *argv[])
 
     use_zc_scheduler = true;
 
-    int num_intel_workers = 1;//get_nprocs() / 2;
+    int num_intel_workers = get_nprocs() / 2;
 
     if (argc == 3)
     {
@@ -517,7 +517,7 @@ int main(int argc, char *argv[])
 
     int id = global_eid;
 
-    //init_memcached(num_mcd_workers);
+    init_memcached(num_mcd_workers);
     //return 0;
 
     //ecall_create_enclave_isolate(global_eid);
@@ -526,7 +526,7 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-    runKissdbBench(2);
+    //runKissdbBench(2);
     //ecall_kissdb_test(global_eid);
 
     //runTestMulti(10);
