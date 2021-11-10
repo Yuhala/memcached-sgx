@@ -569,7 +569,7 @@ int main(int argc, char *argv[])
 
     //init_memcached(num_mcd_workers);
     //runKissdbBench(1);
-    run_zc_micro(1);
+    //run_zc_micro(1);
 
     //return 0;
 

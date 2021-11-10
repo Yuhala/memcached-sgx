@@ -59,6 +59,8 @@ extern volatile unsigned int num_items;
 
 bool use_zc_scheduler = false;
 
+bool set_worker_priorities = false;
+
 static __thread int sl_calls_treated;
 /**
  * Lock free queues for zc switchless calls
@@ -600,16 +602,22 @@ static void create_zc_worker_threads()
     zc_worker_args *args;
     for (int i = 0; i < num_workers; i++)
     {
-        pthread_attr_t worker_attr;
 
         args = (zc_worker_args *)malloc(sizeof(zc_worker_args));
         args->pool_index = i; //curr_pool_index++;
         args->worker_pool = pools->memory_pools[i];
         args->worker_id = i;
 
-        set_worker_priority(&worker_attr, ZC_WORKER_PRIORITY);
-
-        pthread_create(workers + i, &worker_attr, zc_worker_thread, (void *)args);
+        if (set_worker_priorities)
+        {
+            pthread_attr_t worker_attr;
+            set_worker_priority(&worker_attr, ZC_WORKER_PRIORITY);
+            pthread_create(workers + i, &worker_attr, zc_worker_thread, (void *)args);
+        }
+        else
+        {
+            pthread_create(workers + i, NULL, zc_worker_thread, (void *)args);
+        }
     }
 
     /**
