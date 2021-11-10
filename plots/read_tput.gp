@@ -33,18 +33,20 @@ set key maxrows 1 samplen 1 width -1 invert center at graph 0.35,1.1 font ",12"
 set yrange [0:60000]
 plot\
 	f(x) w lp ls 2003 title "sgx-hw",\
-	f(x) w lp ls 2005 title "mcd-native",\
+	f(x) w lp ls 2005 title "zc+sch(1u)",\
 	f(x) w lp ls 2006 title "sgx-sim",\
 	f(x) w lp ls 2004 title "intel-swtcless",\
-	f(x) w lp ls 2002 title "zc-swtcless",\
+	f(x) w lp ls 2002 title "zc no sch",\
 	'data/workloada/hw_no_switchless.csv' using 5:4 notitle 'sgx-hw' with lines ls 2003,\
 	'' every 1 using 5:4  notitle '' with points ls 2003, \
-  	'data/workloada/mcd_native.csv' using 5:4 notitle 'mcd-native' with lines ls 2005, \
+  	'data/workloada/zc_scheduler_1u.csv' using 5:4 notitle 'zc+sch(1u)' with lines ls 2005, \
 	'' every 1 using 5:4  notitle '' with points ls 2005, \
 	'data/workloada/mcd_sgx_sim.csv' using 5:4 notitle 'sgx-sim' with lines ls 2006, \
 	'' every 1 using 5:4 notitle '' with points ls 2006, \
 	'data/workloada/hw_intel_switchless.csv' using 5:4 notitle 'intel-swtcless' with lines ls 2004, \
-	'' every 1 using 5:4 notitle '' with points ls 2004	
+	'' every 1 using 5:4 notitle '' with points ls 2004, \
+	'data/workloada/zc_no_sch.csv' using 5:4 notitle 'zc-no-sch' with lines ls 2002, \
+	'' every 1 using 5:4 notitle '' with points ls 2002
 
 
 

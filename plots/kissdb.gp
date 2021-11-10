@@ -35,18 +35,18 @@ set xlabel offset 0,1,0
 set datafile separator ","
 set key maxrows 1 samplen 1 width -1 invert center at graph 0.35,1.1 font ",12"
 #set key vertical samplen 1.1 width 1 spacing -2 invert reverse Left outside maxrows 1  width -3 center at graph 0.62,1.11
-set yrange [0:20]
+set yrange [0:2]
 plot\
 	f(x) w lp ls 2003 title "sgx-hw",\
-	f(x) w lp ls 2005 title "mcd-native",\
-	f(x) w lp ls 2006 title "zc + sch",\
+	f(x) w lp ls 2005 title "zc+sch(1u)",\
+	f(x) w lp ls 2006 title "zc+sch(1m)",\
 	f(x) w lp ls 2004 title "intel-swtcless",\
 	f(x) w lp ls 2002 title "zc no sch",\
 	'data/kissdb/hw_no_switchless.csv' using 1:2 notitle 'sgx-hw' with lines ls 2003,\
 	'' every 1 using 1:2  notitle '' with points ls 2003, \
-  	'data/kissdb/mcd_native.csv' using 1:2 notitle 'mcd-native' with lines ls 2005, \
+  	'data/kissdb/scheduler-1u.csv' using 1:2 notitle 'zc+schd(1u)' with lines ls 2005, \
 	'' every 1 using 1:2  notitle '' with points ls 2005, \
-	'data/kissdb/zc_w_scheduler.csv' using 1:2 notitle 'zc+schd' with lines ls 2006, \
+	'data/kissdb/zc_w_scheduler.csv' using 1:2 notitle 'zc+schd(1m)' with lines ls 2006, \
 	'' every 1 using 1:2 notitle '' with points ls 2006, \
 	'data/kissdb/hw_intel_switchless.csv' using 1:2 notitle 'intel-swtcless' with lines ls 2004, \
 	'' every 1 using 1:2 notitle '' with points ls 2004, \

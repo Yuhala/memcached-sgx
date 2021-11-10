@@ -21,4 +21,6 @@ void zc_signal_handler(int sig);
 #define ZC_RET_OK 1    /* zc call passed */
 #define ZC_RET_ERROR 2 /* zc call failed */
 
+#define ZC_WORKER_PRIORITY 40
+
 #endif /* ZC_OUT_H */

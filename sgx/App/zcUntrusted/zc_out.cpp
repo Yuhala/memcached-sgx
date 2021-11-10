@@ -24,6 +24,7 @@
 #include "zc_locks.h"
 
 #include "scheduler.h"
+#include <sched.h>
 
 #define _BSD_SOURCE
 #include <sys/time.h>
@@ -78,6 +79,7 @@ static void zc_worker_loop_q();
 static bool could_have_pending_request(int pool_index);
 static void refresh_paused_worker(int index);
 static void wait_for_pool_release(int index);
+static void set_worker_priority(pthread_attr_t *attr, int priority);
 
 static inline void asm_pause(void);
 
@@ -598,12 +600,16 @@ static void create_zc_worker_threads()
     zc_worker_args *args;
     for (int i = 0; i < num_workers; i++)
     {
+        pthread_attr_t worker_attr;
+
         args = (zc_worker_args *)malloc(sizeof(zc_worker_args));
         args->pool_index = i; //curr_pool_index++;
         args->worker_pool = pools->memory_pools[i];
         args->worker_id = i;
 
-        pthread_create(workers + i, NULL, zc_worker_thread, (void *)args);
+        set_worker_priority(&worker_attr, ZC_WORKER_PRIORITY);
+
+        pthread_create(workers + i, &worker_attr, zc_worker_thread, (void *)args);
     }
 
     /**
@@ -615,6 +621,25 @@ static void create_zc_worker_threads()
     {
         ZC_PAUSE();
     }
+}
+
+static void set_worker_priority(pthread_attr_t *attr, int priority)
+{
+    int ret;
+    sched_param param;
+    /* initialized w/ default attributes */
+    ret = pthread_attr_init(attr);
+
+    /* safe to get existing scheduling param */
+    ret = pthread_attr_getschedparam(attr, &param);
+
+    /* set the priority; others are unchanged */
+    param.sched_priority = priority;
+
+    /* setting the new scheduling param */
+    ret = pthread_attr_setschedparam(attr, &param);
+
+    // call this method just b4 pthread_create
 }
 
 void finalize_zc()
