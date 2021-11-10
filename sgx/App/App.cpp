@@ -170,6 +170,29 @@ void gen_sighandler(int sig, siginfo_t *si, void *arg)
     printf("Caught signal: %d\n", sig);
 }
 
+/**
+ * check for definitions of some stack protector macros
+ */
+void print_stack_protector_checks()
+{
+#ifdef __SSP__
+    printf("__SSP macro is defined, with value 1, -fstack-protector is in use.\n");
+#endif
+
+#ifdef __SSP_ALL__
+    printf("__SSP_ALL__ macro is defined, with value 2, -fstack-protector-all is in use.\n");
+#endif
+
+#ifdef __SSP_STRONG__
+    printf("__SSP_STRONG__ macro is defined, with value 3, -fstack-protector-strong is in use.\n");
+#undef __SSP_STRONG__
+#endif
+
+#ifdef __SSP_EXPLICIT__
+    printf("__SSP_EXPLICIT__ macro is defined, with value 4, -fstack-protector-explicit is in use.\n");
+#endif
+}
+
 void fill_array()
 {
     printf("Filling outside array\n");
@@ -346,8 +369,9 @@ void removeKissDbs()
     ZC_ASSERT(!ret);
 }
 
-void remove_zc_files(){
-     int ret = system("rm zcstore*");
+void remove_zc_files()
+{
+    int ret = system("rm zcstore*");
     //WEXITSTATUS(ret);
     ZC_ASSERT(!ret);
 }
@@ -470,6 +494,8 @@ void run_zc_micro(int num_runs)
 int main(int argc, char *argv[])
 {
 
+    print_stack_protector_checks();
+
     (void)(argc);
     (void)(argv);
 
@@ -484,7 +510,7 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 2;//get_nprocs() / 2;
+    int num_sl_workers = 2; //get_nprocs() / 2;
 
     if (argc == 3)
     {
@@ -579,7 +605,6 @@ int main(int argc, char *argv[])
      * PYuhala
      */
 
-   
     //ecall_kissdb_test(global_eid);
 
     //runTestMulti(10);
