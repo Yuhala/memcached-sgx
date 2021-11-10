@@ -85,6 +85,7 @@ void write_micro(int num_writes, int storeId);
 
 void runTestMulti(int n);
 
+
 /**
  * pyuhala: generic ecall for testing enclave routines.
  * E.g after writing a new function you can call it in here
@@ -93,6 +94,14 @@ void runTestMulti(int n);
 
 void ecall_test()
 {
+}
+
+void ecall_undef_stack_protector()
+{
+#ifdef __SSP_STRONG__
+    printf("__SSP_STRONG__ macro is defined, with value 3, -fstack-protector-strong is in use.\n");
+#undef __SSP_STRONG__
+#endif
 }
 
 pid_t gettid(void)
