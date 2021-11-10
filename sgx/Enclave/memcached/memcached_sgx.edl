@@ -60,7 +60,7 @@ enclave {
         void mcd_ocall_do_cache_free(int conn_id, int lvt_thread_id,[user_check]void* bundle);
         void mcd_ocall_mutex_lock_lthread_stats(int conn_id);
         void mcd_ocall_mutex_unlock_lthread_stats(int conn_id);
-        void *ocall_transmit_prepare() transition_using_threads;
+        void *ocall_transmit_prepare();
         int ocall_getErrno();
     };
 };

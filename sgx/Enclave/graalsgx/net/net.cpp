@@ -281,6 +281,9 @@ void *transmit_prepare(void)
     GRAAL_SGX_INFO();
     void *ret;
 
+    ocall_transmit_prepare(&ret);
+    return;
+
     int index = reserve_worker();
 
     if (index != ZC_NO_FREE_POOL)
