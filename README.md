@@ -97,6 +97,11 @@ get test
 ```
 - To build normal memcached, cd into the `memcached` folder and run `make`. Run the server with `./memcached`. Connect to the server via telnet as explained above.
 
+
+## Logging
+- To view function call logs i.e names of enclave routines called in memcached-sgx, comment out `#undef LOG_FUNC_IN` in Enclave/memcached/my_logger_in.c
+- To view function call logs for out-of-enclave routines called in memcached-sgx, comment out `#undef LOG_FUNC` in App/memcached/my_logger_out.c
+
 ## Benchmarking with YCSB workloads
 - Follow these instructions to test memcached with YCSB workloads.
 
