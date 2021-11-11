@@ -282,7 +282,7 @@ void *transmit_prepare(void)
     void *ret;
 
     ocall_transmit_prepare(&ret);
-    return;
+    return ret;
 
     int index = reserve_worker();
 
