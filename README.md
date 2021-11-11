@@ -41,11 +41,11 @@ sudo make install
 sudo ln -s /usr/local/lib/libevent-2.1.so.7 /usr/lib/libevent-2.1.so.7
 
 ```
-- Clone this repo and move to branch `memcached-port`
+- Clone this repo and move to branch `trinity`
 
 ```
 git clone https://gitlab.com/Yuhala/memcached-sgx.git
-git checkout memcached-port
+git checkout trinity
 cd sgx
 
 ```
@@ -62,6 +62,11 @@ make
 ./memcached-sgx
 
 ```
+- To run memcached-sgx server in Intel switchless mode, do:
+```
+./memcached-sgx 0 1
+
+````
 
 - NB: this version does not kill the process/threads correctly with `ctrl + c`. Kill the app with the kill script `./kill.sh` or run app in the sgx-gdb debugger and stop normally via ctrl + c. To run app in the sgx debugger, do:
 
