@@ -1734,10 +1734,10 @@ void init_memcached(int numWorkers)
     }
 
     /* handle SIGINT, SIGTERM */
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
-    signal(SIGHUP, sighup_handler);
-    signal(SIGUSR1, sig_usrhandler);
+    //signal(SIGINT, sig_handler);
+    //signal(SIGTERM, sig_handler);
+    //signal(SIGHUP, sighup_handler);
+    //signal(SIGUSR1, sig_usrhandler);
 
     /**
       * Init settings: the settings structure is used both inside and outside. So initialise
