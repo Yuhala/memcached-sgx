@@ -92,17 +92,17 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
     void *d = pool->begin;
     if (usiz > msiz)
     {
-        //printf("------- ! MEMPOOL EXTEND: USING AN OCALL TO INCREASE POOL SIZE --------\n");
+        printf("------- ! MEMPOOL EXTEND: USING AN OCALL TO INCREASE POOL SIZE --------\n");
         //pyuhala: original code: if (!mpool_extend(pp, usiz * 2 + 1, pool))
 
         /**
          * pyuhala
          * pool is full: free and reallocate
          */
-        printf("------- ! FREE MEMPOOL + REALLOCATE --------\n");
-        d = free_reallocate(pool->mpool_id, siz);
+        //printf("------- ! FREE MEMPOOL + REALLOCATE --------\n");
+        //d = free_reallocate(pool->mpool_id, siz);
 
-        /* if (!mpool_extend(pp, usiz + 1, pool))
+        if (!mpool_extend(pp, usiz + 1, pool))
         {
             return NULL;
         }
@@ -110,7 +110,7 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
         pool->msiz = usiz * 2;
         d = pool->begin;
         pool->begin += mpool_align(siz);
-        *p = pp->next; */
+        *p = pp->next;
     }
     else
     {
