@@ -2009,7 +2009,7 @@ void init_memcached(int numWorkers)
     if (settings.socketpath == NULL)
     {
         const char *portnumber_filename = getenv("MEMCACHED_PORT_FILENAME");
-        printf("Portnumber file: %c\n", portnumber_filename);
+        //printf("Portnumber file: %c\n", portnumber_filename);
         char *temp_portnumber_filename = NULL;
         size_t len;
         FILE *portnumber_file = NULL;
@@ -2033,7 +2033,7 @@ void init_memcached(int numWorkers)
 
         if (portnumber_file == NULL)
         {
-            printf("Portnumber file is NULL\n");
+            //printf("Portnumber file is NULL\n");
         }
         errno = 0;
         if (settings.port && server_sockets(settings.port, tcp_transport,
