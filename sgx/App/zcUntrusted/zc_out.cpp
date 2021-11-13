@@ -194,6 +194,7 @@ static void init_mem_pools()
         pools->memory_pools[i] = (zc_mpool *)malloc(sizeof(zc_mpool));
         pools->memory_pools[i]->pool = mpool_create(POOL_SIZE);
         pools->memory_pools[i]->pool_id = i;
+        pools->memory_pools[i]->pool->mpool_id = i;
         pools->memory_pools[i]->pool_lock = 0;
         pools->memory_pools[i]->pool_status = (int)INACTIVE;
 
@@ -218,6 +219,21 @@ static void init_mem_pools()
             pools->memory_pools[i]->active = 0;
         }
     }
+}
+
+/**
+ * Pool is full, release all pool memory
+ * and reallocate some memory for it.
+ */
+
+void *ocall_free_reallocate_pool(unsigned int id)
+{
+    // free memory
+    mpool_destroy(pools->memory_pools[id]->pool);
+    // reallocate
+    pools->memory_pools[id]->pool = mpool_create(POOL_SIZE);
+    // reassign same id
+    pools->memory_pools[id]->pool->mpool_id = id;
 }
 
 void *zc_worker_thread(void *input)
@@ -402,7 +418,7 @@ static void zc_worker_loop(zc_worker_args *args)
         case DONE:
         {
             /**
-             * A caller has released this buffer. Check for pause signal from signal.
+             * A caller has released this buffer. Check for pause signal from scheduler.
              * If pause is set, pause. Otherwise set the state to UNUSED so other callers
              * can use this buffer. Only callers set this. Pausing/activating in here is safe b/c we 
              * are 100% sure the last caller using this buffer completed its work.

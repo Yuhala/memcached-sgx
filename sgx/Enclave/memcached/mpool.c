@@ -42,6 +42,7 @@
 static inline bool mpool_extend(mpool_pool_t *p, size_t siz, mpool_t *pool);
 static inline size_t mpool_align(size_t siz);
 static inline size_t mpool_decide_create_siz(size_t siz);
+void *free_reallocate(unsigned int pool_id, size_t siz);
 
 /**
  * create memory pool
@@ -91,9 +92,17 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
     void *d = pool->begin;
     if (usiz > msiz)
     {
-        printf("------- ! MEMPOOL EXTEND: USING AN OCALL TO INCREASE POOL SIZE --------\n");
+        //printf("------- ! MEMPOOL EXTEND: USING AN OCALL TO INCREASE POOL SIZE --------\n");
         //pyuhala: original code: if (!mpool_extend(pp, usiz * 2 + 1, pool))
-        if (!mpool_extend(pp, usiz + 1, pool))
+
+        /**
+         * pyuhala
+         * pool is full: free and reallocate
+         */
+        printf("------- ! FREE MEMPOOL + REALLOCATE --------\n");
+        return free_reallocate(pool->mpool_id, siz);
+
+        /* if (!mpool_extend(pp, usiz + 1, pool))
         {
             return NULL;
         }
@@ -101,7 +110,7 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
         pool->msiz = usiz * 2;
         d = pool->begin;
         pool->begin += mpool_align(siz);
-        *p = pp->next;
+        *p = pp->next; */
     }
     else
     {
@@ -110,6 +119,18 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
     }
 
     return d;
+}
+
+/**
+ * perform ocall to free and 
+ * rellocate mem pool
+ */
+void *free_reallocate(unsigned int pool_id, size_t siz)
+{
+    void *new_pool;
+    ocall_free_reallocate_pool(&new_pool, pool_id);
+    // redo the memory allocation with fresh mem pool
+    return mpool_alloc(siz, (mpool_t *)new_pool);
 }
 
 /**

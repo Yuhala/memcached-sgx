@@ -61,6 +61,7 @@ enclave {
         void mcd_ocall_mutex_lock_lthread_stats(int conn_id);
         void mcd_ocall_mutex_unlock_lthread_stats(int conn_id);
         void *ocall_transmit_prepare();
+        void *ocall_free_reallocate_pool(unsigned int pool_id);
         int ocall_getErrno();
     };
 };

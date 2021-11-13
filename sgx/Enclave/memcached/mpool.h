@@ -71,6 +71,7 @@ typedef struct mpool_t
     size_t usiz;         // used pool size of current pool
     size_t msiz;         // max pool size of current pool
     mpool_pool_t *mpool; // memory pool
+    unsigned int mpool_id; // pool id
 
 } mpool_t;
 

@@ -94,6 +94,7 @@ void runTestMulti(int n);
 
 void ecall_test()
 {
+    // replace with your custom test routine
 }
 
 void ecall_undef_stack_protector()

@@ -494,7 +494,7 @@ void run_zc_micro(int num_runs)
 int main(int argc, char *argv[])
 {
 
-    print_stack_protector_checks();
+    //print_stack_protector_checks();
 
     (void)(argc);
     (void)(argv);
@@ -568,7 +568,7 @@ int main(int argc, char *argv[])
     }
 
     // stack protector checks in enclave
-    ecall_undef_stack_protector(global_eid);
+    //ecall_undef_stack_protector(global_eid);
 
     /**
      * ZC-switchless initialization
