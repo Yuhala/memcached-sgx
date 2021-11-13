@@ -231,11 +231,15 @@ void *ocall_free_reallocate_pool(unsigned int id)
     // free memory
     mpool_destroy(pools->memory_pools[id]->pool);
     // reallocate
-    pools->memory_pools[id]->pool = mpool_create(POOL_SIZE);
+
+    mpool_t *new_pool = mpool_create(POOL_SIZE);
+    ZC_ASSERT(new_pool != NULL);
+
+    pools->memory_pools[id]->pool = new_pool;
     // reassign same id
     pools->memory_pools[id]->pool->mpool_id = id;
 
-    return (void *)pools->memory_pools[id]->pool;
+    return (void *)new_pool;
 }
 
 void *zc_worker_thread(void *input)

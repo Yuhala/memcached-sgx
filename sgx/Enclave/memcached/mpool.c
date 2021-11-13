@@ -100,7 +100,7 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
          * pool is full: free and reallocate
          */
         printf("------- ! FREE MEMPOOL + REALLOCATE --------\n");
-        return free_reallocate(pool->mpool_id, siz);
+        d = free_reallocate(pool->mpool_id, siz);
 
         /* if (!mpool_extend(pp, usiz + 1, pool))
         {

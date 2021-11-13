@@ -24,7 +24,7 @@
 
 #define ZC_NO_FREE_POOL -1 /* if there is not free pool in the pool array return -1 index */
 
-#define POOL_SIZE 64 * 1024 * 1024 /* surely 64 mb should be enough for realistic tests/benchmarks */
+#define POOL_SIZE 32 * 1024 * 1024 /* surely 64 mb should be enough for realistic tests/benchmarks */
 #define NUM_POOLS 8                /* the number of memory pools to create; == number max threads in enclave */
 
 #define ZC_REQUEST_DONE 1
