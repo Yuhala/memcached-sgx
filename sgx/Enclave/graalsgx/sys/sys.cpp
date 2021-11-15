@@ -220,7 +220,7 @@ __sighandler_t signal(int signum, __sighandler_t handler)
 {
     GRAAL_SGX_INFO();
     //TODO
-    //printf("Signal num: %d\n", signum);
+    printf("--- In enclave Signal num: %d-----\n", signum);
     //handler = &sig_handler;
     __sighandler_t ret = &sig_handler; //nullptr;
     //ocall_signal(&ret, signum, handler);
@@ -230,10 +230,12 @@ __sighandler_t signal(int signum, __sighandler_t handler)
 void sig_handler(int param)
 {
     GRAAL_SGX_INFO();
+    printf("--- In enclave signal handler: %d-----\n",param);
 }
 
 int raise(int sig)
 {
+    printf("------- raising signal %d ----------\n", sig);
     GRAAL_SGX_INFO();
     int ret = 0;
     //TODO

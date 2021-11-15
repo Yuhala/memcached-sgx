@@ -102,7 +102,7 @@ void *mpool_alloc(size_t siz, mpool_t *pool)
         //printf("------- ! FREE MEMPOOL + REALLOCATE --------\n");
         //d = free_reallocate(pool->mpool_id, siz);
 
-        if (!mpool_extend(pp, usiz + 1, pool))
+        if (!mpool_extend(pp, usiz * 2 + 1, pool))
         {
             return NULL;
         }
