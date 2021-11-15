@@ -1,4 +1,4 @@
-num_conns get_tput set_tput get_lat set_lat 
+num_conns, get_tput, set_tput, get_lat, set_lat 
 2, 6493.47, 6493.47, 0.62933, 0.66640 
 4, 6169.84, 6169.84, 1.29511, 1.33576 
 6, 6221.82, 6221.82, 1.87100, 1.88700 

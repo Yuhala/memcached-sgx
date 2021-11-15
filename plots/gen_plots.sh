@@ -7,7 +7,11 @@
 #
 #
 
+ALL="mcd_var_conns.gp"
+
 #gnuplot read_tput.gp 
-gnuplot kissdb.gp
-gnuplot fwrite.gp
+#gnuplot kissdb.gp
+#gnuplot fwrite.gp
 #gnuplot upd_tput.gp 
+
+gnuplot $ALL

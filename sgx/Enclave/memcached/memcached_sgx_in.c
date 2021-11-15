@@ -1063,7 +1063,7 @@ static enum try_read_result try_read_network(conn *c)
         if (res > 0)
         {
             //pyuhala:
-/* 
+            /* 
             mcd_ocall_mutex_lock_lthread_stats(c->conn_id);
             c->thread->stats.bytes_read += res;
             mcd_ocall_mutex_unlock_lthread_stats(c->conn_id); */
@@ -3915,6 +3915,7 @@ static void drive_machine(conn *c)
                 reject = sfd >= settings.maxconns - 1;
                 if (reject)
                 {
+                    printf(">>>>>>>>>>>>>>>>>>>>>>>>>> rejecting connection: > maxconns >>>>>>>>>>>>>>>>>\n");
                     STATS_LOCK();
                     stats.rejected_conns++;
                     STATS_UNLOCK();
