@@ -930,3 +930,11 @@ void *untrusted_malloc(ssize_t siz)
     ocall_malloc(&ret, siz);
     return ret;
 }
+
+ssize_t getline(char **lineptr, size_t *n,
+                SGX_FILE *stream)
+{
+    ssize_t ret = 0;
+    //ocall_getline(&ret, lineptr, n, stream);
+    return ret;
+}

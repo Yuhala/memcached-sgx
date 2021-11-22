@@ -576,6 +576,7 @@ int main(int argc, char *argv[])
 
     if (zc_switchless)
     {
+        printf("########################## running in ZC-SWITCHLESS mode ##########################\n");
         ret_zero = 0;
         //init_switchless();
         init_zc(num_sl_workers);
@@ -587,12 +588,6 @@ int main(int argc, char *argv[])
     // return 0;
 
     printf("Enclave initialized\n");
-    if (zc_switchless)
-    {
-        // use_zc_switchless = true;
-
-        printf("########################## running in ZC-SWITCHLESS mode ##########################\n");
-    }
 
     int id = global_eid;
 
