@@ -2,6 +2,7 @@
  * Created on Fri Nov 19 2021
  *
  * Copyright (c) 2021 Peterson Yuhala, IIUN
+ * Common libs for in-enclave kyoto db
  */
 
 #ifndef ENCLAVE_COMMON_H
