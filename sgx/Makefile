@@ -122,8 +122,8 @@ Graal_Include_Path := -IEnclave/graalsgx -IEnclave/graalsgx/include
 ########## Memcached Settings ########
 
 # Memcached source
-Memcached_Src_In := ./Enclave/memcached
-Memcached_Src_Out := ./App/memcached
+Memcached_Src_In := ./Enclave/memcached/xx
+Memcached_Src_Out := ./App/memcachedxx
 
 # Memcached c files
 Memcached_C_Files_In := $(wildcard $(Memcached_Src_In)/*.c)
