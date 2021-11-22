@@ -122,8 +122,8 @@ Graal_Include_Path := -IEnclave/graalsgx -IEnclave/graalsgx/include
 ########## Memcached Settings ########
 
 # Memcached source
-Memcached_Src_In := ./Enclave/memcached/xx
-Memcached_Src_Out := ./App/memcachedxx
+Memcached_Src_In := ./Enclave/memcached
+Memcached_Src_Out := ./App/memcached
 
 # Memcached c files
 Memcached_C_Files_In := $(wildcard $(Memcached_Src_In)/*.c)
@@ -148,8 +148,8 @@ Memcached_Inc_Paths := -I$(Memcached_Src_In)
 ########## Kyoto Settings ########
 
 # Kyoto source
-Kyoto_Src_In := ./Enclave/kyoto
-Kyoto_Src_Out := ./App/kyoto
+Kyoto_Src_In := ./Enclave/kyoto/xx
+Kyoto_Src_Out := ./App/kyoto/xx
 
 # Kyoto cc files
 Kyoto_Cpp_Files_In := $(wildcard $(Kyoto_Src_In)/*.cc)
