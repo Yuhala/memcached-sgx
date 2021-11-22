@@ -128,6 +128,9 @@ extern "C"
     char *realpath(const char *path, char *resolved_path);
     char *__xpg_strerror_r(int errnum, char *buf, size_t buflen);
 
+    //>>>>>>>>>>>>>>>>>>>>> kyoto >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    ssize_t getline(char **lineptr, size_t *n, SGX_FILE *stream);
+
     //>>>>>>>>>>>>>>>>>>>>> start signal shim >>>>>>>>>>>>>>>>>>>>>>>>>>
     int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact); //TODO
     int sigemptyset(sigset_t *set);
@@ -137,6 +140,7 @@ extern "C"
     void sig_handler(int param);
     int raise(int sig);
     int kill(pid_t pid, int sig);
+    int nanosleep (const struct timespec *__requested_time,struct timespec *__remaining);
     //>>>>>>>>>>>>>>>>>>>>> end signal shim >>>>>>>>>>>>>>>>>>>>>>>>>>
 
     ///>>>>>>>>>>>>>>>>>>>>> start io shim >>>>>>>>>>>>>>>>>>>>>>>>>>

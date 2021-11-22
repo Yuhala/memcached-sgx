@@ -263,6 +263,12 @@ int sched_yield(void)
     return ret;
 }
 
+int nanosleep(const struct timespec *__requested_time, struct timespec *__remaining)
+{
+    //TODO
+    return 0;
+}
+
 /**
  *  Job related functions
  *  Copyright (c) Panoply 2017

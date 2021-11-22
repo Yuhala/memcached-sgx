@@ -22,7 +22,7 @@ LX=0.05
 LY=0.01
 
 
-NUM_WORKERS
+NUM_WORKERS=1
 
 
 
@@ -65,7 +65,7 @@ set key maxrows 1 samplen 1.1 width -1 invert center at graph 0.5,1.125 font ",1
 #set key maxrows 1 samplen 1.1 width -2 invert reverse at graph 1.,1.08 font ",12"
 #set key horizontal font "Helvetica, 20" width 1.8 at  2.1,1.08, graph 0.1 center maxrows 1
 #------------------------------------------Plots-------------------------------------------------
-set title "(a) SET Tput: 4 client threads, 500 req/conn " font "Helvetica-bold,13" offset 0,1
+set title "(a) SET Tput: 4 client threads, 500 req/conn, 3W " font "Helvetica-bold,13" offset 0,1
 
 set yrange [0:10000]
 plot\
@@ -90,7 +90,7 @@ plot\
 unset ylabel
 
 set origin MX+LX+1*(IX+SX)-0.01,MY+0*(IY+SY)+LY
-set title "(b) SET Latency:4 client threads, 500 req/conn" font "Helvetica-bold,13" offset 0,1
+set title "(b) SET Latency:4 client threads, 500 req/conn, 3W" font "Helvetica-bold,13" offset 0,1
 set ylabel "Avg. Latency (s)" font ",16" offset 2,0
 
 
