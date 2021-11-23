@@ -21,6 +21,11 @@
 #define MAP_ANONYMOUS   0x20
 #define MAP_ANON        MAP_ANONYMOUS
 
+/* Flags to `msync'.  */
+#define MS_ASYNC	1		/* Sync memory asynchronously.  */
+#define MS_SYNC		4		/* Synchronous memory sync.  */
+#define MS_INVALIDATE	2		/* Invalidate the caches.  */
+
 #define MAP_FAILED      ((void *)-1)
 
 #define _SC_PAGESIZE 11

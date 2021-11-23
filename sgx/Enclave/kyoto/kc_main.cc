@@ -10,7 +10,7 @@ using namespace kyotocabinet;
 //log_kyoto_error("",__func__);
 
 // main routine
-int kc_main(int argc, char **argv)
+int kc_main()
 {
 
   // create the database object

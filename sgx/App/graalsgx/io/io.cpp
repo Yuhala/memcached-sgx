@@ -69,6 +69,23 @@ int ocall_fsync(int fd)
     return fsync(fd);
 }
 
+int ocall_msync(void *addr, size_t length, int flags)
+{
+    log_ocall(__func__);
+    return msync(addr, length, flags);
+}
+
+void ocall_sync(void)
+{
+    log_ocall(__func__);
+    sync();
+}
+int ocall_syncfs(int fd)
+{
+    log_ocall(__func__);
+    return syncfs(fd);
+}
+
 int ocall_dup2(int oldfd, int newfd)
 {
     log_ocall(__func__);
@@ -205,7 +222,7 @@ int ocall_fclose(SGX_FILE stream)
 
 size_t ocall_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
 {
-    log_ocall(__func__);    
+    log_ocall(__func__);
     FILE *f = getFile(stream);
     ssize_t ret = fwrite(ptr, size, nmemb, f);
 

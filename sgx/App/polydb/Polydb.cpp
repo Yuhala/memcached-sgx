@@ -5,7 +5,7 @@
  * Copyright (c) 2021 Peterson Yuhala, IIUN
  */
 
-#include "Paldb.h"
+#include "Polydb.h"
 #include "Enclave_u.h"
 #include "sgx_urts.h"
 

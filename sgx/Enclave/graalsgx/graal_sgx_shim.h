@@ -140,7 +140,7 @@ extern "C"
     void sig_handler(int param);
     int raise(int sig);
     int kill(pid_t pid, int sig);
-    int nanosleep (const struct timespec *__requested_time,struct timespec *__remaining);
+    int nanosleep(const struct timespec *__requested_time, struct timespec *__remaining);
     //>>>>>>>>>>>>>>>>>>>>> end signal shim >>>>>>>>>>>>>>>>>>>>>>>>>>
 
     ///>>>>>>>>>>>>>>>>>>>>> start io shim >>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -158,6 +158,9 @@ extern "C"
     int lstat(const char *path, struct stat *buf);
     void empty(int repeats);
     int fsync(int fd);
+    void sync(void);
+    int syncfs(int fd);
+
     int dup2(int oldfd, int newfd);
     int open(const char *path, int oflag, ...);
     int open64(const char *path, int oflag, ...);
@@ -173,11 +176,13 @@ extern "C"
     int puts(const char *str);
     int fputc(int c, SGX_FILE stream);
     int putc(int c, SGX_FILE stream);
+    int msync(void *addr, size_t length, int flags);
 
     //io: added for graphchi
     int mkdir(const char *pathname, mode_t mode);
     int truncate(const char *path, off_t length);
     int ftruncate64(int fd, off_t length);
+    int ftruncate(int fd, off_t length);
     void *mmap64(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
     ssize_t pwrite64(int fildes, const void *buf, size_t nbyte, off_t offset);
     int fdatasync(int fd);

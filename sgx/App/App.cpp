@@ -82,7 +82,7 @@
 #include "graal_sgx_shim_switchless_u.h"
 
 //paldb benchmarking
-#include "paldb/Paldb.h"
+#include "polydb/Polydb.h"
 
 //zc switchless
 #include "zcUntrusted/zc_out.h"
@@ -97,6 +97,7 @@
 
 /* Benchmarking */
 #include "bench/benchtools.h"
+#include "bench/cpu_usage.h"
 #include <time.h>
 struct timespec start, stop;
 double diff;
@@ -164,6 +165,7 @@ extern zc_stats *zc_statistics;
 void runKissdbBench(int num_runs);
 void runTestMulti(int num_runs);
 void run_zc_micro(int num_runs);
+void run_kyoto_bench();
 
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
@@ -359,6 +361,11 @@ void init_switchless(void)
 
 void destroy_switchless(void)
 {
+}
+
+void run_kyoto_bench()
+{
+    ecall_read_kyoto(global_eid, 0, 0);
 }
 
 void removeKissDbs()
@@ -591,9 +598,10 @@ int main(int argc, char *argv[])
 
     int id = global_eid;
 
-    init_memcached(num_mcd_workers);
+    //init_memcached(num_mcd_workers);
     //runKissdbBench(1);
     //run_zc_micro(1);
+    run_kyoto_bench();
 
     //return 0;
 

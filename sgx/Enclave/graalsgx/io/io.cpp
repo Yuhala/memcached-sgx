@@ -31,6 +31,20 @@ void sgx_exit()
     GRAAL_SGX_INFO();
     exit(1);
 }
+
+void sync(void)
+{
+    GRAAL_SGX_INFO();
+    ocall_sync();
+}
+
+int syncfs(int fd)
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    ocall_syncfs(&ret, fd);
+    return ret;
+}
 int fsync(int fd)
 {
     GRAAL_SGX_INFO();
@@ -43,6 +57,14 @@ int fsync(int fd)
         ocall_fsync(&ret, fd); */
     return ret;
 }
+
+/* int msync(void *addr, size_t length, int flags)
+{
+    GRAAL_SGX_INFO();
+    int ret = 0;
+    ocall_msync(&ret, addr, length, flags);
+    return ret;
+} */
 
 int dup2(int oldfd, int newfd)
 {
@@ -475,6 +497,13 @@ int ftruncate64(int fd, off_t length)
     int ret = 0;
     ocall_ftruncate64(&ret, fd, length);
     return ret;
+}
+
+int ftruncate(int fd, off_t length)
+{
+    GRAAL_SGX_INFO();
+    //TODO: is calling ftruncate64 correct ?
+    return ftruncate64(fd, length);
 }
 void *mmap64(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 {

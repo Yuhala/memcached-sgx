@@ -35,6 +35,8 @@
 
 #include "kissdb/kissdb.h"
 
+#include "kyoto/kc_main.h"
+
 // Graal headers
 #include "graal_isolate.h"
 #include "main.h"
@@ -95,7 +97,30 @@ void runTestMulti(int n);
 void ecall_test()
 {
     // replace with your custom test routine
+    
 }
+
+
+
+
+void ecall_read_kyoto(int numKeys,int readerId)
+{
+
+    printf("----------- reading kyoto ----------\n");
+    //kc_main();
+   
+}
+
+void ecall_write_kyoto(int numKeys,int writerId)
+{
+
+    printf("------------ writing kyto --------\n");
+    
+}
+
+
+
+
 
 void ecall_undef_stack_protector()
 {
@@ -216,66 +241,6 @@ void ecall_bench_thread(struct buffer *bs, struct buffer *b, void **sl_fn, void 
     //ocall_write(&ret, fdw, buf, 0);
 }
 
-//run main w/0 args: default
-void ecall_graal_main(int id, struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, sig_atomic_t *sl_count, sig_atomic_t *f_count, int *workers)
-{
-    global_eid = id;
-    enclave_initiated = true;
-    switchless_buffers = bs;
-    switchless_buffer = b;
-    shim_switchless_functions = sl_fn;
-    shim_functions = fn;
-    number_of_sl_calls = sl_count;
-    number_of_fallbacked_calls = f_count;
-    number_of_workers = workers;
-    printf("In ecall_graal_main\n");
-    /* small demo */
-    /*char buf[2048];
-    write(1, "\ntype at least 10 characters then press enter : ", 49);
-    read(0, buf, 10);;
-    //sleep(3);
-    write(1, "what you have typed 3 seconds ago was : ", 40);
-    write(1, buf, 10);
-    write(1, "\n", 1);*/
-
-    //global_enc_iso = isolate_generator();
-    //run_main(1, NULL);
-}
-
-//run main with an additional argument
-void ecall_graal_main_args(int id, int arg1, struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, int *sl_count, int *f_count, int *workers)
-{
-    global_eid = id;
-    enclave_initiated = true;
-    switchless_buffers = bs;
-    switchless_buffer = b;
-    shim_switchless_functions = sl_fn;
-    shim_functions = fn;
-    number_of_sl_calls = sl_count;
-    number_of_fallbacked_calls = f_count;
-    number_of_workers = workers;
-
-    printf("in ecall_graal_main_args\n");
-    //rw_benchmark(arg1);
-    //ocall_bench();
-
-    //run_main(1, NULL);
-    //test_routine(10);
-    //int len = _snprintf_s(NULL, 0);
-
-    char str[32];
-    snprintf(str, 32, "%d", arg1); //good
-
-    printf("Main argument in enclave %d\n", arg1);
-    char *argv[2];
-    argv[0] = "run_main";
-    argv[1] = str;
-
-    printf("Main arg as string: %s\n", str);
-
-    //run_main(2, argv);
-}
-
 void ecall_run_main(int id)
 {
     global_eid = id;
@@ -292,74 +257,6 @@ void test_routine(int n)
     }
 }
 
-/**
- * Will call graal entry point to read n keys in paldb..
- * A graal isolate is created to serve as execution context for the thread.
- */
-void ecall_reader(int n, int id, struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, sig_atomic_t *sl_count, sig_atomic_t *f_count, int *workers)
-{
-    /* initializing global values */
-    switchless_buffers = bs;
-    switchless_buffer = b;
-    shim_switchless_functions = sl_fn;
-    shim_functions = fn;
-    number_of_sl_calls = sl_count;
-    number_of_fallbacked_calls = f_count;
-    number_of_workers = workers;
-
-    //printf("ecall reader: %d keys\n", n);
-
-    //graal_isolatethread_t *iso = isolate_generator();
-
-    readKissdb(n, id);
-}
-
-void ecall_set_global_variables(struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, sig_atomic_t *sl_count, sig_atomic_t *f_count, int *workers, int ret_zero)
-{
-    /* initializing global values */
-    switchless_buffers = bs;
-    switchless_buffer = NULL;
-    shim_switchless_functions = sl_fn;
-    shim_functions = fn;
-    number_of_sl_calls = sl_count;
-    number_of_fallbacked_calls = f_count;
-    number_of_workers = workers;
-    return_zero = ret_zero;
-}
-
-/**
- * Will call graal entry point to write n kv pairs in paldb
- * A graal isolate is created to serve as execution context for the thread.
- */
-void ecall_writer(int n, int id, struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, sig_atomic_t *sl_count, sig_atomic_t *f_count, int *workers)
-{
-    /* initializing global values */
-    switchless_buffers = bs;
-    switchless_buffer = b;
-    shim_switchless_functions = sl_fn;
-    shim_functions = fn;
-    number_of_sl_calls = sl_count;
-    number_of_fallbacked_calls = f_count;
-    number_of_workers = workers;
-
-    //graal_isolatethread_t *iso = isolate_generator();
-    //printf("ecall writer: %d keys\n", n);
-    writeKissdb(n, id);
-}
-
-void ecall_readN(int n)
-{
-
-    printf("In ecall readN\n");
-    //readN(read_iso, n);
-}
-
-void ecall_writeN(int n)
-{
-
-    printf("In ecall writeN\n");
-    //writeN(write_iso, n);
-}
 
 void readKissdb(int n, int storeId)
 {
@@ -473,7 +370,7 @@ void writeKissdb(int n, int storeId)
 void ecall_readKissdb(int n, int storeId)
 {
     //readKissdb(n, storeId);
-    read_micro(n, storeId);
+    //read_micro(n, storeId);
 }
 
 void ecall_writeKissdb(int n, int storeId)
