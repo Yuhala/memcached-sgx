@@ -84,6 +84,8 @@
 //paldb benchmarking
 #include "paldb/Paldb.h"
 
+//cpu calculations
+
 //zc switchless
 #include "zcUntrusted/zc_out.h"
 
@@ -93,11 +95,16 @@
 //for get_nprocs()
 #include <sys/sysinfo.h>
 
+
 #include "zc_types.h"
 
 /* Benchmarking */
 #include "bench/benchtools.h"
+#include "bench/cpu_usage.h"
+
 #include <time.h>
+
+
 struct timespec start, stop;
 double diff;
 using namespace std;

@@ -80,15 +80,21 @@ sudo /sbin/modprobe isgx
 echo "SGX driver succesfully installed"
 
 # ----------------------------------------------------------------------
-echo "[ Building Yuhala modified SGX SDK ]"
+echo "[ Building modified SGX SDK ]"
 cd $script_path
-git clone https://github.com/intel/linux-sgx.git
+#git clone https://github.com/intel/linux-sgx.git
+
+#sdk with modified memcpy
+git clone https://gitlab.com/michaelpaper/linux-sgx.git
+
+#sdk with fno-stack-protector added in makefile
 #git clone https://gitlab.com/Yuhala/sgx-sdk-modified.git
 
 #cd sgx-sdk-modified/linux-sgx
 cd linux-sgx
 git fetch --all --tags
-git checkout tags/$sgx_sdk_version
+#git checkout tags/$sgx_sdk_version
+git checkout master
 
 # Prepare submodules and prebuilt binaries
 make preparation

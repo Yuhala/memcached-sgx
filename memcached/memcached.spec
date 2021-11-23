@@ -27,8 +27,8 @@ BuildRequires: systemd-units
 %endif
 
 Name:           memcached
-Version:        1.6.10
-Release:        1%{?dist}
+Version:        
+Release:        @RELEASE@%{?dist}
 Summary:        High Performance, Distributed Memory Object Cache
 
 Group:          System Environment/Daemons
