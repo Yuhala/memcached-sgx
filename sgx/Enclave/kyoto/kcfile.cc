@@ -437,6 +437,7 @@ bool File::open(const std::string& path, uint32_t mode, int64_t msiz) {
     int32_t cmd = mode & OTRYLOCK ? F_SETLK : F_SETLKW;
     while (::fcntl(fd, cmd, &flbuf) != 0) {
       if (errno != EINTR) {
+        log_kyoto_error("fcntl failed",__func__);
         seterrmsg(core, "fcntl failed");
         ::close(fd);
         return false;
@@ -445,11 +446,13 @@ bool File::open(const std::string& path, uint32_t mode, int64_t msiz) {
   }
   struct ::stat sbuf;
   if (::fstat(fd, &sbuf) != 0) {
+    log_kyoto_error("fstat failed",__func__);
     seterrmsg(core, "fstat failed");
     ::close(fd);
     return false;
   }
   if (!S_ISREG(sbuf.st_mode)) {
+    log_kyoto_error("not a regular file",__func__);
     seterrmsg(core, "not a regular file");
     ::close(fd);
     return false;
@@ -476,6 +479,7 @@ bool File::open(const std::string& path, uint32_t mode, int64_t msiz) {
               core->fd = -1;
               core->walfd = -1;
               if (::fstat(fd, &sbuf) != 0) {
+                log_kyoto_error("fcntl failed",__func__,__LINE__);
                 seterrmsg(core, "fstat failed");
                 ::close(fd);
                 return false;
@@ -504,6 +508,7 @@ bool File::open(const std::string& path, uint32_t mode, int64_t msiz) {
   if (msiz > 0) {
     map = ::mmap(0, msiz, mprot, MAP_SHARED, fd, 0);
     if (map == MAP_FAILED) {
+      log_kyoto_error("mmap failed",__func__,__LINE__);
       seterrmsg(core, "mmap failed");
       ::close(fd);
       return false;
