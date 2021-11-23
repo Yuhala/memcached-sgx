@@ -798,7 +798,7 @@ class HashDB : public BasicDB {
    */
   bool open(const std::string& path, uint32_t mode = OWRITER | OCREATE) {
     _assert_(true);
-    ScopedRWLock lock(&mlock_, true);
+    //ScopedRWLock lock(&mlock_, true);
     if (omode_ != 0) {
       set_error(_KCCODELINE_, Error::INVALID, "already opened");
       return false;
@@ -932,7 +932,7 @@ class HashDB : public BasicDB {
    */
   bool close() {
     _assert_(true);
-    ScopedRWLock lock(&mlock_, true);
+    //ScopedRWLock lock(&mlock_, true);
     if (omode_ == 0) {
       set_error(_KCCODELINE_, Error::INVALID, "not opened");
       return false;
