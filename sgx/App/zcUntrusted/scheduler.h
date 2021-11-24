@@ -28,7 +28,8 @@ void reinitialize_stats();
 #define u 0.001
 
 // scheduler quantum in seconds (10ms --> 0.01)
-#define QUANTUM 0.000001
+//#define QUANTUM 0.000001
+#define QUANTUM 0.001
 
 // estimated time for micro quantum
 #define MICRO_QUANTUM (u * QUANTUM)

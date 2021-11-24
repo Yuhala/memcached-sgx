@@ -367,7 +367,7 @@ static void zc_worker_loop(zc_worker_args *args)
                 {
                     __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
 
-                    //pause();
+                    pause();
                     // I'm done pausing; refresh my state
                     refresh_paused_worker(pool_index);
                 }
@@ -436,7 +436,7 @@ static void zc_worker_loop(zc_worker_args *args)
                 __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)PAUSED, __ATOMIC_SEQ_CST);
                 __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
 
-                //pause();
+                pause();
                 // I'm done pausing; refresh my state
                 refresh_paused_worker(pool_index);
             }
