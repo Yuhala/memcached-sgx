@@ -371,7 +371,7 @@ void destroy_switchless(void)
 void removeKissDbs()
 {
     //printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
-    int ret = system("rm kissdb*");
+    int ret = system("rm zcstore*");
     //WEXITSTATUS(ret);
     ZC_ASSERT(!ret);
 }
@@ -517,7 +517,7 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 2; //get_nprocs() / 2;
+    int num_sl_workers = 4; //get_nprocs() / 2;
 
     if (argc == 3)
     {
@@ -598,8 +598,8 @@ int main(int argc, char *argv[])
 
     int id = global_eid;
 
-    init_memcached(num_mcd_workers);
-    //runKissdbBench(1);
+    //nit_memcached(num_mcd_workers);
+    runKissdbBench(1);
     //run_zc_micro(1);
 
     //return 0;

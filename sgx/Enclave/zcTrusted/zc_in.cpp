@@ -225,7 +225,7 @@ void ZC_REQUEST_WAIT(zc_req *request)
      */
     while (__atomic_load_n(&request->is_done, __ATOMIC_RELAXED) != ZC_REQUEST_DONE)
     {
-        ZC_PAUSE();
+        //ZC_PAUSE();
     }
 
     /**
