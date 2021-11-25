@@ -1,6 +1,8 @@
 
 
-#include "kchashdb.h"
+//#include "kchashdb.h"
+#include "kcdirdb.h"
+
 
 #include "kyoto_logger_in.h"
 
@@ -14,12 +16,12 @@ int kc_main()
 {
 
   // create the database object
-  HashDB db;
+  DirDB db;
 
   printf(">>>>>>>>  kyoto hashdb test >>>>>>>>\n");
 
   // open the database
-  if (!db.open("casket.kcd", HashDB::OWRITER | HashDB::OCREATE))
+  if (!db.open("casket.kcd", DirDB::OWRITER | DirDB::OCREATE))
   {
     //cerr << "open error: " << db.error().name() << endl;
     log_kyoto_error("open error", db.error().name(), __func__);

@@ -64,6 +64,8 @@
 #include <sgx_thread.h>
 //#include <sgx_pthread.h>
 
+#include "graal_sgx_debug.h"
+
 //>>>>> Begin typedefs >>>>>>>>>
 
 typedef unsigned char Byte;

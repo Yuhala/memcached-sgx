@@ -44,6 +44,12 @@ void *ocall_dlopen(const char *filename, int flag)
     return dlopen(filename, flag);
 }
 
+void *ocall_mmap_file(int hint, size_t length, int prot, int flags, int fd, off_t offset)
+{
+    log_ocall(__func__);
+    return mmap((void *)hint, length, prot, flags, fd, offset);
+}
+
 long ocall_sysconf(int name)
 {
     log_ocall(__func__);

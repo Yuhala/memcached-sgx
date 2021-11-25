@@ -419,15 +419,39 @@ int ocall_xstat64(int ver, const char *path, struct stat *stat_buf)
     return __xstat64(ver, path, (struct stat64 *)stat_buf);
 }
 
+/**
+ * Different possibilities for fcntl
+ */
 int ocall_fcntl(int fd, int cmd, int arg)
 {
     log_ocall(__func__);
+    return fcntl(fd, cmd, arg);
+}
+
+int ocall_fcntl1(int fd, int cmd)
+{
+    log_ocall(__func__);
+    return fcntl(fd, cmd);
+}
+
+int ocall_fcntl2(int fd, int cmd, long arg)
+{
+
+    log_ocall(__func__);
+    return fcntl(fd, cmd, arg);
+}
+
+int ocall_fcntl3(int fd, int cmd, void *arg_cast, int flock_size)
+{
+    log_ocall(__func__);
+    struct flock *arg = (struct flock *)arg_cast;
     return fcntl(fd, cmd, arg);
 }
 //--------------------------------zlib-------------------------------
 
 int ocall_deflateEnd(z_streamp stream)
 {
+
     log_ocall(__func__);
 
     return 0; //TODO: get zlib

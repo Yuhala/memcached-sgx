@@ -507,8 +507,9 @@ bool File::open(const std::string& path, uint32_t mode, int64_t msiz) {
   void* map = NULL;
   if (msiz > 0) {
     map = ::mmap(0, msiz, mprot, MAP_SHARED, fd, 0);
+    
     if (map == MAP_FAILED) {
-      log_kyoto_error("mmap failed",__func__,__LINE__);
+      log_kyoto_error("mmap failed",__func__);
       seterrmsg(core, "mmap failed");
       ::close(fd);
       return false;

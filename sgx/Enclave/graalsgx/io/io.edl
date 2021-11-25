@@ -93,7 +93,12 @@ enclave {
         int ocall_lxstat64(int ver,[in,string]const char *path, [out]struct stat *stat_buf);
         
 
-        int ocall_fcntl(int fildes, int cmd, int arg) propagate_errno;
+        int ocall_fcntl(int fildes, int cmd, int arg);
+        int ocall_fcntl1(int fd, int cmd);
+        int ocall_fcntl2(int fd, int cmd, long arg);
+        int ocall_fcntl3(int fd, int cmd, [user_check]void *arg_cast, int flock_size);
+
+
         int ocall_ioctl(int fd, unsigned long request, int arg);
         int ocall_xstat64(int ver, [in,string]const char *path, [in,out]struct stat *stat_buf);
 

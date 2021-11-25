@@ -112,6 +112,7 @@
         "charconv": "cpp",
         "mpool.h": "c",
         "zc_types.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "graal_sgx_debug.h": "c"
     }
 }

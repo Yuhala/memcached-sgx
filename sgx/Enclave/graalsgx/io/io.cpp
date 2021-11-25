@@ -784,10 +784,14 @@ ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset)
     ocall_pwrite(&ret, fd, buf, count, offset);
     return 0;
 }
+
+/**
+ * Definition of fcntl: copyright Panoply
+ */
 int fcntl(int fd, int cmd, ... /* arg */)
 {
     GRAAL_SGX_INFO();
-    va_list ap;
+    /* va_list ap;
     va_start(ap, cmd);
     int arg = va_arg(ap, int);
     va_end(ap);
@@ -800,9 +804,49 @@ int fcntl(int fd, int cmd, ... /* arg */)
         printf("Error in fcntl OCALL\n");
         sgx_exit();
     }
+    return ret; */
 
-    return ret;
+    sgx_status_t status;
+    va_list ap;
+    int retval;
+    va_start(ap, cmd);
+    long larg = -1;
+    struct flock *flarg = NULL;
+    // Fix me: Should refer to the linux kernel in order to do it in the right way
+    switch (cmd)
+    {
+    case F_GETFD:
+    case F_GETFL:
+    case F_GETOWN:
+        va_end(ap);
+        status = ocall_fcntl1(&retval, fd, cmd);
+        CHECK_STATUS(status);
+        return retval;
+    case F_DUPFD:
+    case F_DUPFD_CLOEXEC:
+    case F_SETFD:
+    case F_SETFL:
+    case F_SETOWN:
+        larg = va_arg(ap, long);
+        // fprintf(stderr, "fcntl setfd or setfl with flag: %d \n", larg);
+        status = ocall_fcntl2(&retval, fd, cmd, larg);
+        CHECK_STATUS(status);
+        return retval;
+    case F_SETLK:
+    case F_GETLK:
+    case F_SETLKW:
+        flarg = va_arg(ap, struct flock *);
+        status = ocall_fcntl3(&retval, fd, cmd, flarg, sizeof(struct flock));
+        CHECK_STATUS(status);
+        return retval;
+    default:
+        va_end(ap);
+        return -1;
+    };
+
+    return -1;
 }
+
 int fstatvfs64(int fd, struct statvfs *buf)
 {
     GRAAL_SGX_INFO();

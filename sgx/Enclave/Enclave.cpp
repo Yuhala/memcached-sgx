@@ -107,7 +107,7 @@ void ecall_read_kyoto(int numKeys,int readerId)
 {
 
     printf("----------- reading kyoto ----------\n");
-    //kc_main();
+    kc_main();
    
 }
 

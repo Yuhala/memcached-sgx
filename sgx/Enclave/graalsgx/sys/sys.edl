@@ -28,7 +28,10 @@ enclave {
 
         //dynamic loading
         void ocall_dlsym([user_check]void *handle, [in,string]const char *symbol,[user_check]void *res);
-        void *ocall_dlopen([in,string]const char *symbol,int flag);       
+        void *ocall_dlopen([in,string]const char *symbol,int flag);  
+
+        //mmap file: hint is void* but I chose to always use 0
+        void *ocall_mmap_file(int hint, size_t length, int prot, int flags, int fd, off_t offset);    
 
         long ocall_sysconf(int name);
         int ocall_getuid();                   

@@ -14,6 +14,17 @@
 
 static int map_array[NUM_MAPS];
 
+/**
+ * undefine this when working wity GraalVM projects
+ * where isolates need to allocate memory in enclave
+ * with mmap
+ */
+#define MMAP_DO_NOT_ALLOCATE 1
+
+//forward declarations
+void *mmap_allocate(void *hint, size_t length, int prot, int flags, int fd, off_t offset);
+void *mmap_file();
+
 /*We do not support dynamic loading of libs. We get the appropriate routine name and call the wrapper function.*/
 void *getSymbolHandle(const char *symbol)
 {
@@ -230,7 +241,7 @@ __sighandler_t signal(int signum, __sighandler_t handler)
 void sig_handler(int param)
 {
     GRAAL_SGX_INFO();
-    printf("--- In enclave signal handler: %d-----\n",param);
+    printf("--- In enclave signal handler: %d-----\n", param);
 }
 
 int raise(int sig)
@@ -270,16 +281,8 @@ int munmap(void *addr, size_t len)
     sgx_free_rsrv_mem(addr, aligned_length);
 }
 
-/**
- * Maps an area of memory within the SGX Reserved Memory.
- */
 void *mmap(void *hint, size_t length, int prot, int flags, int fd, off_t offset)
 {
-
-    uint64_t page_size, aligned_length;
-    void *aligned_hint, *reserved_memory_ptr;
-    int memory_protection_flags = 0;
-    sgx_status_t status;
 
     GRAAL_SGX_DEBUG_PRINTF("mmap called fd; %d prot: %d flags: %d size: %d hint: %p offset: %ld", fd, prot, flags, length, hint, offset);
 
@@ -288,10 +291,31 @@ void *mmap(void *hint, size_t length, int prot, int flags, int fd, off_t offset)
     if (fd != -1)
     {
         //TODO: use mmap64 in this case
-        errno = EBADF;
+        /* errno = EBADF;
         GRAAL_SGX_DEBUG_PRINT("error: mmap cannot map a file or a device in the enclave.");
-        return MAP_FAILED;
+        return MAP_FAILED; */
+
+        void *ret = NULL;
+        ocall_mmap_file(&ret, 0, length, prot, flags, fd, offset);
+        return ret;
     }
+    else
+    {
+        return mmap_allocate(hint, length, prot, flags, fd, offset);
+    }
+}
+
+/**
+ * Maps an area of memory within the SGX Reserved Memory.
+ */
+
+void *mmap_allocate(void *hint, size_t length, int prot, int flags, int fd, off_t offset)
+{
+
+    uint64_t page_size, aligned_length;
+    void *aligned_hint, *reserved_memory_ptr;
+    int memory_protection_flags = 0;
+    sgx_status_t status;
 
     // Align the hint and the length according to the size of the memory pages
     page_size = getpagesize();
