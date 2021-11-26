@@ -742,7 +742,7 @@ namespace kyotocabinet
    */
     size_t signal(const char *kbuf, size_t ksiz)
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       return 0;
       /*
@@ -758,7 +758,7 @@ namespace kyotocabinet
    */
     size_t signal(const std::string &key)
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       return 0;
       /*
@@ -782,7 +782,7 @@ namespace kyotocabinet
    */
     size_t broadcast(const char *kbuf, size_t ksiz)
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       return 0;
       /*
@@ -798,7 +798,7 @@ namespace kyotocabinet
    */
     size_t broadcast(const std::string &key)
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       return 0;
       /*
@@ -819,7 +819,7 @@ namespace kyotocabinet
    */
     size_t broadcast_all()
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       return 0;
 
@@ -852,7 +852,7 @@ namespace kyotocabinet
    */
     size_t count()
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       return 0;
       /*
@@ -1285,7 +1285,7 @@ namespace kyotocabinet
    */
     void start(size_t thnum)
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       /*
       _assert_(thnum > 0 && thnum <= MEMMAXSIZ);
@@ -1305,7 +1305,7 @@ namespace kyotocabinet
    */
     void finish()
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       /*
       _assert_(true);
@@ -1355,7 +1355,7 @@ namespace kyotocabinet
    */
     int64_t add_task(Task *task)
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       return -1;
       /*
@@ -1375,7 +1375,7 @@ namespace kyotocabinet
    */
     int64_t count()
     {
-      log_kyoto_routine(__func__);
+      //log_kyoto_routine(__func__);
       //kyoto_commented_todo
       return 0;
       /*
@@ -1405,7 +1405,7 @@ namespace kyotocabinet
       void run()
       {
 
-        log_kyoto_routine(__func__);
+        //log_kyoto_routine(__func__);
         //kyoto_commented_todo
 
       /*

@@ -92,7 +92,7 @@ namespace kyotocabinet
  */
   Thread::~Thread()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -116,7 +116,7 @@ namespace kyotocabinet
  */
   void Thread::start()
   {
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -146,7 +146,7 @@ namespace kyotocabinet
   void Thread::join()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 
     /*
@@ -173,7 +173,7 @@ namespace kyotocabinet
  */
   void Thread::detach()
   {
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -195,7 +195,7 @@ namespace kyotocabinet
  */
   void Thread::exit()
   {
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -336,7 +336,7 @@ namespace kyotocabinet
   Mutex::Mutex() : opq_(NULL)
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -360,7 +360,7 @@ namespace kyotocabinet
   Mutex::Mutex(Type type)
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -407,7 +407,7 @@ namespace kyotocabinet
   Mutex::~Mutex()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -430,7 +430,7 @@ namespace kyotocabinet
   void Mutex::lock()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -452,7 +452,7 @@ namespace kyotocabinet
   bool Mutex::lock_try()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
     /*
@@ -481,7 +481,7 @@ namespace kyotocabinet
   bool Mutex::lock_try(double sec)
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
     /*
@@ -545,7 +545,7 @@ namespace kyotocabinet
   void Mutex::unlock()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -582,7 +582,7 @@ namespace kyotocabinet
   SlottedMutex::SlottedMutex(size_t slotnum) : opq_(NULL)
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -618,7 +618,7 @@ namespace kyotocabinet
   SlottedMutex::~SlottedMutex()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 
 /*
@@ -654,7 +654,7 @@ namespace kyotocabinet
   void SlottedMutex::lock(size_t idx)
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -676,7 +676,7 @@ namespace kyotocabinet
   void SlottedMutex::unlock(size_t idx)
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -698,7 +698,7 @@ namespace kyotocabinet
   void SlottedMutex::lock_all()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -730,7 +730,7 @@ namespace kyotocabinet
   void SlottedMutex::unlock_all()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -762,7 +762,7 @@ namespace kyotocabinet
   SpinLock::SpinLock() : opq_(NULL)
   {
   
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 
   /*
@@ -786,7 +786,7 @@ namespace kyotocabinet
   SpinLock::~SpinLock()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -808,7 +808,7 @@ namespace kyotocabinet
   void SpinLock::lock()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 
 /*
@@ -857,7 +857,7 @@ namespace kyotocabinet
   bool SpinLock::lock_try()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
 /*
@@ -886,7 +886,7 @@ namespace kyotocabinet
   void SpinLock::unlock()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -925,7 +925,7 @@ namespace kyotocabinet
   SlottedSpinLock::SlottedSpinLock(size_t slotnum) : opq_(NULL)
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_) || _KC_GCCATOMIC
@@ -961,7 +961,7 @@ namespace kyotocabinet
   SlottedSpinLock::~SlottedSpinLock()
   {
 
-    log_kyoto_routine(__func__);
+    //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_) || _KC_GCCATOMIC
@@ -989,7 +989,7 @@ namespace kyotocabinet
  */
   void SlottedSpinLock::lock(size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1040,7 +1040,7 @@ namespace kyotocabinet
  */
   void SlottedSpinLock::unlock(size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1067,7 +1067,7 @@ namespace kyotocabinet
  */
   void SlottedSpinLock::lock_all()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1173,7 +1173,7 @@ namespace kyotocabinet
  */
   RWLock::RWLock() : opq_(NULL)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1195,7 +1195,7 @@ namespace kyotocabinet
  */
   RWLock::~RWLock()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1216,7 +1216,7 @@ namespace kyotocabinet
  */
   void RWLock::lock_writer()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
 /*  
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1237,7 +1237,7 @@ namespace kyotocabinet
  */
   bool RWLock::lock_writer_try()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
     /*
@@ -1263,7 +1263,7 @@ namespace kyotocabinet
  */
   void RWLock::lock_reader()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1284,7 +1284,7 @@ namespace kyotocabinet
  */
   bool RWLock::lock_reader_try()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
   
@@ -1311,7 +1311,7 @@ namespace kyotocabinet
  */
   void RWLock::unlock()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1346,7 +1346,7 @@ namespace kyotocabinet
  */
   SlottedRWLock::SlottedRWLock(size_t slotnum) : opq_(NULL)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1377,7 +1377,7 @@ namespace kyotocabinet
  */
   SlottedRWLock::~SlottedRWLock()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1405,7 +1405,7 @@ namespace kyotocabinet
  */
   void SlottedRWLock::lock_writer(size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1426,7 +1426,7 @@ namespace kyotocabinet
  */
   void SlottedRWLock::lock_reader(size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1446,7 +1446,7 @@ namespace kyotocabinet
  */
   void SlottedRWLock::unlock(size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1466,7 +1466,7 @@ namespace kyotocabinet
  */
   void SlottedRWLock::lock_writer_all()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1497,7 +1497,7 @@ namespace kyotocabinet
  */
   void SlottedRWLock::lock_reader_all()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1528,7 +1528,7 @@ namespace kyotocabinet
  */
   void SlottedRWLock::unlock_all()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1588,7 +1588,7 @@ namespace kyotocabinet
  */
   SpinRWLock::SpinRWLock() : opq_(NULL)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_) || _KC_GCCATOMIC
@@ -1613,7 +1613,7 @@ namespace kyotocabinet
  */
   SpinRWLock::~SpinRWLock()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_) || _KC_GCCATOMIC
@@ -1634,7 +1634,7 @@ namespace kyotocabinet
  */
   void SpinRWLock::lock_writer()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
     _assert_(true);
@@ -1665,7 +1665,7 @@ namespace kyotocabinet
  */
   bool SpinRWLock::lock_writer_try()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
     /*
@@ -1688,7 +1688,7 @@ namespace kyotocabinet
  */
   void SpinRWLock::lock_reader()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
     _assert_(true);
@@ -1719,7 +1719,7 @@ namespace kyotocabinet
  */
   bool SpinRWLock::lock_reader_try()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
     /*
@@ -1742,7 +1742,7 @@ namespace kyotocabinet
  */
   void SpinRWLock::unlock()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
     _assert_(true);
@@ -1765,7 +1765,7 @@ namespace kyotocabinet
  */
   bool SpinRWLock::promote()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
 
@@ -1789,7 +1789,7 @@ namespace kyotocabinet
  */
   void SpinRWLock::demote()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
     _assert_(true);
@@ -1805,7 +1805,7 @@ namespace kyotocabinet
  */
   static void spinrwlocklock(SpinRWLockCore *core)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1883,7 +1883,7 @@ namespace kyotocabinet
  */
   SlottedSpinRWLock::SlottedSpinRWLock(size_t slotnum) : opq_(NULL)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1942,7 +1942,7 @@ namespace kyotocabinet
  */
   SlottedSpinRWLock::~SlottedSpinRWLock()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_) || _KC_GCCATOMIC
@@ -1969,7 +1969,7 @@ namespace kyotocabinet
  */
   void SlottedSpinRWLock::lock_writer(size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
     _assert_(true);
@@ -2001,7 +2001,7 @@ namespace kyotocabinet
  */
   void SlottedSpinRWLock::lock_reader(size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todok
     /*
     _assert_(true);
@@ -2033,7 +2033,7 @@ namespace kyotocabinet
  */
   void SlottedSpinRWLock::unlock(size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
     _assert_(true);
@@ -2057,7 +2057,7 @@ namespace kyotocabinet
  */
   void SlottedSpinRWLock::lock_writer_all()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
     _assert_(true);
@@ -2094,7 +2094,7 @@ namespace kyotocabinet
  */
   void SlottedSpinRWLock::lock_reader_all()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
     _assert_(true);
@@ -2131,7 +2131,7 @@ namespace kyotocabinet
  */
   void SlottedSpinRWLock::unlock_all()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
     _assert_(true);
@@ -2160,7 +2160,7 @@ namespace kyotocabinet
  */
   static void slottedspinrwlocklock(SlottedSpinRWLockCore *core, size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2188,7 +2188,7 @@ namespace kyotocabinet
  */
   static void slottedspinrwlockunlock(SlottedSpinRWLockCore *core, size_t idx)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2211,7 +2211,7 @@ namespace kyotocabinet
  //CondVar::CondVar() : opq_(NULL)
   CondVar::CondVar()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2242,7 +2242,7 @@ namespace kyotocabinet
  */
   CondVar::~CondVar()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2265,7 +2265,7 @@ namespace kyotocabinet
  */
   void CondVar::wait(Mutex *mutex)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2310,7 +2310,7 @@ namespace kyotocabinet
  */
   bool CondVar::wait(Mutex *mutex, double sec)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
     /*
@@ -2396,7 +2396,7 @@ namespace kyotocabinet
  */
   void CondVar::signal()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2428,7 +2428,7 @@ namespace kyotocabinet
  */
   void CondVar::broadcast()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2460,7 +2460,7 @@ namespace kyotocabinet
  */
   TSDKey::TSDKey() : opq_(NULL)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2484,7 +2484,7 @@ namespace kyotocabinet
  */
   TSDKey::TSDKey(void (*dstr)(void *)) : opq_(NULL)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2508,7 +2508,7 @@ namespace kyotocabinet
  */
   TSDKey::~TSDKey()
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2529,7 +2529,7 @@ namespace kyotocabinet
  */
   void TSDKey::set(void *ptr)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -2551,7 +2551,7 @@ namespace kyotocabinet
  */
   void *TSDKey::get() const
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return NULL;
   /*
@@ -2572,7 +2572,7 @@ namespace kyotocabinet
  */
   int64_t AtomicInt64::set(int64_t val)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
    return 0;
    /*
@@ -2601,7 +2601,7 @@ namespace kyotocabinet
  */
   int64_t AtomicInt64::add(int64_t val)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
   /*
 #if (defined(_SYS_MSVC_) || defined(_SYS_MINGW_)) && defined(_SYS_WIN64_)
@@ -2628,7 +2628,7 @@ namespace kyotocabinet
  */
   bool AtomicInt64::cas(int64_t oval, int64_t nval)
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return false;
   /*
@@ -2660,7 +2660,7 @@ namespace kyotocabinet
  */
   int64_t AtomicInt64::get() const
   {
-     log_kyoto_routine(__func__);
+     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
     return 0;
   /*

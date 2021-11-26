@@ -25,7 +25,7 @@ void log_kyoto_routine(const char *func)
 void log_kyoto_info(const char *msg, const char *func)
 {
 #ifdef KC_LOGGER_IN
-    printf("kyoto info: %s\n", msg, func);
+    printf(">>> kyoto info: %s --> %s >>>\n", msg, func);
 #else
 //do nothing: important to avoid needless ocalls when integrating sgx
 #endif

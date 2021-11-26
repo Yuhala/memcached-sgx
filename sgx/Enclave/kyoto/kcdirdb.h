@@ -716,7 +716,7 @@ namespace kyotocabinet
         return false;
       }
       //report(_KCCODELINE_, Logger::DEBUG, "opening the database (path=%s)", path.c_str());
-      log_kyoto_info("opening database", __func__);
+      log_kyoto_info("opening database", _KCCODELINE_);
       writer_ = false;
       autotran_ = false;
       autosync_ = false;
@@ -756,11 +756,13 @@ namespace kyotocabinet
       {
         if (!file_.open(magicpath, fmode))
         {
+          log_kyoto_info("open magic path failed", __func__);
           set_error(_KCCODELINE_, Error::SYSTEM, file_.error());
           return false;
         }
         if (!remove_files(cpath))
         {
+          log_kyoto_info("removed files cpath failed", __func__);
           file_.close();
           return false;
         }
@@ -771,6 +773,7 @@ namespace kyotocabinet
         }
         if (!file_.close())
         {
+          log_kyoto_info("file.close failed", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, file_.error());
           return false;
         }
