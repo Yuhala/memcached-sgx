@@ -1975,6 +1975,7 @@ namespace kyotocabinet
     _assert_(true);
     struct ::stat sbuf;
     if (::lstat(path.c_str(), &sbuf) != 0)
+    
       return false;
     if (buf)
     {

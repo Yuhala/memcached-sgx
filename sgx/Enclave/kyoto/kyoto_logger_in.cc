@@ -22,20 +22,28 @@ void log_kyoto_routine(const char *func)
 //do nothing: important to avoid needless ocalls when integrating sgx
 #endif
 }
-
-void log_kyoto_error( const char* message,const char *func)
+void log_kyoto_info(const char *msg, const char *func)
 {
 #ifdef KC_LOGGER_IN
-    printf("Enclave kyoto error: %s | : %s\n", message,func);
+    printf("kyoto info: %s\n", msg, func);
 #else
 //do nothing: important to avoid needless ocalls when integrating sgx
 #endif
 }
 
-void log_kyoto_error(const char* msg1, const char* msg2,const char *func)
+void log_kyoto_error(const char *message, const char *func)
 {
 #ifdef KC_LOGGER_IN
-    printf("Enclave kyoto error: %s: | %s | : %s\n", msg1,msg2,func);
+    printf("Enclave kyoto error: %s | : %s\n", message, func);
+#else
+//do nothing: important to avoid needless ocalls when integrating sgx
+#endif
+}
+
+void log_kyoto_error(const char *msg1, const char *msg2, const char *func)
+{
+#ifdef KC_LOGGER_IN
+    printf("Enclave kyoto error: %s: | %s | : %s\n", msg1, msg2, func);
 #else
 //do nothing: important to avoid needless ocalls when integrating sgx
 #endif
