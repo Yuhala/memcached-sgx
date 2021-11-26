@@ -40,7 +40,7 @@ int kc_main()
       !db.set("baz", "jump"))
   {
     //cerr << "set error: " << db.error().name() << endl;
-    log_kyoto_error("set error", _KCCODELINE_);
+    log_kyoto_info("set error", _KCCODELINE_);
   }
 
   // retrieve a record
@@ -58,7 +58,7 @@ int kc_main()
   {
 
 #ifdef USE_SGX
-    log_kyoto_error("record get error", _KCCODELINE_);
+    log_kyoto_info("record get error", _KCCODELINE_);
 #else
     cerr << "get error: " << db.error().name() << endl;
 #endif
@@ -84,7 +84,7 @@ int kc_main()
   {
 
 #ifdef USE_SGX
-    log_kyoto_error("close error", _KCCODELINE_);
+    log_kyoto_info("close error", _KCCODELINE_);
 #else
     cerr << "close error: " << db.error().name() << endl;
 #endif
