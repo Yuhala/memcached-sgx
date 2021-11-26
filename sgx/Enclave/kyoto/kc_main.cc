@@ -25,13 +25,13 @@ int kc_main()
   // create the database object
   DirDB db;
 
-  printf(">>>>>>>>  kyoto hashdb test >>>>>>>>\n");
+  printf(">>>>>>>>  kyoto dirdb test >>>>>>>>\n");
 
   // open the database
   if (!db.open("casket.kcd", DirDB::OWRITER | DirDB::OCREATE))
   {
     //cerr << "open error: " << db.error().name() << endl;
-    log_kyoto_error("open error", db.error().name(), __func__);
+    log_kyoto_info("open error", _KCCODELINE_);
   }
 
   // store records
@@ -40,7 +40,7 @@ int kc_main()
       !db.set("baz", "jump"))
   {
     //cerr << "set error: " << db.error().name() << endl;
-    log_kyoto_error("set error", db.error().name(), __func__);
+    log_kyoto_error("set error", _KCCODELINE_);
   }
 
   // retrieve a record
@@ -58,7 +58,7 @@ int kc_main()
   {
 
 #ifdef USE_SGX
-    log_kyoto_error("get error", db.error().name(), __func__);
+    log_kyoto_error("record get error", _KCCODELINE_);
 #else
     cerr << "get error: " << db.error().name() << endl;
 #endif
@@ -84,7 +84,7 @@ int kc_main()
   {
 
 #ifdef USE_SGX
-    log_kyoto_error("close error", db.error().name(), __func__);
+    log_kyoto_error("close error", _KCCODELINE_);
 #else
     cerr << "close error: " << db.error().name() << endl;
 #endif
@@ -92,4 +92,3 @@ int kc_main()
 
   return 0;
 }
-
