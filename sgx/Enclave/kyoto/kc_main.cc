@@ -3,18 +3,25 @@
 //#include "kchashdb.h"
 #include "kcdirdb.h"
 
-
 #include "kyoto_logger_in.h"
 
 using namespace std;
 using namespace kyotocabinet;
 
-//log_kyoto_error("",__func__);
+//forward declarations
+int kc_main();
 
 // main routine
+
+#ifndef USE_SGX
+int main()
+{
+  return kc_main();
+}
+#endif
+
 int kc_main()
 {
-
   // create the database object
   DirDB db;
 
@@ -40,13 +47,21 @@ int kc_main()
   string value;
   if (db.get("foo", &value))
   {
-    //cout << value << endl;
-    printf("Value is %s\n", value);
+
+#ifdef USE_SGX
+    printf("Value is: ?? TODO\n");
+#else
+    cout << value << endl;
+#endif
   }
   else
   {
-    //cerr << "get error: " << db.error().name() << endl;
+
+#ifdef USE_SGX
     log_kyoto_error("get error", db.error().name(), __func__);
+#else
+    cerr << "get error: " << db.error().name() << endl;
+#endif
   }
 
   // traverse records
@@ -55,17 +70,26 @@ int kc_main()
   string ckey, cvalue;
   while (cur->get(&ckey, &cvalue, true))
   {
-    //cout << ckey << ":" << cvalue << endl;
-    printf("Key: %s Value: %d", ckey, cvalue);
+
+#ifdef USE_SGX
+    printf("cannot traverse records well in sgx atm, TODO :-)\n");
+#else
+    cout << ckey << ":" << cvalue << endl;
+#endif
   }
   delete cur;
 
   // close the database
   if (!db.close())
   {
-    //cerr << "close error: " << db.error().name() << endl;
+
+#ifdef USE_SGX
     log_kyoto_error("close error", db.error().name(), __func__);
+#else
+    cerr << "close error: " << db.error().name() << endl;
+#endif
   }
 
   return 0;
 }
+

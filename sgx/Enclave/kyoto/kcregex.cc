@@ -52,7 +52,7 @@ namespace kyotocabinet
  */
   Regex::Regex() : opq_(NULL)
   {
-    log_routine(__func__);
+    log_kyoto_routine(__func__);
     //kyoto_comment_todo
     /*
 #if _KC_PXREGEX
@@ -75,7 +75,7 @@ namespace kyotocabinet
  */
   Regex::~Regex()
   {
-    log_routine(__func__);
+    log_kyoto_routine(__func__);
     //kyoto_comment_todo
     /*
 #if _KC_PXREGEX
@@ -98,7 +98,7 @@ namespace kyotocabinet
   bool Regex::compile(const std::string &regex, uint32_t opts)
   {
 
-    log_routine(__func__);
+    log_kyoto_routine(__func__);
     //kyoto_comment_todo
     return false;
     /*
@@ -144,7 +144,7 @@ namespace kyotocabinet
  */
   bool Regex::match(const std::string &str)
   {
-    log_routine(__func__);
+    log_kyoto_routine(__func__);
     //kyoto_comment_todo
     return false;
 
@@ -174,7 +174,7 @@ namespace kyotocabinet
  */
   std::string Regex::replace(const std::string &str, const std::string &alt)
   {
-    log_routine(__func__);
+    log_kyoto_routine(__func__);
     //kyoto_comment_todo
     return nullptr;
     /*

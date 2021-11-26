@@ -17,6 +17,14 @@
 #include "kcfile.h"
 #include "myconf.h"
 
+#ifdef USE_SGX
+#include <sgx/sys/types.h>
+#include <sgx/sys/stat.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h> // for fstat
+#endif
+
 namespace kyotocabinet
 { // common namespace
 
@@ -487,7 +495,7 @@ namespace kyotocabinet
       }
     }
     struct ::stat sbuf;
-    if (::fstat(fd, &sbuf) != 0)
+    if (fstat(fd, &sbuf) != 0)
     {
       log_kyoto_error("fstat failed", __func__);
       seterrmsg(core, "fstat failed");
@@ -531,9 +539,9 @@ namespace kyotocabinet
                   seterrmsg(core, "ftruncate failed");
                 core->fd = -1;
                 core->walfd = -1;
-                if (::fstat(fd, &sbuf) != 0)
+                if (fstat(fd, &sbuf) != 0)
                 {
-                  log_kyoto_error("fstat failed", __func__, __LINE__);
+                  log_kyoto_info("fstat failed", _KCCODELINE_);
                   seterrmsg(core, "fstat failed");
                   ::close(fd);
                   return false;
@@ -1975,7 +1983,7 @@ namespace kyotocabinet
     _assert_(true);
     struct ::stat sbuf;
     if (::lstat(path.c_str(), &sbuf) != 0)
-    
+
       return false;
     if (buf)
     {

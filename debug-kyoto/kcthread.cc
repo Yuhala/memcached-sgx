@@ -571,7 +571,7 @@ namespace kyotocabinet
     ::CRITICAL_SECTION *mutexes; ///< primitives
     size_t slotnum;              ///< number of slots
 #else
-    ::sgx_thread_mutex_t *mutexes; ///< primitives
+    ::MUTEX_TYPE *mutexes; ///< primitives
     size_t slotnum;             ///< number of slots
 #endif
   };

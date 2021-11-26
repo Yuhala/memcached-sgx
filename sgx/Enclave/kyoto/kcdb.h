@@ -1390,7 +1390,7 @@ namespace kyotocabinet
     bool copy(const std::string &dest, ProgressChecker *checker = NULL)
     {
 
-      log_routine(__func__);
+      log_kyoto_routine(__func__);
       //kyoto_comment_todo
       return false;
       /*
@@ -2562,7 +2562,7 @@ namespace kyotocabinet
   /*
     bool dump_snapshot(std::ostream *dest, ProgressChecker *checker = NULL)
     {
-      log_routine(__func__);
+      log_kyoto_routine(__func__);
       //kyoto_comment_todo
       return false;
 
@@ -2627,7 +2627,7 @@ namespace kyotocabinet
     bool dump_snapshot(const std::string &dest, ProgressChecker *checker = NULL)
     {
 
-      log_routine(__func__);
+      log_kyoto_routine(__func__);
       //kyoto_comment_todo
       return false;
       
@@ -2660,7 +2660,7 @@ namespace kyotocabinet
     bool load_snapshot(std::istream *src, ProgressChecker *checker = NULL)
     {
 
-      log_routine(__func__);
+      log_kyoto_routine(__func__);
       //kyoto_comment_todo
       return false;
 
@@ -2750,7 +2750,7 @@ namespace kyotocabinet
     /*bool load_snapshot(const std::string &src, ProgressChecker *checker = NULL)
     {
 
-      log_routine(__func__);
+      log_kyoto_routine(__func__);
       //kyoto_comment_todo
       return false;
 

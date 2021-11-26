@@ -240,7 +240,7 @@ namespace kyotocabinet
 
     //kyoto_comment_todo: std::ifstream
 
-    log_routine(__func__);
+    log_kyoto_routine(__func__);
 
     /*  
 #if defined(_SYS_LINUX_)

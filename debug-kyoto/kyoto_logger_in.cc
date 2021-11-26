@@ -8,7 +8,11 @@
 
 #include "kyoto_logger_in.h"
 #include "enclave_common.h"
-#include <stdint.h>//for int32_t
+#include <stdint.h> //for int32_t
+
+#ifndef USE_SGX
+#include <stdio.h> //for printf if not in enclave
+#endif
 
 //pyuhala: custom logging
 #define KC_LOGGER_IN 1
