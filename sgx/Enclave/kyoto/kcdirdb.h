@@ -756,13 +756,13 @@ namespace kyotocabinet
       {
         if (!file_.open(magicpath, fmode))
         {
-          log_kyoto_info("open magic path failed", __func__);
+          log_kyoto_info("open magic path failed", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, file_.error());
           return false;
         }
         if (!remove_files(cpath))
         {
-          log_kyoto_info("removed files cpath failed", __func__);
+          log_kyoto_info("removed files cpath failed", _KCCODELINE_);
           file_.close();
           return false;
         }
@@ -780,16 +780,19 @@ namespace kyotocabinet
         const std::string &buf = format_magic(0, 0);
         if (!File::write_file(magicpath, buf.c_str(), buf.size()))
         {
+          log_kyoto_info("write_file for magic path failed", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, "writing a file failed");
           return false;
         }
         if (File::status(metapath) && !File::remove(metapath))
         {
+          log_kyoto_info("status metapath: removing file failed", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, "removing a file failed");
           return false;
         }
         if (File::status(opqpath) && !File::remove(opqpath))
         {
+          log_kyoto_info("status opqpath: removing file failed", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, "removing a file failed");
           return false;
         }
@@ -800,11 +803,13 @@ namespace kyotocabinet
       {
         if (!sbuf.isdir)
         {
+          log_kyoto_info("invalide path (not directory)", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::NOPERM, "invalid path (not directory)");
           return false;
         }
         if (!File::status(magicpath))
         {
+          log_kyoto_info("invalide magic data", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::BROKEN, "invalid magic data");
           return false;
         }
@@ -819,17 +824,20 @@ namespace kyotocabinet
         hot = true;
         if (!File::make_directory(cpath))
         {
+          log_kyoto_info("making a directory failed", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, "making a directory failed");
           return false;
         }
         if (!file_.open(magicpath, fmode))
         {
+          log_kyoto_info("open magic path failed", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, file_.error());
           return false;
         }
       }
       else
       {
+        log_kyoto_info("open failed (file not found)", _KCCODELINE_);
         set_error(_KCCODELINE_, Error::NOREPOS, "open failed (file not found)");
         return false;
       }
@@ -844,12 +852,14 @@ namespace kyotocabinet
         chksum_ = calc_checksum();
         if (!dump_meta(metapath))
         {
+          log_kyoto_info("dump_meta for metapath failed", _KCCODELINE_);
           file_.close();
           return false;
         }
         std::memset(opaque_, 0, sizeof(opaque_));
         if (autosync_ && !File::synchronize_whole())
         {
+          log_kyoto_info("synchronizing the file system failed", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, "synchronizing the file system failed");
           file_.close();
           return false;
@@ -898,6 +908,7 @@ namespace kyotocabinet
         }
         if (!load_meta(metapath))
         {
+          log_kyoto_info("load_meta failed", _KCCODELINE_);
           file_.close();
           return false;
         }
@@ -905,6 +916,7 @@ namespace kyotocabinet
         uint8_t chksum = calc_checksum();
         if (chksum != chksum_)
         {
+          log_kyoto_info("invalid module checksum", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::INVALID, "invalid module checksum");
           report(_KCCODELINE_, Logger::WARN, "saved=%02X calculated=%02X",
                  (unsigned)chksum_, (unsigned)chksum);
@@ -924,6 +936,7 @@ namespace kyotocabinet
             const std::string &buf = format_magic(count_, size_);
             if (!File::write_file(magicpath, buf.c_str(), buf.size()))
             {
+              log_kyoto_info("writing file failed", _KCCODELINE_);
               set_error(_KCCODELINE_, Error::SYSTEM, "writing a file failed");
               file_.close();
               return false;
@@ -940,6 +953,7 @@ namespace kyotocabinet
       }
       if (writer_ && !file_.truncate(0))
       {
+        log_kyoto_info("file truncate failed", _KCCODELINE_);
         set_error(_KCCODELINE_, Error::SYSTEM, file_.error());
         file_.close();
         return false;
