@@ -72,7 +72,8 @@ int kc_main()
   {
 
 #ifdef USE_SGX
-    printf("cannot traverse records well in sgx atm, TODO :-)\n");
+    //printf("cannot traverse records well in sgx atm, TODO :-)\n");
+    printf("Key %s: Value: %s\n", ckey, cvalue);
 #else
     cout << ckey << ":" << cvalue << endl;
 #endif
