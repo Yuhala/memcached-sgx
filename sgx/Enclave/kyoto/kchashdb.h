@@ -651,6 +651,7 @@ namespace kyotocabinet
     bool accept(const char *kbuf, size_t ksiz, Visitor *visitor, bool writable = true)
     {
       _assert_(kbuf && ksiz <= MEMMAXSIZ && visitor);
+      //todo: fix locks
       mlock_.lock_reader();
       if (omode_ == 0)
       {
@@ -1072,7 +1073,7 @@ namespace kyotocabinet
 
       lsiz_ = roff_;
       lsiz_.set(roff_);
-      
+
       if (lsiz_ != roff_)
       {
         printf("still not equal ???  >>>\n");

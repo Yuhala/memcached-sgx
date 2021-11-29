@@ -483,7 +483,7 @@ namespace kyotocabinet
 
     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
-    return false;
+    return true;
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_) || defined(_SYS_CYGWIN_) || defined(_SYS_MACOSX_)
     _assert_(sec >= 0.0);
@@ -851,15 +851,16 @@ namespace kyotocabinet
 */
   }
 
-  /**
+  /*
  * Try to get the lock.
+ * Pyuhala: get the lock by force :) u will be reading/writing alone
  */
   bool SpinLock::lock_try()
   {
 
     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
-    return false;
+    return true;
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
     _assert_(true);
@@ -1239,7 +1240,11 @@ namespace kyotocabinet
   {
     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
-    return false;
+    /**
+     * PYuhala: for enclave tests, we will have 1 writer per db.
+     * So return true;
+     */
+    return true;
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
     _assert_(true);
@@ -1286,7 +1291,10 @@ namespace kyotocabinet
   {
     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
-    return false;
+    /**
+     * PYuhala: for enclave tests, we will have 1 reader per db
+     */
+    return true;
 
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
@@ -1667,7 +1675,7 @@ namespace kyotocabinet
   {
     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
-    return false;
+    return true;
     /*
     _assert_(true);
     SpinRWLockCore *core = (SpinRWLockCore *)opq_;
@@ -1721,7 +1729,7 @@ namespace kyotocabinet
   {
     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
-    return false;
+    return true;
     /*
     _assert_(true);
     SpinRWLockCore *core = (SpinRWLockCore *)opq_;
@@ -1767,7 +1775,7 @@ namespace kyotocabinet
   {
     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
-    return false;
+    return true;
 
     /*
     _assert_(true);
@@ -2312,7 +2320,7 @@ namespace kyotocabinet
   {
     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
-    return false;
+    return true;
     /*
 #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
     _assert_(mutex && sec >= 0);
