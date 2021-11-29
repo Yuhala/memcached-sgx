@@ -11,5 +11,6 @@
 //APIs for running/testing kyoto dbs
 
 int kc_main();
+void kc_set_bench(int numRecords, int tid);
 
 #endif /* KC_MAIN_H */
