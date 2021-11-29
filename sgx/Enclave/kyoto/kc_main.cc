@@ -9,6 +9,7 @@
 //#include "kctextdb.h"
 
 #include "kyoto_logger_in.h"
+#include "kc_main.h"
 
 using namespace std;
 using namespace kyotocabinet;
@@ -16,8 +17,8 @@ using namespace kyotocabinet;
 //forward declarations
 int kc_main();
 void traverse_db();
-int
-    HashDB db;
+
+HashDB db;
 
 // main routine
 
@@ -31,7 +32,7 @@ int main()
 int kc_main()
 {
 
-  kc_set_bench(10);
+  kc_set_bench(10,0);
 
   // create the database object
   int num_records = 10;
@@ -123,8 +124,9 @@ void kc_set_bench(int numRecords, int tid)
   const char dbName[16];
   snprintf(dbName, 16, "kyotoDB_%d", tid);
 
+  HashDB myDb;
   // open the database
-  if (!db.open(dbName, HashDB::OWRITER | HashDB::OCREATE | HashDB::OAUTOSYNC))
+  if (!myDb.open(dbName, HashDB::OWRITER | HashDB::OCREATE | HashDB::OAUTOSYNC))
   {
     //cerr << "open error: " << db.error().name() << endl;
     log_kyoto_info("open error", _KCCODELINE_);
@@ -137,7 +139,7 @@ void kc_set_bench(int numRecords, int tid)
     const char key[16];
     snprintf(key, 16, "kyoto_key_%d", i);
     snprintf(value, 16, "kyoto_value_%d", i);
-    if (!db.set(key, value))
+    if (!myDb.set(key, value))
     {
       log_kyoto_info("set error", _KCCODELINE_);
     }
