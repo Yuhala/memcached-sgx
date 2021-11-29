@@ -25,6 +25,8 @@ int kc_main()
   // create the database object
   HashDB db;
 
+  int num_records = 10;
+
   printf(">>>>>>>>  kyoto hashdb test >>>>>>>>\n");
 
   // open the database
@@ -41,6 +43,18 @@ int kc_main()
   {
     //cerr << "set error: " << db.error().name() << endl;
     log_kyoto_info("set error", _KCCODELINE_);
+  }
+
+  for (int i = 0; i < num_records; i++)
+  {
+    const char value[16];
+    const char key[16];
+    snprintf(key, 16, "kyoto_key_%d", i);
+    snprintf(value, 16, "kyoto_value_%d", i);
+    if (!db.set(key, value))
+    {
+      log_kyoto_info("set error", _KCCODELINE_);
+    }
   }
 
   // retrieve a record

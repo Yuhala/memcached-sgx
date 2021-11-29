@@ -1541,7 +1541,7 @@ namespace kyotocabinet
    */
     bool set(const char *kbuf, size_t ksiz, const char *vbuf, size_t vsiz)
     {
-      log_kyoto_info(" ---- kcdb setting key: ----", _KCCODELINE_);
+      //log_kyoto_info(" ---- kcdb setting key: ----", _KCCODELINE_);
       _assert_(kbuf && ksiz <= MEMMAXSIZ && vbuf && vsiz <= MEMMAXSIZ);
       class VisitorImpl : public Visitor
       {
