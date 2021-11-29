@@ -33,6 +33,7 @@ int kc_main()
 {
 
   kc_set_bench(10,0);
+  return 0;
 
   // create the database object
   int num_records = 10;
@@ -122,7 +123,7 @@ void kc_set_bench(int numRecords, int tid)
 {
   //create the db
   const char dbName[16];
-  snprintf(dbName, 16, "kyotoDB_%d", tid);
+  snprintf(dbName, 16, "kyotoDB_%d.kcd", tid);
 
   HashDB myDb;
   // open the database

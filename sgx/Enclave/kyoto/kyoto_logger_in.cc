@@ -17,7 +17,7 @@
 //pyuhala: custom logging
 #define KC_LOGGER_IN 1
 
-#undef KC_LOGGER_IN
+//#undef KC_LOGGER_IN
 
 void log_kyoto_routine(const char *func)
 {
