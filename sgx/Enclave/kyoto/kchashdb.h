@@ -1066,6 +1066,11 @@ namespace kyotocabinet
         calc_meta();
         reorg_ = true;
       }
+      /**
+       * Forcing lsiz = roff: debugging
+       */
+      lsiz_ = roff_;
+      
       if (type_ == 0 || apow_ > MAXAPOW || fpow_ > MAXFPOW ||
           bnum_ < 1 || count_ < 0 || lsiz_ < roff_)
       {
