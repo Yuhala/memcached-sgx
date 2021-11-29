@@ -14,6 +14,9 @@ void zc_fwrite_switchless(zc_req *request);
 void zc_fread_switchless(zc_req *request);
 void zc_fseeko_switchless(zc_req *request);
 
+int zc_fsync_switchless(zc_req *request);
+void zc_sync_switchless(zc_req *request);
+int zc_ftruncate64_switchless(zc_req *request);
 // NET
 void zc_sendmsg_switchless(zc_req *request);
 void zc_transmit_prepare(zc_req *request);

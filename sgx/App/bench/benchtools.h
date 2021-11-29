@@ -43,6 +43,7 @@ double get_SD(std::vector<double> &vect);
 double time_diff(timespec *start, timespec *stop, granularity gran);
 void start_clock();
 void stop_clock();
-void registerKissResults(int numKeys, double runTime);
+void register_results(const char *path, int numKeys, double runTime);
+void register_results(const char *path, int numKeys, double runTime, double tput);
 
 #endif /* BENCHTOOLS_H */

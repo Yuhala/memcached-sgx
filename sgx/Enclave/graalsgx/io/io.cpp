@@ -55,7 +55,18 @@ void sgx_exit()
 void sync(void)
 {
     GRAAL_SGX_INFO();
-    ocall_sync();
+
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
+    {
+
+        zc_sync(index);
+    }
+    else
+    {
+        ocall_sync();
+    }
 }
 
 int syncfs(int fd)
@@ -65,16 +76,23 @@ int syncfs(int fd)
     ocall_syncfs(&ret, fd);
     return ret;
 }
+
 int fsync(int fd)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    ocall_fsync(&ret, fd);
-    /* log_ocall(FN_TOKEN_FSYNC);
-    if (should_be_switchless(FN_TOKEN_FSYNC))
-        ret = fsync_switchless(fd);
+
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
+    {
+
+        ret = zc_fsync(fd, index);
+    }
     else
-        ocall_fsync(&ret, fd); */
+    {
+        ocall_fsync(&ret, fd);
+    }
     return ret;
 }
 
@@ -479,7 +497,7 @@ int fstat(int fd, struct stat *buf)
     GRAAL_SGX_INFO();
     int fstat_ret;
     void *ret;
-    ocall_fstat(&ret,fd, &fstat_ret);
+    ocall_fstat(&ret, fd, &fstat_ret);
     struct stat *ret_buf = (struct stat *)ret;
     copy_stats(buf, ret_buf);
     return fstat_ret;
@@ -527,7 +545,18 @@ int ftruncate64(int fd, off_t length)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    ocall_ftruncate64(&ret, fd, length);
+
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
+    {
+
+        ret = zc_ftruncate64(fd, length, index);
+    }
+    else
+    {
+        ocall_ftruncate64(&ret, fd, length);
+    }
     return ret;
 }
 
@@ -869,7 +898,6 @@ int fcntl(int fd, int cmd, ... /* arg */)
     case F_SETLKW:
         flarg = va_arg(ap, struct flock *);
 
-        
         status = ocall_fcntl3(&retval, fd, cmd, flarg, sizeof(struct flock));
         CHECK_STATUS(status);
         return retval;

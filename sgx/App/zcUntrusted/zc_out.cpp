@@ -578,6 +578,16 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
         zc_transmit_prepare(request);
         break;
 
+    case ZC_FSYNC:
+        zc_fsync_switchless(request);
+        break;
+    case ZC_SYNC:
+        zc_sync_switchless(request);
+        break;
+    case ZC_FTRUNCATE64:
+        zc_ftruncate64_switchless(request);
+        break;
+
     case ZC_TEST:
         zc_test_switchless(request);
         break;

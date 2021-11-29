@@ -166,6 +166,8 @@ void runKissdbBench(int num_runs);
 void runTestMulti(int num_runs);
 void run_zc_micro(int num_runs);
 void run_kyoto_bench();
+void remove_kc_dbs();
+void run_kyoto_bench(int numRuns);
 
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
@@ -363,15 +365,21 @@ void destroy_switchless(void)
 {
 }
 
-void run_kyoto_bench()
-{
-    ecall_read_kyoto(global_eid, 0, 0);
-}
-
 void removeKissDbs()
 {
     //printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
     int ret = system("rm kissdb*");
+    //WEXITSTATUS(ret);
+    ZC_ASSERT(!ret);
+}
+
+/**
+ * remove all kyoto cabinet dbs
+ */
+void remove_kc_dbs()
+{
+    //printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
+    int ret = system("rm *.kcd");
     //WEXITSTATUS(ret);
     ZC_ASSERT(!ret);
 }
@@ -385,6 +393,9 @@ void remove_zc_files()
 
 void runTestMulti(int num_runs)
 {
+
+    char path[20];
+    snprintf(path, 20, "testmulti_results.csv");
 
     int min = 5000;
     int max = 80000;
@@ -410,13 +421,13 @@ void runTestMulti(int num_runs)
         }
         avg_runtime = total_runtime / num_runs;
 
-        registerKissResults(i, avg_runtime);
+        register_results(path, i, avg_runtime);
         printf(">>>>>>>>>>>>>>>>> test multi %d: COMPLETE >>>>>>>>>>>>>>>>>\n", i);
     }
     printf(">>>>>>>>>>>>>>>>> test multi bench END >>>>>>>>>>>>>>>>>\n");
 }
 
-void runKissdbBench(int num_runs)
+void runKissdbBench(int numRuns)
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
     int min_keys = 10;
@@ -427,32 +438,74 @@ void runKissdbBench(int num_runs)
     //write_keys(numKeys, numWriters);
     //bool test = (numReaders == numWriters);
 
+    char path[20];
+    snprintf(path, 20, "kissdb_results.csv");
+
     //ZC_ASSERT(test);
 
-    double total_runtime;
-    double avg_runtime;
+    double totalRuntime;
+    double avgRuntime;
 
     for (int i = min_keys; i <= max_keys; i += step)
     {
 
-        total_runtime = 0;
-        avg_runtime = 0;
-        for (int j = 0; j < num_runs; j++)
+        totalRuntime = 0;
+        avgRuntime = 0;
+        for (int j = 0; j < numRuns; j++)
         {
             //printf("<--------------------- running test multi ----------------------->\n", i);
             start_clock();
             write_keys(i, numWriters);
             //read_keys(i, numReaders);
             stop_clock();
-            total_runtime += time_diff(&start, &stop, SEC);
+            totalRuntime += time_diff(&start, &stop, SEC);
             removeKissDbs();
         }
-        avg_runtime = total_runtime / num_runs;
+        avgRuntime = totalRuntime / numRuns;
 
-        registerKissResults(i, avg_runtime);
+        register_results(path, i, avgRuntime);
         printf(">>>>>>>>>>>>>>>>> kissdb bench: PUT %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
     }
     printf(">>>>>>>>>>>>>>>>> kissdb bench END >>>>>>>>>>>>>>>>>\n");
+}
+
+void run_kyoto_bench(int numRuns)
+{
+
+    char path[20];
+    snprintf(path, 20, "kyoto_results.csv");
+
+    printf(">>>>>>>>>>>>>>>>> kyoto bench START >>>>>>>>>>>>>>>>>\n");
+    int minKeys = 10;
+    int maxKeys = 100;
+    int step = 10;
+    int numWriters = 2;
+
+    double totalRuntime;
+    double avgRuntime;
+    double tput;
+
+    for (int i = minKeys; i <= maxKeys; i += step)
+    {
+
+        totalRuntime = 0;
+        avgRuntime = 0;
+        for (int j = 0; j < numRuns; j++)
+        {
+            //printf("<--------------------- running test multi ----------------------->\n", i);
+            start_clock();
+            write_keys(i, numWriters);
+            stop_clock();
+            totalRuntime += time_diff(&start, &stop, SEC);
+            remove_kc_dbs();
+        }
+        avgRuntime = totalRuntime / numRuns;
+        tput = i / avgRuntime; // ops/sec
+
+        register_results(path, i, avgRuntime, tput);
+        printf(">>>>>>>>>>>>>>>>> kyoto bench: SET %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
+    }
+    printf(">>>>>>>>>>>>>>>>> kyoto bench END >>>>>>>>>>>>>>>>>\n");
 }
 
 /**
@@ -468,6 +521,9 @@ void run_zc_micro(int num_runs)
     int numReaders = 2;
     //write_keys(numKeys, numWriters);
     //bool test = (numReaders == numWriters);
+
+    char path[20];
+    snprintf(path, 20, "zc_micro_results.csv");
 
     //ZC_ASSERT(test);
 
@@ -491,7 +547,7 @@ void run_zc_micro(int num_runs)
         }
         avg_runtime = total_runtime / num_runs;
 
-        registerKissResults(i, avg_runtime);
+        register_results(path, i, avg_runtime);
         printf(">>>>>>>>>>>>>>>>> zc micro bench: writing %d lines COMPLETE >>>>>>>>>>>>>>>>>\n", i);
     }
     printf(">>>>>>>>>>>>>>>>> zc micro bench END >>>>>>>>>>>>>>>>>\n");
@@ -517,7 +573,7 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 3; //get_nprocs() / 2;
+    int num_sl_workers = 2; //get_nprocs() / 2;
 
     if (argc == 3)
     {
@@ -601,7 +657,7 @@ int main(int argc, char *argv[])
     //init_memcached(num_mcd_workers);
     //runKissdbBench(1);
     //run_zc_micro(1);
-    run_kyoto_bench();
+    run_kyoto_bench(1);
 
     //return 0;
 

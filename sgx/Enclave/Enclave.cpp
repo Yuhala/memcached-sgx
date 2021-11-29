@@ -87,7 +87,6 @@ void write_micro(int num_writes, int storeId);
 
 void runTestMulti(int n);
 
-
 /**
  * pyuhala: generic ecall for testing enclave routines.
  * E.g after writing a new function you can call it in here
@@ -97,30 +96,19 @@ void runTestMulti(int n);
 void ecall_test()
 {
     // replace with your custom test routine
-    
 }
 
+void ecall_read_kyoto(int numKeys, int readerId)
+{
+    //todo
+}
 
-
-
-void ecall_read_kyoto(int numKeys,int readerId)
+void ecall_write_kyotodb(int numKeys, int writerId)
 {
 
-    printf("----------- reading kyoto ----------\n");
-    kc_main();
-   
+    printf("------------ writing kyoto: %d kv pairs in store %d \n--------\n", numKeys, writerId);
+    kc_set_bench(numKeys, writerId);
 }
-
-void ecall_write_kyoto(int numKeys,int writerId)
-{
-
-    printf("------------ writing kyto --------\n");
-    
-}
-
-
-
-
 
 void ecall_undef_stack_protector()
 {
@@ -256,7 +244,6 @@ void test_routine(int n)
         printf("Test routine: %d\n", i);
     }
 }
-
 
 void readKissdb(int n, int storeId)
 {

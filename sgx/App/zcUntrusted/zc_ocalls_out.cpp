@@ -90,3 +90,18 @@ void zc_test_switchless(zc_req *request)
     ((test_arg_zc *)request->args)->ret = ocall_test(((test_arg_zc *)request->args)->a,
                                                      ((test_arg_zc *)request->args)->b);
 }
+
+int zc_fsync_switchless(zc_req *request)
+{
+
+    ((fsync_arg_zc *)request->args)->ret = ocall_fsync(((fsync_arg_zc *)request->args)->fd);
+}
+void zc_sync_switchless(zc_req *request)
+{
+    ocall_sync();
+}
+int zc_ftruncate64_switchless(zc_req *request)
+{
+    ((ftruncate64_arg_zc *)request->args)->ret = ocall_ftruncate64(((ftruncate64_arg_zc *)request->args)->fd,
+                                                                   ((ftruncate64_arg_zc *)request->args)->length);
+}

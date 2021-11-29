@@ -115,11 +115,18 @@ double time_diff(timespec *start, timespec *stop, granularity gran)
 /**
  * Some benchmark specific routines.
  */
-void registerKissResults(int numKeys, double runTime)
+void register_results(const char *path, int numKeys, double runTime, double tput)
 {
-    char buf[20];
-    snprintf(buf, 20, "results_kissdb.csv");
-    FILE *fptr = fopen(buf, "ab+");
+
+    FILE *fptr = fopen(path, "ab+");
+    fprintf(fptr, "%d, %f\n", numKeys, runTime, tput);
+    fclose(fptr);
+}
+
+void register_results(const char *path, int numKeys, double runTime)
+{
+
+    FILE *fptr = fopen(path, "ab+");
     fprintf(fptr, "%d, %f\n", numKeys, runTime);
     fclose(fptr);
 }

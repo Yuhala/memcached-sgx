@@ -21,6 +21,11 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
 size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_index);
 int zc_fseeko(SGX_FILE stream, off_t offset, int whence, int pool_index);
 
+// for kyoto cabinet
+int zc_fsync(int fd, int pool_index);
+void zc_sync(int pool_index);
+int zc_ftruncate64(int fd, off_t length, int pool_index);
+
 // net
 ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags, int pool_index);
 void *zc_transmit_prepare(int pool_index);

@@ -76,4 +76,6 @@ void showOcallLog(int num)
             break;
         }
     }
+    int total = accumulate(vect.begin(), vect.end(), 0);
+    printf("Total ocalls: %d \n", total);
 }

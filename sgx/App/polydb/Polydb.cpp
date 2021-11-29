@@ -66,7 +66,7 @@ void *writer_thread(void *input)
     int id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
     //pthread_mutex_unlock(&lock);
    
-    ecall_writeKissdb(global_eid, n, id);
+    ecall_write_kyotodb(global_eid, n, id);
 }
 
 /**

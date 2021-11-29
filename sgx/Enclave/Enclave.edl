@@ -79,8 +79,8 @@ enclave {
        public void ecall_run_main(int id);
 
        
-       public void ecall_read_kyoto(int n,int id);
-       public void ecall_write_kyoto(int n, int id);
+       public void ecall_read_kyoto(int n,int storeId);
+       public void ecall_write_kyotodb(int n, int storeId);
        public void ecall_kissdb_test();
        public void ecall_readKissdb(int n, int storeId);
        public void ecall_writeKissdb(int n, int storeId);

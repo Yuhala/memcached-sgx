@@ -270,3 +270,86 @@ int zc_test(int a, int b, int pool_index)
     //printf("---------------zc fread ret: %d ---------------------\n", ret);
     return ret;
 }
+
+int zc_fsync(int fd, int pool_index)
+{
+    log_zc_routine(__func__);
+    // allocate memory for args
+    fsync_arg_zc *arg = (fsync_arg_zc *)zc_malloc(pool_index, sizeof(fsync_arg_zc));
+    // copy args from enclave to untrusted memory
+    arg->fd = fd;
+
+    // do request
+    zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
+    request->args = (void *)arg;
+    request->func_name = ZC_FSYNC;
+    request->is_done = 0;
+
+    do_zc_switchless_request(request, pool_index);
+
+    // copy response to enclave if needed
+
+    // release worker/memory pool
+    release_worker(pool_index);
+    //request->req_status = STALE_REQUEST;
+
+    // return
+    int ret = ((fsync_arg_zc *)request->args)->ret;
+    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    return ret;
+}
+void zc_sync(int pool_index)
+{
+    log_zc_routine(__func__);
+    // allocate memory for args
+    sync_arg_zc *arg = (sync_arg_zc *)zc_malloc(pool_index, sizeof(sync_arg_zc));
+    // copy args from enclave to untrusted memory
+    // no args for sync: syncs all file descriptors
+
+    // do request
+    zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
+    request->args = (void *)arg;
+    request->func_name = ZC_SYNC;
+    request->is_done = 0;
+
+    do_zc_switchless_request(request, pool_index);
+
+    // copy response to enclave if needed
+
+    // release worker/memory pool
+    release_worker(pool_index);
+    //request->req_status = STALE_REQUEST;
+
+    // return
+    //int ret = ((sync_arg_zc *)request->args)->ret;
+    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    //return ret;
+}
+int zc_ftruncate64(int fd, off_t length, int pool_index)
+{
+    log_zc_routine(__func__);
+    // allocate memory for args
+    ftruncate64_arg_zc *arg = (ftruncate64_arg_zc *)zc_malloc(pool_index, sizeof(ftruncate64_arg_zc));
+    // copy args from enclave to untrusted memory
+    arg->fd = fd;
+    arg->length = length;
+
+    // do request
+    zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
+    request->args = (void *)arg;
+    request->func_name = ZC_FTRUNCATE64;
+    request->is_done = 0;
+
+    do_zc_switchless_request(request, pool_index);
+
+    // copy response to enclave if needed
+
+    // release worker/memory pool
+    release_worker(pool_index);
+    //request->req_status = STALE_REQUEST;
+
+    // return
+    int ret = ((ftruncate64_arg_zc *)request->args)->ret;
+    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    return ret;
+}

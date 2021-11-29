@@ -119,6 +119,24 @@ struct test_arg
     int ret;
 };
 
+struct fsync_arg
+{
+    int fd;
+    int ret;
+};
+
+struct sync_arg
+{
+    int ret;
+};
+
+struct ftruncate64_arg
+{
+    int fd;
+    off_t length;
+    int ret;
+};
+
 //Type definitions
 typedef struct fread_arg fread_arg_zc;
 typedef struct fwrite_arg fwrite_arg_zc;
@@ -130,6 +148,10 @@ typedef struct transmit_prepare_arg transmit_prepare_arg_zc;
 
 typedef struct test_arg test_arg_zc;
 
+typedef struct fsync_arg fsync_arg_zc;
+typedef struct sync_arg sync_arg_zc;
+typedef struct ftruncate64_arg ftruncate64_arg_zc;
+
 //Special types for each zc switchless routine
 enum zc_routine
 {
@@ -140,6 +162,9 @@ enum zc_routine
     ZC_SENDMSG,
     ZC_TRANSMIT_PREPARE,
     ZC_FSEEKO,
+    ZC_FSYNC,
+    ZC_SYNC,
+    ZC_FTRUNCATE64,
     ZC_TEST
 };
 typedef enum zc_routine zc_routine;
@@ -262,7 +287,7 @@ typedef enum
     PROCESSING,
     WAITING,
     PAUSED, /* pause worker */
-    DONE, /* state immediately after a caller completes its request */
+    DONE,   /* state immediately after a caller completes its request */
     EXIT,
     INACTIVE /* pool status at start of program */
 
