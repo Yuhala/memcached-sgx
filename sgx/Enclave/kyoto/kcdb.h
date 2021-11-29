@@ -1620,6 +1620,12 @@ namespace kyotocabinet
         set_error(_KCCODELINE_, Error::DUPREC, "record duplication");
         return false;
       }
+
+      /**
+       * pyuhala: synchronize the whole file system; we do this intentionally 
+       * to induce greater ocalls.
+       */
+      //File::synchronize(true); need object to call this
       return true;
     }
     /**
@@ -1849,7 +1855,7 @@ namespace kyotocabinet
    */
     double increment_double(const char *kbuf, size_t ksiz, double num, double orig = 0)
     {
-      
+
       _assert_(kbuf && ksiz <= MEMMAXSIZ);
       class VisitorImpl : public Visitor
       {
