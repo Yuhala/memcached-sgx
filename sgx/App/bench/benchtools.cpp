@@ -119,7 +119,7 @@ void register_results(const char *path, int numKeys, double runTime, double tput
 {
 
     FILE *fptr = fopen(path, "ab+");
-    fprintf(fptr, "%d, %f\n", numKeys, runTime, tput);
+    fprintf(fptr, "%d, %f, %f\n", numKeys, runTime, tput);
     fclose(fptr);
 }
 
