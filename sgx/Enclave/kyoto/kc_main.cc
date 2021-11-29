@@ -1,3 +1,8 @@
+/*
+ * Created on Mon Nov 29 2021
+ *
+ * Copyright (c) 2021 Peterson Yuhala, IIUN
+ */
 
 
 #include "kchashdb.h"
@@ -11,6 +16,8 @@ using namespace kyotocabinet;
 
 //forward declarations
 int kc_main();
+void traverse_db();
+HashDB db;
 
 // main routine
 
@@ -24,7 +31,7 @@ int main()
 int kc_main()
 {
   // create the database object
-  HashDB db;
+
 
   int num_records = 10;
 
@@ -37,7 +44,6 @@ int kc_main()
     log_kyoto_info("open error", _KCCODELINE_);
   }
 
-  
   for (int i = 0; i < num_records; i++)
   {
     const char value[16];
@@ -71,6 +77,24 @@ int kc_main()
 #endif
   }
 
+  traverse_db();
+
+  // close the database
+  if (!db.close())
+  {
+
+#ifdef USE_SGX
+    log_kyoto_info("close error", _KCCODELINE_);
+#else
+    cerr << "close error: " << db.error().name() << endl;
+#endif
+  }
+
+  return 0;
+}
+
+void traverse_db()
+{
   // traverse records
   DB::Cursor *cur = db.cursor();
   cur->jump();
@@ -86,17 +110,4 @@ int kc_main()
 #endif
   }
   delete cur;
-
-  // close the database
-  if (!db.close())
-  {
-
-#ifdef USE_SGX
-    log_kyoto_info("close error", _KCCODELINE_);
-#else
-    cerr << "close error: " << db.error().name() << endl;
-#endif
-  }
-
-  return 0;
 }
