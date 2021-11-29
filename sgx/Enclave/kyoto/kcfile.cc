@@ -487,7 +487,7 @@ namespace kyotocabinet
       {
         if (errno != EINTR)
         {
-          log_kyoto_error("fcntl failed", __func__);
+          log_kyoto_info("fcntl failed", _KCCODELINE_);         
           seterrmsg(core, "fcntl failed");
           ::close(fd);
           return false;
@@ -497,14 +497,14 @@ namespace kyotocabinet
     struct ::stat sbuf;
     if (fstat(fd, &sbuf) != 0)
     {
-      log_kyoto_error("fstat failed", __func__);
+      log_kyoto_info("fstat failed", _KCCODELINE_);
       seterrmsg(core, "fstat failed");
       ::close(fd);
       return false;
     }
     if (!S_ISREG(sbuf.st_mode))
     {
-      log_kyoto_error("not a regular file", __func__);
+      log_kyoto_info("not a regular file", _KCCODELINE_);
       seterrmsg(core, "not a regular file");
       ::close(fd);
       return false;

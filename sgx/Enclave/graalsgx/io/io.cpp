@@ -17,6 +17,9 @@
 #include "ocall_manager.h"
 #include "zcTrusted/zc_in.h"
 
+//forward declarations
+void copy_stats(struct stat *dest, struct stat *src);
+
 void empty(int repeats)
 {
     //log_ocall(FN_TOKEN_EMPTY);
@@ -24,6 +27,23 @@ void empty(int repeats)
         empty_switchless(repeats);
     else
         ocall_empty(repeats);
+}
+
+void copy_stats(struct stat *dest, struct stat *src)
+{
+    dest->st_dev = src->st_dev;
+    dest->st_ino = src->st_ino;
+    dest->st_mode = src->st_mode;
+    dest->st_nlink = src->st_nlink;
+    dest->st_uid = src->st_uid;
+    dest->st_gid = src->st_gid;
+    dest->st_rdev = src->st_rdev;
+    dest->st_size = src->st_size;
+    dest->st_blksize = src->st_blksize;
+    dest->st_blocks = src->st_blocks;
+    dest->st_atim = src->st_atim;
+    dest->st_mtim = src->st_mtim;
+    dest->st_ctim = src->st_ctim;
 }
 
 void sgx_exit()
@@ -429,9 +449,12 @@ int __fxstat(int ver, int fd, struct stat *stat_buf)
 int fstat64(int fd, struct stat *buf)
 {
     GRAAL_SGX_INFO();
-    int ret;
-    ocall_fstat64(&ret, fd, buf);
-    return ret;
+    int fstat_ret;
+    void *ret;
+    ocall_fstat64(&ret, fd, &fstat_ret);
+    struct stat *ret_buf = (struct stat *)ret;
+    copy_stats(buf, ret_buf);
+    return fstat_ret;
 }
 int __fxstat64(int ver, int fd, struct stat *stat_buf)
 {
@@ -444,23 +467,32 @@ int __fxstat64(int ver, int fd, struct stat *stat_buf)
 int stat(const char *path, struct stat *buf)
 {
     GRAAL_SGX_INFO();
-    int ret;
-    ocall_stat(&ret, path, buf);
-    return ret;
+    void *ret;
+    int stat_ret;
+    ocall_stat(&ret, path, &stat_ret);
+    struct stat *ret_buf = (struct stat *)ret;
+    copy_stats(buf, ret_buf);
+    return stat_ret;
 }
 int fstat(int fd, struct stat *buf)
 {
     GRAAL_SGX_INFO();
-    int ret;
-    ocall_fstat(&ret, fd, buf);
-    return ret;
+    int fstat_ret;
+    void *ret;
+    ocall_fstat(&ret,fd, &fstat_ret);
+    struct stat *ret_buf = (struct stat *)ret;
+    copy_stats(buf, ret_buf);
+    return fstat_ret;
 }
 int lstat(const char *path, struct stat *buf)
 {
     GRAAL_SGX_INFO();
-    int ret;
-    ocall_lstat(&ret, path, buf);
-    return ret;
+    void *ret;
+    int lstat_ret;
+    ocall_lstat(&ret, path, &lstat_ret);
+    struct stat *ret_buf = (struct stat *)ret;
+    copy_stats(buf, ret_buf);
+    return lstat_ret;
 }
 
 char *getenv(const char *name)
@@ -836,6 +868,8 @@ int fcntl(int fd, int cmd, ... /* arg */)
     case F_GETLK:
     case F_SETLKW:
         flarg = va_arg(ap, struct flock *);
+
+        
         status = ocall_fcntl3(&retval, fd, cmd, flarg, sizeof(struct flock));
         CHECK_STATUS(status);
         return retval;

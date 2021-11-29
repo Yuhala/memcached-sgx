@@ -62,6 +62,11 @@ void ocall_empty(int repeats)
         asm volatile("pause");
 }
 
+void copy_stat_buf()
+{
+    //todo
+}
+
 //DIR *getDir(const char*)
 int ocall_fsync(int fd)
 {
@@ -108,26 +113,37 @@ int ocall_ioctl(int fd, unsigned long request, int arg)
     return ioctl(fd, request, arg);
 }
 
-int ocall_stat(const char *path, struct stat *buf)
+void *ocall_stat(const char *path, int *stat_ret)
 {
     log_ocall(__func__);
-    return stat(path, buf);
-}
-int ocall_fstat(int fd, struct stat *buf)
-{
-    log_ocall(__func__);
-    return fstat(fd, buf);
-}
-int ocall_lstat(const char *path, struct stat *buf)
-{
-    log_ocall(__func__);
-    return lstat(path, buf);
+    struct stat *buf = (struct stat *)malloc(sizeof(struct stat));
+    *stat_ret = stat(path, buf);
+    return (void *)buf;
 }
 
-int ocall_fstat64(int fd, struct stat *buf)
+void *ocall_fstat(int fd, int *fstat_ret)
 {
     log_ocall(__func__);
-    return fstat64(fd, (struct stat64 *)buf);
+    struct stat *buf = (struct stat *)malloc(sizeof(struct stat));
+    *fstat_ret = fstat(fd, buf);
+    return (void *)buf;
+}
+
+void *ocall_lstat(const char *path, int *lstat_ret)
+{
+    log_ocall(__func__);
+    struct stat *buf = (struct stat *)malloc(sizeof(struct stat));
+    *lstat_ret = lstat(path, buf);
+    return (void *)buf;
+}
+
+void *ocall_fstat64(int fd, int *fstat_ret)
+{
+    log_ocall(__func__);
+
+    struct stat *buf = (struct stat *)malloc(sizeof(struct stat));
+    *fstat_ret = fstat64(fd, (struct stat64 *)buf);
+    return (void *)buf;
 }
 
 int ocall_fxstat64(int ver, int fildes, struct stat *stat_buf)
