@@ -989,9 +989,13 @@ namespace kyotocabinet
         return false;
       }
       if (file_.recovered())
+      {
         report(_KCCODELINE_, Logger::WARN, "recovered by the WAL file");
+      }
+
       if ((mode & OWRITER) && file_.size() < 1)
       {
+        log_kyoto_info("calculated meta for file.size < 1 >>> ", _KCCODELINE_);
         calc_meta();
         libver_ = LIBVER;
         librev_ = LIBREV;
@@ -1000,7 +1004,7 @@ namespace kyotocabinet
         lsiz_ = roff_;
         if (!file_.truncate(lsiz_))
         {
-          log_kyoto_error("file truncate error", __func__);
+          log_kyoto_info("file truncate error", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, file_.error());
 
           file_.close();
@@ -1013,7 +1017,7 @@ namespace kyotocabinet
         }
         if (autosync_ && !File::synchronize_whole())
         {
-          log_kyoto_error("synchronizing the file system failed", __func__);
+          log_kyoto_info("synchronizing the file system failed", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::SYSTEM, "synchronizing the file system failed");
           file_.close();
           return false;
@@ -1028,7 +1032,7 @@ namespace kyotocabinet
       uint8_t chksum = calc_checksum();
       if (chksum != chksum_)
       {
-        log_kyoto_error("invalid module checksum", __func__);
+        log_kyoto_info("invalid module checksum", _KCCODELINE_);
         set_error(_KCCODELINE_, Error::INVALID, "invalid module checksum");
         report(_KCCODELINE_, Logger::WARN, "saved=%02X calculated=%02X",
                (unsigned)chksum_, (unsigned)chksum);
@@ -3086,6 +3090,7 @@ namespace kyotocabinet
    */
     void calc_meta()
     {
+      log_kyoto_info("calculate meta data with saved ones", _KCCODELINE_);
       _assert_(true);
       align_ = 1 << apow_;
       fbpnum_ = fpow_ > 0 ? 1 << fpow_ : 0;
@@ -3208,6 +3213,7 @@ namespace kyotocabinet
    */
     bool load_meta()
     {
+      log_kyoto_info("loading meta data from the file >>>", _KCCODELINE_);
       _assert_(true);
       char head[HEADSIZ];
       if (file_.size() < (int64_t)sizeof(head))
