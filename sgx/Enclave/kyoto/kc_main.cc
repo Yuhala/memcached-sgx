@@ -25,7 +25,7 @@ int kc_main()
   // create the database object
   HashDB db;
 
-  printf(">>>>>>>>  kyoto dirdb test >>>>>>>>\n");
+  printf(">>>>>>>>  kyoto hashdb test >>>>>>>>\n");
 
   // open the database
   if (!db.open("casket.kcd", HashDB::OWRITER | HashDB::OCREATE))

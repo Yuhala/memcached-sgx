@@ -182,7 +182,7 @@ namespace kyotocabinet
         {
           if (!db_->writer_)
           {
-            log_kyoto_error("permission denied",__func__);
+            log_kyoto_error("permission denied", __func__);
             db_->set_error(_KCCODELINE_, Error::NOPERM, "permission denied");
             return false;
           }
@@ -215,7 +215,7 @@ namespace kyotocabinet
           zbuf = db_->comp_->decompress(vbuf, vsiz, &zsiz);
           if (!zbuf)
           {
-            log_kyoto_error("data decompression failed",__func__);
+            log_kyoto_error("data decompression failed", __func__);
             db_->set_error(_KCCODELINE_, Error::SYSTEM, "data decompression failed");
             delete[] rec.bbuf;
             return false;
@@ -1065,7 +1065,12 @@ namespace kyotocabinet
       if (type_ == 0 || apow_ > MAXAPOW || fpow_ > MAXFPOW ||
           bnum_ < 1 || count_ < 0 || lsiz_ < roff_)
       {
-        log_kyoto_error("invalid meta data", __func__);
+
+        log_kyoto_info("invalid meta data: type=0x%02X apow=%d fpow=%d bnum=%lld count=%lld"
+                       " lsiz=%lld fsiz=%lld",
+                       (unsigned)type_, (int)apow_, (int)fpow_, (long long)bnum_,
+                       (long long)count_, (long long)lsiz_, (long long)file_.size(), _KCCODELINE_);
+
         set_error(_KCCODELINE_, Error::BROKEN, "invalid meta data");
         report(_KCCODELINE_, Logger::WARN, "type=0x%02X apow=%d fpow=%d bnum=%lld count=%lld"
                                            " lsiz=%lld fsiz=%lld",
@@ -1076,7 +1081,7 @@ namespace kyotocabinet
       }
       if (file_.size() < lsiz_)
       {
-        log_kyoto_error("inconsistent file size", __func__);
+        log_kyoto_info("inconsistent file size", _KCCODELINE_);
         set_error(_KCCODELINE_, Error::BROKEN, "inconsistent file size");
         report(_KCCODELINE_, Logger::WARN, "lsiz=%lld fsiz=%lld",
                (long long)lsiz_, (long long)file_.size());
