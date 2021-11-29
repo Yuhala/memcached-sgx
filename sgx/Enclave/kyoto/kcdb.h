@@ -1574,6 +1574,7 @@ namespace kyotocabinet
    */
     bool set(const std::string &key, const std::string &value)
     {
+
       _assert_(true);
       return set(key.c_str(), key.size(), value.c_str(), value.size());
     }
@@ -1589,6 +1590,7 @@ namespace kyotocabinet
    */
     bool add(const char *kbuf, size_t ksiz, const char *vbuf, size_t vsiz)
     {
+      log_kyoto_info(" ---- add a record: ----", _KCCODELINE_);
       _assert_(kbuf && ksiz <= MEMMAXSIZ && vbuf && vsiz <= MEMMAXSIZ);
       class VisitorImpl : public Visitor
       {
@@ -1626,6 +1628,7 @@ namespace kyotocabinet
    */
     bool add(const std::string &key, const std::string &value)
     {
+      log_kyoto_info(" ---- set the value of a record: ----", _KCCODELINE_);
       _assert_(true);
       return add(key.c_str(), key.size(), value.c_str(), value.size());
     }
@@ -1641,7 +1644,7 @@ namespace kyotocabinet
    */
     bool replace(const char *kbuf, size_t ksiz, const char *vbuf, size_t vsiz)
     {
-      log_kyoto_info(" ---- kcdirdb replacing key: ----", _KCCODELINE_);
+      log_kyoto_info(" ---- replace the value of a record: ----", _KCCODELINE_);
       _assert_(kbuf && ksiz <= MEMMAXSIZ && vbuf && vsiz <= MEMMAXSIZ);
       class VisitorImpl : public Visitor
       {
@@ -1695,6 +1698,7 @@ namespace kyotocabinet
    */
     bool append(const char *kbuf, size_t ksiz, const char *vbuf, size_t vsiz)
     {
+      log_kyoto_info(" ---- append the value of a record: ----", _KCCODELINE_);
       _assert_(kbuf && ksiz <= MEMMAXSIZ && vbuf && vsiz <= MEMMAXSIZ);
       class VisitorImpl : public Visitor
       {
@@ -1754,6 +1758,7 @@ namespace kyotocabinet
    */
     int64_t increment(const char *kbuf, size_t ksiz, int64_t num, int64_t orig = 0)
     {
+      log_kyoto_info(" ---- Add a number to the numeric value of a record: ----", _KCCODELINE_);
       _assert_(kbuf && ksiz <= MEMMAXSIZ);
       class VisitorImpl : public Visitor
       {

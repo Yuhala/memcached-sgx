@@ -2632,7 +2632,7 @@ namespace kyotocabinet
   {
     //log_kyoto_routine(__func__);
     //kyoto_commented_todo
-    return false;
+    
 
 #if (defined(_SYS_MSVC_) || defined(_SYS_MINGW_)) && defined(_SYS_WIN64_)
     _assert_(true);
