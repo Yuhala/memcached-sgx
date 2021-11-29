@@ -1841,11 +1841,15 @@ namespace kyotocabinet
     if (limit < 0)
       limit = INT64MAX;
     int32_t fd = ::open(path.c_str(), O_RDONLY, FILEPERM);
-    if (fd < 0)
-      return NULL;
+    if (fd < 0){
+      log_kyoto_info("fd < 0 >>>>", _KCCODELINE_);
+       return NULL;
+    }
+     
     struct stat sbuf;
     if (::fstat(fd, &sbuf) == -1 || !S_ISREG(sbuf.st_mode))
     {
+      log_kyoto_info("fstat failed >>>>", _KCCODELINE_);
       ::close(fd);
       return NULL;
     }
