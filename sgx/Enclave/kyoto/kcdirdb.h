@@ -803,13 +803,13 @@ namespace kyotocabinet
       {
         if (!sbuf.isdir)
         {
-          log_kyoto_info("invalide path (not directory)", _KCCODELINE_);
+          log_kyoto_info("invalid path (not directory)", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::NOPERM, "invalid path (not directory)");
           return false;
         }
         if (!File::status(magicpath))
         {
-          log_kyoto_info("invalide magic data", _KCCODELINE_);
+          log_kyoto_info("invalid magic data", _KCCODELINE_);
           set_error(_KCCODELINE_, Error::BROKEN, "invalid magic data");
           return false;
         }
@@ -975,7 +975,7 @@ namespace kyotocabinet
       tmppath_ = tmppath;
       load_opaque();
       trigger_meta(MetaTrigger::OPEN, "open");
-      log_kyoto_info("kcdirdb open success:", __func__);
+      log_kyoto_info(" ---- kcdirdb open success: ----", __func__);
       return true;
     }
     /**
@@ -2017,6 +2017,7 @@ namespace kyotocabinet
       char *buf = File::read_file(metapath, &size, METABUFSIZ);
       if (!buf)
       {
+        log_kyoto_info("reading a file failed", _KCCODELINE_);
         set_error(_KCCODELINE_, Error::SYSTEM, "reading a file failed");
         return false;
       }
@@ -2025,6 +2026,7 @@ namespace kyotocabinet
       std::vector<std::string> elems;
       if (strsplit(str, '\n', &elems) < 7 || elems[6] != KCDDBMAGICEOF)
       {
+        log_kyoto_info("invalid meta data file", _KCCODELINE_);
         set_error(_KCCODELINE_, Error::BROKEN, "invalid meta data file");
         return false;
       }
