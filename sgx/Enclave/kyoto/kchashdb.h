@@ -1068,9 +1068,9 @@ namespace kyotocabinet
         log_kyoto_info("invalid meta data >>>", _KCCODELINE_);
         //todo: make kyoto debug print macro
         printf("invalid meta data: type=0x%02X apow=%d fpow=%d bnum=%lld count=%lld"
-               " lsiz=%lld fsiz=%lld",
+               " lsiz=%lld roff=%d fsiz=%lld",
                (unsigned)type_, (int)apow_, (int)fpow_, (long long)bnum_,
-               (long long)count_, (long long)lsiz_, (long long)file_.size());
+               (long long)count_, (long long)lsiz_, (int)roff_, (long long)file_.size());
 
         set_error(_KCCODELINE_, Error::BROKEN, "invalid meta data");
         report(_KCCODELINE_, Logger::WARN, "type=0x%02X apow=%d fpow=%d bnum=%lld count=%lld"
