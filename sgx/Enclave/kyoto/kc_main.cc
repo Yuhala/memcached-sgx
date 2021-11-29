@@ -26,7 +26,7 @@ int kc_main()
   // create the database object
   HashDB db;
 
-  int num_records = 10;
+  int num_records = 100;
 
   printf(">>>>>>>>  kyoto hashdb test >>>>>>>>\n");
 
