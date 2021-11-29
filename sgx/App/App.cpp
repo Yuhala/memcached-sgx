@@ -476,9 +476,9 @@ void run_kyoto_bench(int numRuns)
     snprintf(path, 20, "kyoto_results.csv");
 
     printf(">>>>>>>>>>>>>>>>> kyoto bench START >>>>>>>>>>>>>>>>>\n");
-    int minKeys = 5000;
-    int maxKeys = 100000;
-    int step = 5000;
+    int minKeys = 500;
+    int maxKeys = 10000;
+    int step = 500;
     int numWriters = 2;
 
     double totalRuntime;
@@ -573,7 +573,7 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 2; //get_nprocs() / 2;
+    int num_sl_workers = get_nprocs() / 2;
 
     if (argc == 3)
     {
