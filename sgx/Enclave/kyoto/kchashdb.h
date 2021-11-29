@@ -1065,11 +1065,12 @@ namespace kyotocabinet
       if (type_ == 0 || apow_ > MAXAPOW || fpow_ > MAXFPOW ||
           bnum_ < 1 || count_ < 0 || lsiz_ < roff_)
       {
-
-        log_kyoto_info("invalid meta data: type=0x%02X apow=%d fpow=%d bnum=%lld count=%lld"
-                       " lsiz=%lld fsiz=%lld",
-                       (unsigned)type_, (int)apow_, (int)fpow_, (long long)bnum_,
-                       (long long)count_, (long long)lsiz_, (long long)file_.size(), _KCCODELINE_);
+        log_kyoto_info("invalid meta data >>>", _KCCODELINE_);
+        //todo: make kyoto debug print macro
+        printf("invalid meta data: type=0x%02X apow=%d fpow=%d bnum=%lld count=%lld"
+               " lsiz=%lld fsiz=%lld",
+               (unsigned)type_, (int)apow_, (int)fpow_, (long long)bnum_,
+               (long long)count_, (long long)lsiz_, (long long)file_.size());
 
         set_error(_KCCODELINE_, Error::BROKEN, "invalid meta data");
         report(_KCCODELINE_, Logger::WARN, "type=0x%02X apow=%d fpow=%d bnum=%lld count=%lld"
