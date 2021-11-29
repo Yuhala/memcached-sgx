@@ -9,6 +9,7 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include <bits/stdc++.h>
+#include <numeric>
 #include <map>
 
 using namespace std;
@@ -76,6 +77,12 @@ void showOcallLog(int num)
             break;
         }
     }
-    int total = accumulate(vect.begin(), vect.end(), 0);
+
+    //calculate totals: use accumulate next time.. pyuhala
+    int total = 0;
+    for (auto &it : vect)
+    {
+        total += it.second;
+    }
     printf("Total ocalls: %d \n", total);
 }
