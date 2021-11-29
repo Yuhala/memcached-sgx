@@ -596,7 +596,7 @@ namespace kyotocabinet
     core->omode = mode;
     core->path.append(path);
 
-    printf(">>>>>>>>>>>>>>> File::open success >>>>>>>>>>>>>>>>>\n");
+    //printf(">>>>>>>>>>>>>>> File::open success >>>>>>>>>>>>>>>>>\n");
     return true;
 #endif
   }
