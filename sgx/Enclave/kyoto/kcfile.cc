@@ -1841,11 +1841,13 @@ namespace kyotocabinet
     if (limit < 0)
       limit = INT64MAX;
     int32_t fd = ::open(path.c_str(), O_RDONLY, FILEPERM);
-    if (fd < 0){
+    printf(" open string path: %s >>>> \n", path.c_str());
+    if (fd < 0)
+    {
       log_kyoto_info("fd < 0 >>>>", _KCCODELINE_);
-       return NULL;
+      return NULL;
     }
-     
+
     struct stat sbuf;
     if (::fstat(fd, &sbuf) == -1 || !S_ISREG(sbuf.st_mode))
     {
