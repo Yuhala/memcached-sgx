@@ -476,9 +476,9 @@ void run_kyoto_bench(int numRuns)
     snprintf(path, 20, "kyoto_results.csv");
 
     printf(">>>>>>>>>>>>>>>>> kyoto bench START >>>>>>>>>>>>>>>>>\n");
-    int minKeys = 10;
-    int maxKeys = 100;
-    int step = 10;
+    int minKeys = 5000;
+    int maxKeys = 100000;
+    int step = 5000;
     int numWriters = 2;
 
     double totalRuntime;
