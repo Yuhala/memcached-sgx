@@ -1069,8 +1069,12 @@ namespace kyotocabinet
       /**
        * Forcing lsiz = roff: debugging
        */
+    
       lsiz_ = roff_;
-      
+      if(lsiz_ != roff_){
+          printf("still not equal ???  >>>\n");
+      }
+
       if (type_ == 0 || apow_ > MAXAPOW || fpow_ > MAXFPOW ||
           bnum_ < 1 || count_ < 0 || lsiz_ < roff_)
       {
