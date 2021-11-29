@@ -3123,6 +3123,7 @@ namespace kyotocabinet
       size_t zsiz = 0;
       if (comp_)
       {
+        log_kyoto_info("compressing >>>", _KCCODELINE_);
         zbuf = comp_->compress(kbuf, ksiz, &zsiz);
         if (!zbuf)
           return 0;
@@ -3296,6 +3297,7 @@ namespace kyotocabinet
    */
     bool reorganize_file(const std::string &path)
     {
+      log_kyoto_info("reorganizing the whole file >>>", _KCCODELINE_);
       _assert_(true);
       bool err = false;
       HashDB db;
@@ -3350,6 +3352,7 @@ namespace kyotocabinet
    */
     bool copy_records(HashDB *dest)
     {
+      log_kyoto_info("copy all records to another db >>> ", _KCCODELINE_);
       _assert_(dest);
       Logger *logger = logger_;
       logger_ = NULL;
