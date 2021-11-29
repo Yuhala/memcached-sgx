@@ -1849,6 +1849,7 @@ namespace kyotocabinet
    */
     double increment_double(const char *kbuf, size_t ksiz, double num, double orig = 0)
     {
+      
       _assert_(kbuf && ksiz <= MEMMAXSIZ);
       class VisitorImpl : public Visitor
       {

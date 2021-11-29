@@ -49,7 +49,7 @@ int kc_main()
   {
 
 #ifdef USE_SGX
-    printf("Value is: ?? TODO\n");
+    printf("Value of foo is: %s\n", value);
 #else
     cout << value << endl;
 #endif
