@@ -162,7 +162,7 @@ extern unsigned int num_workers;
 extern zc_stats *zc_statistics;
 
 //pyuhala: forward declarations
-void runKissdbBench(int num_runs);
+void run_kissdb_bench(int num_runs);
 void runTestMulti(int num_runs);
 void run_zc_micro(int num_runs);
 void run_kyoto_bench();
@@ -424,8 +424,14 @@ void runTestMulti(int num_runs)
     printf(">>>>>>>>>>>>>>>>> test multi bench END >>>>>>>>>>>>>>>>>\n");
 }
 
-void runKissdbBench(int numRuns)
+void run_kissdb_bench(int numRuns)
 {
+
+//most frequent ocalls
+/* Ocall: ocall_fseeko Count: 2399250
+Ocall: ocall_fwrite Count: 1577020
+Ocall: ocall_fread Count: 1349250 */
+
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
     int minKeys = 500;
     int maxKeys = 10000;
@@ -436,7 +442,7 @@ void runKissdbBench(int numRuns)
     //bool test = (numReaders == numWriters);
 
     char path[20];
-    snprintf(path, 20, "kissdb_results.csv");
+    snprintf(path, 20, "results_kissdb.csv");
 
     //ZC_ASSERT(test);
 
@@ -451,7 +457,7 @@ void runKissdbBench(int numRuns)
         avgRuntime = 0;
         for (int j = 0; j < numRuns; j++)
         {
-            //printf("<--------------------- running test multi ----------------------->\n", i);
+            
             start_clock();
             write_keys(i, numWriters);
             //read_keys(i, numReaders);
@@ -472,7 +478,7 @@ void run_kyoto_bench(int numRuns)
 {
 
     char path[20];
-    snprintf(path, 20, "kyoto_results.csv");
+    snprintf(path, 20, "results_kyoto.csv");
 
     printf(">>>>>>>>>>>>>>>>> kyoto bench START >>>>>>>>>>>>>>>>>\n");
     int minKeys = 500;
@@ -654,7 +660,7 @@ int main(int argc, char *argv[])
     int id = global_eid;
 
     //init_memcached(num_mcd_workers);
-    runKissdbBench(5);
+    run_kissdb_bench(5);
     //run_zc_micro(1);
     //run_kyoto_bench(5);
 
