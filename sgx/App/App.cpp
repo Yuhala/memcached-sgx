@@ -430,9 +430,9 @@ void runTestMulti(int num_runs)
 void runKissdbBench(int numRuns)
 {
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
-    int min_keys = 10;
-    int max_keys = 100;
-    int step = 10;
+    int minKeys = 500;
+    int maxKeys = 10000;
+    int step = 500;
     int numWriters = 2;
     int numReaders = 2;
     //write_keys(numKeys, numWriters);
@@ -445,8 +445,9 @@ void runKissdbBench(int numRuns)
 
     double totalRuntime;
     double avgRuntime;
+    double tput;
 
-    for (int i = min_keys; i <= max_keys; i += step)
+    for (int i = minKeys; i <= maxKeys; i += step)
     {
 
         totalRuntime = 0;
@@ -462,8 +463,9 @@ void runKissdbBench(int numRuns)
             removeKissDbs();
         }
         avgRuntime = totalRuntime / numRuns;
+        tput = i / avgRuntime; // ops/sec
 
-        register_results(path, i, avgRuntime);
+        register_results(path, i, avgRuntime, tput);
         printf(">>>>>>>>>>>>>>>>> kissdb bench: PUT %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
     }
     printf(">>>>>>>>>>>>>>>>> kissdb bench END >>>>>>>>>>>>>>>>>\n");
@@ -655,9 +657,9 @@ int main(int argc, char *argv[])
     int id = global_eid;
 
     //init_memcached(num_mcd_workers);
-    //runKissdbBench(1);
+    runKissdbBench(5);
     //run_zc_micro(1);
-    run_kyoto_bench(1);
+    //run_kyoto_bench(5);
 
     //return 0;
 
