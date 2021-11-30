@@ -104,6 +104,12 @@ double diff;
 using namespace std;
 extern std::map<pthread_t, pthread_attr_t *> attr_map;
 
+/**
+ * globals for getting cpu stats
+ */
+unsigned long long **cpu_stats_begin;
+unsigned long long **cpu_stats_end;
+
 extern unsigned long int total_sl; /* total # of switchless calls at runtime */
 extern unsigned long int total_fb; /* total # of fallback calls at runtime */
 
@@ -368,7 +374,7 @@ void destroy_switchless(void)
 void removeKissDbs()
 {
     //printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
-    int ret = system("rm kissdb*");    
+    int ret = system("rm kissdb*");
     ZC_ASSERT(!ret);
 }
 
@@ -378,13 +384,13 @@ void removeKissDbs()
 void remove_kc_dbs()
 {
     //printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
-    int ret = system("rm *.kcd"); 
+    int ret = system("rm *.kcd");
     ZC_ASSERT(!ret);
 }
 
 void remove_zc_files()
 {
-    int ret = system("rm zcstore*");   
+    int ret = system("rm zcstore*");
     ZC_ASSERT(!ret);
 }
 
@@ -427,8 +433,8 @@ void runTestMulti(int num_runs)
 void run_kissdb_bench(int numRuns)
 {
 
-//most frequent ocalls
-/* Ocall: ocall_fseeko Count: 2399250
+    //most frequent ocalls
+    /* Ocall: ocall_fseeko Count: 2399250
 Ocall: ocall_fwrite Count: 1577020
 Ocall: ocall_fread Count: 1349250 */
 
@@ -449,26 +455,41 @@ Ocall: ocall_fread Count: 1349250 */
     double totalRuntime;
     double avgRuntime;
     double tput;
+    double cpu_usage;
+    double avg_cpu;
 
     for (int i = minKeys; i <= maxKeys; i += step)
     {
 
         totalRuntime = 0;
         avgRuntime = 0;
+        cpu_usage = 0;
+
         for (int j = 0; j < numRuns; j++)
         {
-            
+
             start_clock();
+
+            cpu_stats_begin = read_cpu();
             write_keys(i, numWriters);
-            //read_keys(i, numReaders);
+            cpu_stats_end = read_cpu();
+
             stop_clock();
             totalRuntime += time_diff(&start, &stop, SEC);
+            cpu_usage += get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
             removeKissDbs();
         }
+
         avgRuntime = totalRuntime / numRuns;
         tput = i / avgRuntime; // ops/sec
+        avg_cpu = cpu_usage / numRuns;
 
-        register_results(path, i, avgRuntime, tput);
+        free(cpu_stats_begin);
+        free(cpu_stats_end);
+
+        //register_results(path, i, avgRuntime, tput);
+        register_results(path, i, 0, avg_cpu);
+
         printf(">>>>>>>>>>>>>>>>> kissdb bench: PUT %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
     }
     printf(">>>>>>>>>>>>>>>>> kissdb bench END >>>>>>>>>>>>>>>>>\n");
@@ -660,9 +681,9 @@ int main(int argc, char *argv[])
     int id = global_eid;
 
     //init_memcached(num_mcd_workers);
-    //run_kissdb_bench(5);
+    run_kissdb_bench(5);
     //run_zc_micro(1);
-    run_kyoto_bench(5);
+    //run_kyoto_bench(5);
 
     //return 0;
 

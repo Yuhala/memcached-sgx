@@ -133,3 +133,22 @@ int cpu_usage_test()
 
     return EXIT_SUCCESS;
 } /* ----------  end of function main  ---------- */
+
+/**
+ * Get average cpu usage for all cpus
+ */
+
+double get_avg_cpu_usage(unsigned long long **stop, unsigned long long **start)
+{
+    int i, num_of_cpus = get_number_of_cpu_cores();    
+
+    double total_percentage = 0;
+
+    for (i = 0; i <= num_of_cpus; i++)
+    {
+        total_percentage += get_cpu_percentage(stop[i], start[i]);
+    }
+
+    double avg_usage = total_percentage / num_of_cpus;
+    return avg_usage;
+}
