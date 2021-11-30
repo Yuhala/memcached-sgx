@@ -477,6 +477,7 @@ Ocall: ocall_fread Count: 1349250 */
             stop_clock();
             totalRuntime += time_diff(&start, &stop, SEC);
             cpu_usage += get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
+            
             free(cpu_stats_begin);
             free(cpu_stats_end);
             removeKissDbs();
