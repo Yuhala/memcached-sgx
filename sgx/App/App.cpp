@@ -368,8 +368,7 @@ void destroy_switchless(void)
 void removeKissDbs()
 {
     //printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
-    int ret = system("rm kissdb*");
-    //WEXITSTATUS(ret);
+    int ret = system("rm kissdb*");    
     ZC_ASSERT(!ret);
 }
 
@@ -379,15 +378,13 @@ void removeKissDbs()
 void remove_kc_dbs()
 {
     //printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
-    int ret = system("rm *.kcd");
-    //WEXITSTATUS(ret);
+    int ret = system("rm *.kcd"); 
     ZC_ASSERT(!ret);
 }
 
 void remove_zc_files()
 {
-    int ret = system("rm zcstore*");
-    //WEXITSTATUS(ret);
+    int ret = system("rm zcstore*");   
     ZC_ASSERT(!ret);
 }
 
