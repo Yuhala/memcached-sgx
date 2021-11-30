@@ -93,15 +93,15 @@ get_cpu_percentage(unsigned long long *a1, unsigned long long *a2)
      * pyuhala: modification from this algorithm
      * https://rosettacode.org/wiki/Linux_CPU_utilization
      */
-    double total_cpu_time = (double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2]));
+    /* double total_cpu_time = (double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2]));
     double fraction_idle = (double)(a1[3] - a2[3]) / total_cpu_time;
     double cpu_percent = (double)((1 - fraction_idle) * 100);
 
-    return cpu_percent;
+    return cpu_percent; */
 
-    /*  return (double)(((double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2])) /
+    return (double)(((double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2])) /
                      (double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2]) + (a1[3] - a2[3]))) *
-                    100); */
+                    100);
 } /* -----  end of function get_cpu_percentage  ----- */
 
 /* 
