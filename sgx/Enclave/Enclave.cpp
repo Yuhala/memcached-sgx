@@ -394,7 +394,7 @@ void write_micro(int num_writes, int storeId)
     const char storeFile[16];
     snprintf(storeFile, 16, "zcstore%d.db", storeId);
 
-    char str[] = "Testing zc switchless calls";
+    char str[] = "Helloworld";
 
     SGX_FILE writeFile = fopen(storeFile, "w");
 
