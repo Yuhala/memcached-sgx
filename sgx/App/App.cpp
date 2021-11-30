@@ -477,7 +477,7 @@ Ocall: ocall_fread Count: 1349250 */
             stop_clock();
             totalRuntime += time_diff(&start, &stop, SEC);
             cpu_usage += get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
-            
+
             free(cpu_stats_begin);
             free(cpu_stats_end);
             removeKissDbs();
@@ -510,25 +510,36 @@ void run_kyoto_bench(int numRuns)
     double totalRuntime;
     double avgRuntime;
     double tput;
+    double cpu_usage;
+    double avg_cpu;
 
     for (int i = minKeys; i <= maxKeys; i += step)
     {
 
         totalRuntime = 0;
         avgRuntime = 0;
+        cpu_usage = 0;
         for (int j = 0; j < numRuns; j++)
         {
-            //printf("<--------------------- running test multi ----------------------->\n", i);
             start_clock();
+
+            cpu_stats_begin = read_cpu();
             write_keys(i, numWriters);
+            cpu_stats_end = read_cpu();
+
             stop_clock();
             totalRuntime += time_diff(&start, &stop, SEC);
+            cpu_usage += get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
+
+            free(cpu_stats_begin);
+            free(cpu_stats_end);
             remove_kc_dbs();
         }
         avgRuntime = totalRuntime / numRuns;
         tput = i / avgRuntime; // ops/sec
+        avg_cpu = cpu_usage / numRuns;
 
-        register_results(path, i, avgRuntime, tput);
+        register_results(path, i, avgRuntime, avg_cpu);
         printf(">>>>>>>>>>>>>>>>> kyoto bench: SET %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
     }
     printf(">>>>>>>>>>>>>>>>> kyoto bench END >>>>>>>>>>>>>>>>>\n");
@@ -681,9 +692,9 @@ int main(int argc, char *argv[])
     int id = global_eid;
 
     //init_memcached(num_mcd_workers);
-    run_kissdb_bench(5);
+    //run_kissdb_bench(5);
     //run_zc_micro(1);
-    //run_kyoto_bench(5);
+    run_kyoto_bench(5);
 
     //return 0;
 
