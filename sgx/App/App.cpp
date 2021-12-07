@@ -584,7 +584,7 @@ void run_zc_fg(int numRuns)
 
             free(cpu_stats_begin);
             free(cpu_stats_end);
-            remove_kc_dbs();
+           
         }
         avgRuntime = totalRuntime / numRuns;
 
