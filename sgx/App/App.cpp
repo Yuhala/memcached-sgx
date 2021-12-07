@@ -719,7 +719,7 @@ int main(int argc, char *argv[])
     }
 
     // stack protector checks in enclave
-    //ecall_undef_stack_protector(global_eid);
+    // ecall_undef_stack_protector(global_eid);
 
     /**
      * ZC-switchless initialization
