@@ -110,7 +110,7 @@ void ecall_run_fg(int total, int tid)
     int numF = (int)temp;
     int numG = total - numF;
 
-    printf(">>> zc fg micro: %dF numF calls: %d , numG calls: %d >>>\n", fpercent, numF, numG);
+    printf(">>> zc fg micro: %fF numF calls: %d , numG calls: %d >>>\n", fpercent, numF, numG);
 
     for (int i = 0; i < numF; i++)
     {
