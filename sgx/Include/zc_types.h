@@ -130,6 +130,11 @@ struct sync_arg
     int ret;
 };
 
+struct no_arg
+{
+    int ret;
+};
+
 struct ftruncate64_arg
 {
     int fd;
@@ -152,6 +157,8 @@ typedef struct fsync_arg fsync_arg_zc;
 typedef struct sync_arg sync_arg_zc;
 typedef struct ftruncate64_arg ftruncate64_arg_zc;
 
+typedef struct no_arg no_arg_zc;
+
 //Special types for each zc switchless routine
 enum zc_routine
 {
@@ -165,7 +172,9 @@ enum zc_routine
     ZC_FSYNC,
     ZC_SYNC,
     ZC_FTRUNCATE64,
-    ZC_TEST
+    ZC_TEST,
+    ZC_F,
+    ZC_G
 };
 typedef enum zc_routine zc_routine;
 

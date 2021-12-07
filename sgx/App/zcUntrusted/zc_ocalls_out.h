@@ -23,5 +23,7 @@ void zc_transmit_prepare(zc_req *request);
 
 //for benchmarking
 void zc_test_switchless(zc_req *request);
+void zc_f(zc_req *request);
+void zc_g(zc_req *request);
 
 #endif /* ZC_OCALLS_OUT_H */

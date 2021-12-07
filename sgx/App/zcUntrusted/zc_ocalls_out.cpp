@@ -105,3 +105,13 @@ int zc_ftruncate64_switchless(zc_req *request)
     ((ftruncate64_arg_zc *)request->args)->ret = ocall_ftruncate64(((ftruncate64_arg_zc *)request->args)->fd,
                                                                    ((ftruncate64_arg_zc *)request->args)->length);
 }
+
+void zc_f(zc_req *request)
+{
+    ocall_f();
+}
+
+void zc_g(zc_req *request)
+{
+    ocall_g();
+}

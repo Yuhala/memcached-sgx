@@ -18,6 +18,8 @@
 #include "ocall_logger.h"
 #include "Enclave_u.h"
 
+#include "zc_types.h"
+
 //#include <libexplain/libexplain.h>
 #include "io.h"
 
@@ -602,4 +604,22 @@ int ocall_test(int a, int b)
 {
     log_ocall(__func__);
     return a * b;
+}
+
+/**
+ * micro-benchmarking functions for zc
+ * f is a short routine - does nothing
+ * g is a long routine - does 500 pauses
+ */
+void ocall_f()
+{
+    //do nothing
+}
+
+void ocall_g()
+{
+    for (int i = 0; i < 500; i++)
+    {
+        ZC_PAUSE();
+    }
 }

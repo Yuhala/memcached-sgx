@@ -1073,3 +1073,32 @@ ssize_t getline(char **lineptr, size_t *n,
     //ocall_getline(&ret, lineptr, n, stream);
     return ret;
 }
+
+void micro_f()
+{
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
+    {
+
+        zc_micro_f(index);
+    }
+    else
+    {
+        ocall_f();
+    }
+}
+void micro_g()
+{
+    int index = reserve_worker();
+
+    if (index != ZC_NO_FREE_POOL)
+    {
+
+        zc_micro_g(index);
+    }
+    else
+    {
+        ocall_g();
+    }
+}

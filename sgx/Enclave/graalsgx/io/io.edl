@@ -143,6 +143,10 @@ enclave {
 
         //test ocalls for zc switchless bench
         int ocall_test(int a, int b) transition_using_threads;
+
+        //for benchmarking purposes
+        void ocall_f() transition_using_threads;
+        void ocall_g() transition_using_threads;
         
 
     };

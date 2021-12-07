@@ -88,6 +88,9 @@ enclave {
        public void ecall_test();
        public void ecall_undef_stack_protector();
 
+       //for benchmarking
+       public void ecall_run_fg(int total, int tid);
+
    };
 
     /* 

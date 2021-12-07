@@ -27,6 +27,8 @@ extern "C"
     off_t ocall_ftello(SGX_FILE stream);
 
     int ocall_test(int a, int b);
+    void ocall_f();
+    void ocall_g();
 
 #if defined(__cplusplus)
 }

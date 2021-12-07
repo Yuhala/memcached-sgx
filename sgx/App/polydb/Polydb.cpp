@@ -52,7 +52,7 @@ void *reader_thread(void *input)
 
     //int id = (write_store_counter > 0) ? write_store_counter - 1 : 0;
     int id = __atomic_fetch_add(&read_store_counter, 1, __ATOMIC_RELAXED);
-      
+
     ecall_readKissdb(global_eid, n, id);
 }
 
@@ -65,9 +65,10 @@ void *writer_thread(void *input)
     //id = write_store_counter++;
     int id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
     //pthread_mutex_unlock(&lock);
-   
+
     //ecall_write_kyotodb(global_eid, n, id);
-    ecall_writeKissdb(global_eid, n, id);
+    //ecall_writeKissdb(global_eid, n, id);
+    ecall_run_fg(global_eid, n, id);
 }
 
 /**

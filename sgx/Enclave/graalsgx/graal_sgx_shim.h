@@ -402,6 +402,10 @@ extern "C"
     int test_multi(int a, int b);
     void *untrusted_malloc(ssize_t siz);
 
+    // for micro-benchmarking purposes
+    void micro_f();
+    void micro_g();
+
 #if defined(__cplusplus)
 }
 #endif

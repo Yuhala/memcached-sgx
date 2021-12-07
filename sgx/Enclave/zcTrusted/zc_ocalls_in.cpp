@@ -353,3 +353,45 @@ int zc_ftruncate64(int fd, off_t length, int pool_index)
     //printf("---------------zc fread ret: %d ---------------------\n", ret);
     return ret;
 }
+
+void zc_micro_f(int pool_index)
+{
+    log_zc_routine(__func__);
+    // allocate memory for args
+    no_arg_zc *arg = (no_arg_zc *)zc_malloc(pool_index, sizeof(no_arg_zc));
+
+    // do request
+    zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
+    request->args = (void *)arg;
+    request->func_name = ZC_F;
+    request->is_done = 0;
+
+    do_zc_switchless_request(request, pool_index);
+
+    // copy response to enclave if needed
+
+    // release worker/memory pool
+    release_worker(pool_index);
+    //request->req_status = STALE_REQUEST;
+}
+
+void zc_micro_g(int pool_index)
+{
+    log_zc_routine(__func__);
+    // allocate memory for args
+    no_arg_zc *arg = (no_arg_zc *)zc_malloc(pool_index, sizeof(no_arg_zc));
+
+    // do request
+    zc_req *request = (zc_req *)zc_malloc(pool_index, sizeof(zc_req));
+    request->args = (void *)arg;
+    request->func_name = ZC_G;
+    request->is_done = 0;
+
+    do_zc_switchless_request(request, pool_index);
+
+    // copy response to enclave if needed
+
+    // release worker/memory pool
+    release_worker(pool_index);
+    //request->req_status = STALE_REQUEST;
+}

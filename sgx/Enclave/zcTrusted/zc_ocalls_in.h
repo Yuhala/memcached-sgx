@@ -33,4 +33,8 @@ void *zc_transmit_prepare(int pool_index);
 //test
 int zc_test(int a, int b, int pool_index);
 
+//for benchmarking purposes
+void zc_micro_f(int pool_index);
+void zc_micro_g(int pool_index);
+
 #endif /* ZC_OCALLS_H */

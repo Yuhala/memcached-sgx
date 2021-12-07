@@ -174,6 +174,7 @@ void run_zc_micro(int num_runs);
 void run_kyoto_bench();
 void remove_kc_dbs();
 void run_kyoto_bench(int numRuns);
+void run_zc_fg(int numRuns);
 
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
@@ -545,6 +546,56 @@ void run_kyoto_bench(int numRuns)
     printf(">>>>>>>>>>>>>>>>> kyoto bench END >>>>>>>>>>>>>>>>>\n");
 }
 
+void run_zc_fg(int numRuns)
+{
+
+    int fpercent = 10;
+    char path[20];
+    snprintf(path, 20, "results_zc_fg.csv");
+
+    printf(">>>>>>>>>>>>>>>>> zc fg bench START >>>>>>>>>>>>>>>>>\n");
+    int min = 5000;
+    int max = 100000;
+    int step = 5000;
+    int numWriters = 2;
+
+    double totalRuntime;
+    double avgRuntime;
+    double cpu_usage;
+    double avg_cpu;
+
+    for (int i = min; i <= max; i += step)
+    {
+
+        totalRuntime = 0;
+        avgRuntime = 0;
+        cpu_usage = 0;
+        for (int j = 0; j < numRuns; j++)
+        {
+            start_clock();
+
+            cpu_stats_begin = read_cpu();
+            write_keys(i, numWriters);
+            cpu_stats_end = read_cpu();
+
+            stop_clock();
+            totalRuntime += time_diff(&start, &stop, SEC);
+            cpu_usage += get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
+
+            free(cpu_stats_begin);
+            free(cpu_stats_end);
+            remove_kc_dbs();
+        }
+        avgRuntime = totalRuntime / numRuns;
+
+        avg_cpu = cpu_usage / numRuns;
+
+        register_results(path, i, avgRuntime, avg_cpu);
+        printf(">>>>>>>>>>>>>>>>> zc fg bench: total calls: %d COMPLETE >>>>>>>>>>>>>>>>>\n", i);
+    }
+    printf(">>>>>>>>>>>>>>>>> zc fg bench END >>>>>>>>>>>>>>>>>\n");
+}
+
 /**
  * micro benchmark that writes and reads text to file from within enclave
  */
@@ -692,9 +743,11 @@ int main(int argc, char *argv[])
     int id = global_eid;
 
     //init_memcached(num_mcd_workers);
-    run_kissdb_bench(5);
+    //run_kissdb_bench(5);
     //run_zc_micro(1);
     //run_kyoto_bench(5);
+
+    run_zc_fg(5);
 
     //return 0;
 

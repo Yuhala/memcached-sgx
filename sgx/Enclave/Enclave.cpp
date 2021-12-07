@@ -98,6 +98,28 @@ void ecall_test()
     // replace with your custom test routine
 }
 
+/**
+ * microbenchmark to run fast(f) and long(g) ocalls
+ */
+void ecall_run_fg(int total, int tid)
+{
+    int fpercent = 10;//50,90
+    
+
+    int numF = (fpercent / 100) * total;
+    int numG = total - numF;
+
+    for (int i = 0; i < numF; i++)
+    {
+        micro_f();
+    }
+
+    for (int j = 0; j < numG; j++)
+    {
+        micro_g();
+    }
+}
+
 void ecall_read_kyoto(int numKeys, int readerId)
 {
     //todo
