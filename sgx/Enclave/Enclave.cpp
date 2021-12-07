@@ -103,11 +103,12 @@ void ecall_test()
  */
 void ecall_run_fg(int total, int tid)
 {
-    int fpercent = 10;//50,90
-    
+    int fpercent = 10; //50,90
 
     int numF = (fpercent / 100) * total;
     int numG = total - numF;
+
+    printf(">>> zc fg micro: numF calls: %d , numG calls: %d >>>\n", numF, numG);
 
     for (int i = 0; i < numF; i++)
     {
