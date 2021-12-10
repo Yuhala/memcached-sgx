@@ -57,9 +57,9 @@ enclave {
        SGX_FILE ocall_fopen([in,string]const char* filename, [in,string]const char* mode);
        SGX_FILE ocall_fdopen(int fd, [in, string]const char *mode);
        int ocall_fclose(SGX_FILE stream);
-       size_t ocall_fwrite([in,size=size, count=nmemb]const void *ptr, size_t size, size_t nmemb, SGX_FILE stream) transition_using_threads;
-       size_t ocall_fread([out,size=size, count=nmemb]void *ptr, size_t size, size_t nmemb, SGX_FILE stream) transition_using_threads;
-       int ocall_fseeko(SGX_FILE file, off_t offset, int whence) transition_using_threads;
+       size_t ocall_fwrite([in,size=size, count=nmemb]const void *ptr, size_t size, size_t nmemb, SGX_FILE stream);
+       size_t ocall_fread([out,size=size, count=nmemb]void *ptr, size_t size, size_t nmemb, SGX_FILE stream);
+       int ocall_fseeko(SGX_FILE file, off_t offset, int whence);
        off_t ocall_ftello(SGX_FILE file);
 
 
@@ -75,7 +75,7 @@ enclave {
 
         int ocall_mkdir([in,string]const char *pathname, mode_t mode); 
         int ocall_truncate([in,string]const char *path, off_t length); 
-        int ocall_ftruncate64(int fd, off_t length);
+        int ocall_ftruncate64(int fd, off_t length) transition_using_threads;
         void *ocall_mmap64([user_check]void *addr, size_t len, int prot, int flags, int fildes, off_t off);
         ssize_t ocall_pwrite64(int fd,[in,size=nbyte]const void *buf, size_t nbyte, off_t offset);   
         int ocall_fdatasync(int fd);
