@@ -742,9 +742,9 @@ int main(int argc, char *argv[])
     int id = global_eid;
 
     //init_memcached(num_mcd_workers);
-    //run_kissdb_bench(5);
+    run_kissdb_bench(5);
     //run_zc_micro(1);
-    run_kyoto_bench(5);
+    //run_kyoto_bench(5);
 
     //run_zc_fg(5);
 
