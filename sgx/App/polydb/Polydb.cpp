@@ -67,8 +67,8 @@ void *writer_thread(void *input)
     //pthread_mutex_unlock(&lock);
 
     //ecall_write_kyotodb(global_eid, n, id);
-    //ecall_writeKissdb(global_eid, n, id);
-    ecall_run_fg(global_eid, n, id);
+    ecall_writeKissdb(global_eid, n, id);
+    //ecall_run_fg(global_eid, n, id);
 }
 
 /**

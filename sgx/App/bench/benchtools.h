@@ -45,5 +45,6 @@ void start_clock();
 void stop_clock();
 void register_results(const char *path, int numKeys, double runTime);
 void register_results(const char *path, int numKeys, double runTime, double tput);
+void register_results(const char *path, int numKeys, double runTime, double tput, double cpu);
 
 #endif /* BENCHTOOLS_H */

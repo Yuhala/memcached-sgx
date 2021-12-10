@@ -436,8 +436,8 @@ void run_kissdb_bench(int numRuns)
 
     //most frequent ocalls
     /* Ocall: ocall_fseeko Count: 2399250
-Ocall: ocall_fwrite Count: 1577020
-Ocall: ocall_fread Count: 1349250 */
+    Ocall: ocall_fwrite Count: 1577020
+    Ocall: ocall_fread Count: 1349250 */
 
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
     int minKeys = 500;
@@ -489,7 +489,7 @@ Ocall: ocall_fread Count: 1349250 */
         avg_cpu = cpu_usage / numRuns;
 
         //register_results(path, i, avgRuntime, tput);
-        register_results(path, i, avgRuntime, avg_cpu);
+        register_results(path, i, avgRuntime, tput, avg_cpu);
 
         printf(">>>>>>>>>>>>>>>>> kissdb bench: PUT %d keys COMPLETE >>>>>>>>>>>>>>>>>\n", i);
     }
@@ -584,8 +584,7 @@ void run_zc_fg(int numRuns)
 
             free(cpu_stats_begin);
             free(cpu_stats_end);
-           
-        }
+                }
         avgRuntime = totalRuntime / numRuns;
 
         avg_cpu = cpu_usage / numRuns;
@@ -743,11 +742,11 @@ int main(int argc, char *argv[])
     int id = global_eid;
 
     //init_memcached(num_mcd_workers);
-    //run_kissdb_bench(5);
+    run_kissdb_bench(5);
     //run_zc_micro(1);
     //run_kyoto_bench(5);
 
-    run_zc_fg(5);
+    //run_zc_fg(5);
 
     //return 0;
 

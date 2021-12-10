@@ -113,6 +113,11 @@ double time_diff(timespec *start, timespec *stop, granularity gran)
 }
 
 /**
+ * pyuhala: due to laziness, I overload the method a little
+ * unecessarily. TODO: to redo
+ */
+
+/**
  * Some benchmark specific routines.
  */
 void register_results(const char *path, int numKeys, double runTime, double tput)
@@ -123,10 +128,22 @@ void register_results(const char *path, int numKeys, double runTime, double tput
     fclose(fptr);
 }
 
+
 void register_results(const char *path, int numKeys, double runTime)
 {
 
     FILE *fptr = fopen(path, "ab+");
     fprintf(fptr, "%d, %f\n", numKeys, runTime);
+    fclose(fptr);
+}
+
+/**
+ * Some benchmark specific routines.
+ */
+void register_results(const char *path, int numKeys, double runTime, double tput, double cpu)
+{
+
+    FILE *fptr = fopen(path, "ab+");
+    fprintf(fptr, "%d, %f, %f, %f\n", numKeys, runTime, tput, cpu);
     fclose(fptr);
 }
