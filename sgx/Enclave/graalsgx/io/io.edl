@@ -36,7 +36,7 @@ enclave {
 
     untrusted {
        void ocall_empty(int repeats);
-       int ocall_fsync(int fd);
+       int ocall_fsync(int fd) transition_using_threads;
        int ocall_msync([user_check]void *addr, size_t length, int flags);
        void ocall_sync(void);
        int ocall_syncfs(int fd);
