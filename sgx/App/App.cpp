@@ -118,7 +118,7 @@ extern pthread_mutex_t ocall_counter_lock;
 /* Macro for this value which is in the config file of the enclave because I
  * don't know how to do better
  */
-// pyuhala: these should be fixed b/c they are machine dependent; try using
+// pyuhala: these should not be fixed b/c they are machine dependent; try using
 // global variables instead, which you can set to the right values at the start of the program
 // for example: num of cores can be obtained with get_nprocs()
 
@@ -742,9 +742,9 @@ int main(int argc, char *argv[])
     int id = global_eid;
 
     //init_memcached(num_mcd_workers);
-    //run_kissdb_bench(5);
+    run_kissdb_bench(5);
     //run_zc_micro(1);
-    run_kyoto_bench(5);
+    //run_kyoto_bench(5);
 
     //run_zc_fg(5);
 

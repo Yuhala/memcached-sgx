@@ -99,11 +99,11 @@ void zc_test_switchless(zc_req *request)
 int zc_fsync_switchless(zc_req *request)
 {
 
-    start_clock();
+    //start_clock();
     ((fsync_arg_zc *)request->args)->ret = ocall_fsync(((fsync_arg_zc *)request->args)->fd);
-    stop_clock();
-    double totalRuntime = time_diff(&start, &stop, SEC);
-    printf("FSYNC TIME: %f >>>>>>>>>>>>>>>>>>>>\n", totalRuntime);
+    //stop_clock();
+    //double totalRuntime = time_diff(&start, &stop, SEC);
+    //printf("FSYNC TIME: %f >>>>>>>>>>>>>>>>>>>>\n", totalRuntime);
 }
 void zc_sync_switchless(zc_req *request)
 {
@@ -116,9 +116,9 @@ int zc_ftruncate64_switchless(zc_req *request)
     ((ftruncate64_arg_zc *)request->args)->ret = ocall_ftruncate64(((ftruncate64_arg_zc *)request->args)->fd,
                                                                    ((ftruncate64_arg_zc *)request->args)->length);
 
-    stop_clock();
-    double totalRuntime = time_diff(&start, &stop, SEC);
-    printf("FTRUNCATE TIME: %f >>>>>>>>>>>>>>>>>>>>\n", totalRuntime);
+    //stop_clock();
+    //double totalRuntime = time_diff(&start, &stop, SEC);
+    //printf("FTRUNCATE TIME: %f >>>>>>>>>>>>>>>>>>>>\n", totalRuntime);
 }
 
 void zc_f(zc_req *request)

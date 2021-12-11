@@ -614,8 +614,8 @@ int ocall_test(int a, int b)
 void ocall_f()
 {
     //do nothing
-    volatile int val1 = 234 * 567;
-    volatile int val2 = val1 - 1234;
+    //volatile int val1 = 234 * 567;
+    //volatile int val2 = val1 - 1234;
 }
 
 void ocall_g()
