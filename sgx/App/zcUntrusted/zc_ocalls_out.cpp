@@ -30,6 +30,8 @@
 
 #include "../App/bench/benchtools.h"
 
+extern struct timespec start, stop;
+
 
 void zc_read_switchless(zc_req *request)
 {
