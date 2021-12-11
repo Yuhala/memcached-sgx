@@ -28,7 +28,7 @@
 #include "io/io.h"
 #include "net/graal_net.h"
 
-#include "benchtools.h"
+#include "../App/bench/benchtools.h"
 
 struct timespec start, stop;
 
