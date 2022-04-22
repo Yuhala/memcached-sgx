@@ -4,7 +4,7 @@
  * Copyright (c) 2021 Peterson Yuhala, IIUN
  * Proof of concept ocalls using our zc switchless mechanism. Mostly io calls for the poc.
  * Future work: use the ocall-libc calls already defined in the shim untrusted side (internship)
- * 
+ *
  */
 
 #include <unistd.h>
@@ -18,20 +18,20 @@
 #include <sys/ioctl.h>
 #include <dirent.h>
 
-//zc headers
+// zc headers
 #include "ocall_logger.h"
 #include "zc_types.h"
 #include "zc_queues_out.h"
 #include "zc_ocalls_out.h"
 
-//headers from corresponding ocall shim helper lib
+// headers from corresponding ocall shim helper lib
 #include "io/io.h"
 #include "net/graal_net.h"
 
 #include "../App/bench/benchtools.h"
 
-extern struct timespec start, stop;
-
+static struct timespec start, stop;
+static double diff;
 
 void zc_read_switchless(zc_req *request)
 {
@@ -99,11 +99,11 @@ void zc_test_switchless(zc_req *request)
 int zc_fsync_switchless(zc_req *request)
 {
 
-    //start_clock();
+    // start_clock();
     ((fsync_arg_zc *)request->args)->ret = ocall_fsync(((fsync_arg_zc *)request->args)->fd);
-    //stop_clock();
-    //double totalRuntime = time_diff(&start, &stop, SEC);
-    //printf("FSYNC TIME: %f >>>>>>>>>>>>>>>>>>>>\n", totalRuntime);
+    // stop_clock();
+    // double totalRuntime = time_diff(&start, &stop, SEC);
+    // printf("FSYNC TIME: %f >>>>>>>>>>>>>>>>>>>>\n", totalRuntime);
 }
 void zc_sync_switchless(zc_req *request)
 {
@@ -112,13 +112,13 @@ void zc_sync_switchless(zc_req *request)
 int zc_ftruncate64_switchless(zc_req *request)
 
 {
-    start_clock();
+    // start_clock(&start);
     ((ftruncate64_arg_zc *)request->args)->ret = ocall_ftruncate64(((ftruncate64_arg_zc *)request->args)->fd,
                                                                    ((ftruncate64_arg_zc *)request->args)->length);
 
-    //stop_clock();
-    //double totalRuntime = time_diff(&start, &stop, SEC);
-    //printf("FTRUNCATE TIME: %f >>>>>>>>>>>>>>>>>>>>\n", totalRuntime);
+    // stop_clock(&stop);
+    // double totalRuntime = time_diff(&start, &stop, SEC);
+    // printf("FTRUNCATE TIME: %f >>>>>>>>>>>>>>>>>>>>\n", totalRuntime);
 }
 
 void zc_f(zc_req *request)

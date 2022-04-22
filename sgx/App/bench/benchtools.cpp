@@ -8,15 +8,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern struct timespec start, stop;
-
-void start_clock()
+/**
+ * register start timestamp in start variable
+ */
+void start_clock(struct timespec *start)
 {
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    clock_gettime(CLOCK_MONOTONIC_RAW, start);
 }
-void stop_clock()
+/**
+ * register stop time in stop variable;
+ * will be used to compute diff with a start var;
+ */
+void stop_clock(struct timespec *stop)
 {
+    clock_gettime(CLOCK_MONOTONIC_RAW, stop);
+}
+
+/**
+ * get elapsed time in secs since start
+ */
+double elapsed_time(struct timespec *start)
+{
+    struct timespec stop;//creates stop on the stack
     clock_gettime(CLOCK_MONOTONIC_RAW, &stop);
+    return time_diff(start, &stop, SEC);
 }
 
 /* Calculates mean of array of values */
@@ -26,7 +41,7 @@ double get_mean(std::vector<double> &v)
     double sum = std::accumulate(v.begin(), v.end(), 0.0);
     return sum / v.size();
 }
-//Function to swap two pointers
+// Function to swap two pointers
 void swap(double *a, double *b)
 {
     double temp = *a;
@@ -61,12 +76,12 @@ void quicksort(std::vector<double> &target, int left, int right)
 /* Calculate median of array of values */
 double get_median(std::vector<double> &data)
 {
-    //Q0:0 Q1:1 Q2:2(median) Q3:3
-    //Do pointer checks first
+    // Q0:0 Q1:1 Q2:2(median) Q3:3
+    // Do pointer checks first
 
     int index = MEDIAN_INDEX;
     quicksort(data, 0, NUM_ITERATIONS - 1);
-    //printf("Min: %f Max: %f\n", data[0], data[NUM_ITERATIONS - 1]);
+    // printf("Min: %f Max: %f\n", data[0], data[NUM_ITERATIONS - 1]);
     return data[index];
 }
 
@@ -105,7 +120,7 @@ double time_diff(timespec *start, timespec *stop, granularity gran)
         diff = (double)(stop->tv_sec - start->tv_sec) * 1.0e9 + (double)((stop->tv_nsec - start->tv_nsec));
         break;
 
-    case SEC: //seconds
+    case SEC: // seconds
         diff = (double)(stop->tv_sec - start->tv_sec) + (double)((stop->tv_nsec - start->tv_nsec) / 1.0e9);
         break;
     }
@@ -127,7 +142,6 @@ void register_results(const char *path, int numKeys, double runTime, double tput
     fprintf(fptr, "%d, %f, %f\n", numKeys, runTime, tput);
     fclose(fptr);
 }
-
 
 void register_results(const char *path, int numKeys, double runTime)
 {
