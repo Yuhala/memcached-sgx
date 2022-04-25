@@ -29,7 +29,7 @@ void stop_clock(struct timespec *stop)
  */
 double elapsed_time(struct timespec *start)
 {
-    struct timespec stop;//creates stop on the stack
+    struct timespec stop; // creates stop on the stack
     clock_gettime(CLOCK_MONOTONIC_RAW, &stop);
     return time_diff(start, &stop, SEC);
 }
@@ -159,5 +159,17 @@ void register_results(const char *path, int numKeys, double runTime, double tput
 
     FILE *fptr = fopen(path, "ab+");
     fprintf(fptr, "%d, %f, %f, %f\n", numKeys, runTime, tput, cpu);
+    fclose(fptr);
+}
+
+/**
+ * Each enclave caller thread will
+ * register results in a file after completion
+ * The number of workers = number of worker threads in intel or number of workers in zc
+ */
+void register_results_dynamic(const char *path, double timestamp, double req_tput, unsigned int num_workers)
+{
+    FILE *fptr = fopen(path, "ab+");
+    fprintf(fptr, "%f, %f, %d\n", timestamp, req_tput, num_workers);
     fclose(fptr);
 }

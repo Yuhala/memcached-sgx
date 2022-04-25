@@ -30,18 +30,31 @@ extern void *shim_functions[];
 
 extern bool use_zc_switchless;
 
+extern unsigned int num_active_zc_workers;
+
 /**
  * number of seconds for the min request frequency
  * i.e numReq will be issued every maxSleep for the lowest frequency
  * I chose 1s here because it corresponds to the max usleep time i.e 1000 000 in useconds_t
  */
-double max_sleep = 1.0;
+static double max_sleep = 1.0;
 /**
  * number of secs for the min request frequency
  * todo: find a better value
  */
-double min_sleep = 0.03125;
+static double min_sleep = 0.03125;
 
+/**
+ * register start time for the writer threads.
+ * this is done by the main thread
+ */
+static struct timespec write_start_time;
+
+/**
+ * time spent since atleast one of the caller threads began sending requests
+ */
+
+static double time_spent = 0.0;
 /**
  * Used by the writers. We need to make sure any 2 writers don't use the same
  * storeId ==> storeFile
@@ -49,6 +62,8 @@ double min_sleep = 0.03125;
 static int write_store_counter = 0;
 static int read_store_counter = 0;
 pthread_mutex_t kissdb_lock;
+
+pthread_mutex_t write_timer_lock;
 
 struct thread_args
 {
@@ -118,11 +133,8 @@ void *writer_thread_dynamic(void *input)
     // time thread spends in each state
     double state_slot_time = run_time / NUM_STATES;
 
-    double time_spent = 0.0;
-
-    // register thread_start_time
-    struct timespec thread_start_time;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &thread_start_time);
+    // create results file
+    char *res_file = create_results_file(id);
 
     while (time_spent < run_time)
     {
@@ -156,7 +168,7 @@ void *writer_thread_dynamic(void *input)
         switch (state)
         {
         case INCREASE:
-
+            printf(">>> INCREASING FREQUENCY >>>\n");
             /**
              * Send num_req write requests to kissdb in enclave.
              * We could calculate time spent out of the switch
@@ -167,8 +179,13 @@ void *writer_thread_dynamic(void *input)
 
             // cpu_stats_begin = read_cpu();
             req_time_inc = do_request(num_req, id);
-            time_spent = elapsed_time(&thread_start_time);
-            printf(">>> INCREASING FREQUENCY >>>\n");
+
+            pthread_mutex_lock(&write_timer_lock);
+            time_spent = elapsed_time(&write_start_time);
+            pthread_mutex_unlock(&write_timer_lock);
+
+            register_results_dynamic(res_file, time_spent, num_req / req_time_inc, num_active_zc_workers);
+
             // cpu_stats_end = read_cpu();
             // cpu_usage = get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
 
@@ -181,10 +198,15 @@ void *writer_thread_dynamic(void *input)
             break;
 
         case CONSTANT:
+            printf(">>> CONSTANT FREQUENCY >>>\n");
 
             req_time_const = do_request(num_req, id);
-            time_spent = elapsed_time(&thread_start_time);
-            printf(">>> CONSTANT FREQUENCY >>>\n");
+
+            pthread_mutex_lock(&write_timer_lock);
+            time_spent = elapsed_time(&write_start_time);
+            pthread_mutex_unlock(&write_timer_lock);
+
+            register_results_dynamic(res_file, time_spent, num_req / req_time_const, num_active_zc_workers);
             /**
              * sleep time remains constant here
              */
@@ -192,9 +214,18 @@ void *writer_thread_dynamic(void *input)
 
             break;
         case DECREASE:
-            req_time_dec = do_request(num_req, id);
-            time_spent = elapsed_time(&thread_start_time);
             printf(">>> DECREASING FREQUENCY >>>\n");
+            req_time_dec = do_request(num_req, id);
+
+            pthread_mutex_lock(&write_timer_lock);
+            time_spent = elapsed_time(&write_start_time);
+            pthread_mutex_unlock(&write_timer_lock);
+
+            register_results_dynamic(res_file, time_spent, num_req / req_time_dec, num_active_zc_workers);
+
+            /**
+             * sleep time remains constant here
+             */
             usleep(sleep_micro);
             /**
              * to decrease the req frequency,
@@ -224,6 +255,16 @@ double do_request(int num_keys, int thread_id)
     return req_time;
 }
 
+/**
+ * Each thread will create its results file
+ */
+
+char *create_results_file(int thread_id)
+{
+    char path[30];
+    snprintf(path, 30, "results_kissdb_dynamic_%d.csv", thread_id);
+    return path;
+}
 /**
  * Writes nKeys kv pairs in paldb with nThreads
  * The number of kv pairs will be divided among the number of threads more or less evenly.
@@ -262,6 +303,14 @@ void write_keys_dynamic(int num_keys, int num_threads, double run_time)
 
     pthread_t id[num_threads];
 
+    pthread_mutex_init(&write_timer_lock, NULL);
+
+    /**
+     * a small delta time is spent to spawn the threads in pthread_create,
+     * but lets assume writing starts here
+     */
+    clock_gettime(CLOCK_MONOTONIC_RAW, &write_start_time);
+
     for (int i = 0; i < num_threads; i++)
     {
         pthread_create(&id[i], NULL, writer_thread_dynamic, (void *)args);
@@ -271,6 +320,8 @@ void write_keys_dynamic(int num_keys, int num_threads, double run_time)
         pthread_join(id[i], NULL);
     }
     free(args);
+
+    pthread_mutex_destroy(&write_timer_lock);
 }
 
 /**

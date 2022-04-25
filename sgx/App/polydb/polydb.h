@@ -25,6 +25,8 @@ typedef enum
 
 #define MICRO_SECS 1000000
 
+#define RES_FILE_LEN 30
+
 #if defined(__cplusplus)
 extern "C"
 {
@@ -38,6 +40,7 @@ extern "C"
     void read_keys(int num_keys, int num_threads);
 
     double do_request(int num_keys, int thread_id);
+    char *create_results_file(int thread_id);
 
 #if defined(__cplusplus)
 }

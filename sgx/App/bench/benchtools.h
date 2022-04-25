@@ -47,5 +47,6 @@ double elapsed_time(struct timespec *start);
 void register_results(const char *path, int numKeys, double runTime);
 void register_results(const char *path, int numKeys, double runTime, double tput);
 void register_results(const char *path, int numKeys, double runTime, double tput, double cpu);
+void register_results_dynamic(const char *path, double timestamp, double req_tput, unsigned int num_workers);
 
 #endif /* BENCHTOOLS_H */

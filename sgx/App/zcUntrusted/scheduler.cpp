@@ -59,32 +59,35 @@ extern unsigned int num_workers;
 // int optimum workers
 int optimum_workers;
 
+// number of active zc workers
+unsigned int num_active_zc_workers = num_workers;
+
 pthread_t scheduling_thread;
 
 extern bool use_zc_scheduler;
 
-//forward declarations
+// forward declarations
 
 static void set_num_workers(int desired_workers);
 
-//scheduling phase
+// scheduling phase
 static void do_scheduling(int desired_workers);
-//configuration phase
+// configuration phase
 static void do_configuration();
-//activate the corresponding worker + buffer/pool
+// activate the corresponding worker + buffer/pool
 static void activate_worker(int index);
-//deactivate the corresponding worker + buffer/pool
+// deactivate the corresponding worker + buffer/pool
 static void deactivate_worker(int index);
-//scheduling thread routine
+// scheduling thread routine
 void *scheduling_thread_func(void *arg);
-//caculates optimum # workers for the next scheduling phase
+// caculates optimum # workers for the next scheduling phase
 static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, vector<double> &sl_ratios, int num_micro_q);
 
 /* function definitions */
 
 void init_zc_scheduler()
 {
-    //pthread_mutex_init(&stats_lock, NULL);
+    // pthread_mutex_init(&stats_lock, NULL);
     zc_create_scheduling_thread();
 }
 
@@ -106,27 +109,27 @@ void zc_create_scheduling_thread()
  */
 void *scheduling_thread_func(void *arg)
 {
-    //start scheduler with optimum workers = num workers
+    // start scheduler with optimum workers = num workers
     optimum_workers = num_workers;
 
-    //use_zc_scheduler = false;
+    // use_zc_scheduler = false;
 
-    //Test workers w/o scheduler: set to true if you don't want any scheduling
+    // Test workers w/o scheduler: set to true if you don't want any scheduling
     if (!use_zc_scheduler)
     {
         set_num_workers(optimum_workers);
         return NULL;
     }
 
-    //scheduler loop
+    // scheduler loop
     for (;;)
     {
-        //initialize scheduler in a scheduling phase
+        // initialize scheduler in a scheduling phase
         do_scheduling(optimum_workers);
         sleep(QUANTUM);
-        //sleep(1);
+        // sleep(1);
 
-        //configure optimum workers for next scheduling phase
+        // configure optimum workers for next scheduling phase
         do_configuration();
     }
 }
@@ -147,14 +150,14 @@ static void do_scheduling(int desired_workers)
     }
 }
 /**
- * find best configuration/ie optimum number of workers for 
+ * find best configuration/ie optimum number of workers for
  * the next scheduling phase.
  */
 static void do_configuration()
 {
     static unsigned int counter = 0;
 
-    //printf("doing configuration >>>>>>>>>>>>>\n");
+    // printf("doing configuration >>>>>>>>>>>>>\n");
     /**
      * micro quantums will vary as follows: 0, 1, 3, ... , num_workers
      */
@@ -192,11 +195,11 @@ static void do_configuration()
         sleep(MICRO_QUANTUM);
 
         // get num of fallback calls for this micro quantum
-        //num_fb_mq = zc_statistics->num_zc_fallback_calls;
+        // num_fb_mq = zc_statistics->num_zc_fallback_calls;
         num_fb_mq = __atomic_load_n(&zc_statistics->num_zc_fallback_calls, __ATOMIC_RELAXED);
 
         // get num of fallback calls for this micro quantum
-        //num_sl_mq = zc_statistics->num_zc_swtless_calls;
+        // num_sl_mq = zc_statistics->num_zc_swtless_calls;
         num_sl_mq = __atomic_load_n(&zc_statistics->num_zc_swtless_calls, __ATOMIC_RELAXED);
 
         // calculate wasted cycles for this micro quantum: Ui = F.Tes + i.u.Q.cpu_freq
@@ -259,8 +262,8 @@ static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, ve
         int min_index = 0;
         for (int i = 0; i < num_micro_q; i++)
         {
-            //pyuhala: my observation: the min almost always (or always!) corresponds to i = 0
-            //TODO: change to < (just testing to see what > gets)
+            // pyuhala: my observation: the min almost always (or always!) corresponds to i = 0
+            // TODO: change to < (just testing to see what > gets)
             if (wasted_cycles[i] < wasted_cycles[min_index])
             {
                 min_index = i;
@@ -294,7 +297,7 @@ static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, ve
 }
 
 /**
- * Set number of active workers + pools. We activate workers: 0 .. desired_workers 
+ * Set number of active workers + pools. We activate workers: 0 .. desired_workers
  * and deactivate all the rest.
  */
 static void set_num_workers(int desired_workers)
@@ -316,6 +319,9 @@ static void set_num_workers(int desired_workers)
     {
         deactivate_worker(j);
     }
+
+    // update number of active workers
+    num_active_zc_workers = desired_workers;
 }
 
 /**
@@ -342,7 +348,7 @@ static void activate_worker(int index)
     }
 
     /**
-     * Activate worker if it is paused. The worker may not be already 
+     * Activate worker if it is paused. The worker may not be already
      * sleeping/paused but it cannot be treating a request at this point.
      */
     if (status == paused)
@@ -353,23 +359,23 @@ static void activate_worker(int index)
 /**
  * Sets pause field in corresponding buffer.
  * The worker will pause once it sees this value is set.
- * 
+ *
  */
 static void deactivate_worker(int index)
 {
     __atomic_store_n(&pools->memory_pools[index]->scheduler_pause, 1, __ATOMIC_SEQ_CST);
 }
 
-//reinitize statistics
+// reinitize statistics
 void reinitialize_stats()
 {
-    //pthread_mutex_lock(&stats_lock);
-    //update global totals b4 zeroing
+    // pthread_mutex_lock(&stats_lock);
+    // update global totals b4 zeroing
     total_sl += __atomic_load_n(&zc_statistics->num_zc_swtless_calls, __ATOMIC_RELAXED);
     total_fb += __atomic_load_n(&zc_statistics->num_zc_fallback_calls, __ATOMIC_RELAXED);
 
     __atomic_store_n(&zc_statistics->num_zc_fallback_calls, 0, __ATOMIC_SEQ_CST);
     __atomic_store_n(&zc_statistics->num_zc_swtless_calls, 0, __ATOMIC_SEQ_CST);
 
-    //pthread_mutex_unlock(&stats_lock);
+    // pthread_mutex_unlock(&stats_lock);
 }

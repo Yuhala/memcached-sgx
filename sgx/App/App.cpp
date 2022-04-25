@@ -89,6 +89,14 @@ bool use_zc_switchless = false;
 extern unsigned int num_workers;
 extern zc_stats *zc_statistics;
 
+extern unsigned int num_active_zc_workers;
+
+/**
+ * flags specifying which system to use
+ */
+int sdk_switchless = 0;
+int zc_switchless = 0;
+
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
     printf("Caught signal: %d\n", sig);
@@ -209,8 +217,7 @@ int main(int argc, char *argv[])
     struct timeval tval_before, tval_after, tval_result;
 
     int num_mcd_workers = 2;
-    int sdk_switchless = 0;
-    int zc_switchless = 0;
+
     int ret_zero = 1;
 
     use_zc_scheduler = true;
