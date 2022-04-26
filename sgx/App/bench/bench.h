@@ -13,6 +13,8 @@ void runTestMulti(int num_runs);
 void run_zc_micro(int num_runs);
 void run_kyoto_bench();
 void remove_kc_dbs();
+void remove_kiss_results();
+void remove_kiss_dbs();
 void run_kyoto_bench(int num_runs);
 void run_zc_fg(int num_runs);
 

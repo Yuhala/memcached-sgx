@@ -170,6 +170,7 @@ void register_results(const char *path, int numKeys, double runTime, double tput
 void register_results_dynamic(const char *path, double timestamp, double req_tput, unsigned int num_workers)
 {
     FILE *fptr = fopen(path, "ab+");
+    printf(">>>>> after fopen register_results\n");
     fprintf(fptr, "%f, %f, %d\n", timestamp, req_tput, num_workers);
     fclose(fptr);
 }

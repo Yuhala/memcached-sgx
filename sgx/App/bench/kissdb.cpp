@@ -18,10 +18,16 @@ static double diff;
 static unsigned long long **cpu_stats_begin;
 static unsigned long long **cpu_stats_end;
 
-void removeKissDbs()
+void remove_kiss_dbs()
 {
     // printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
     int ret = system("rm kissdb*");
+    ZC_ASSERT(!ret);
+}
+
+void remove_kiss_results()
+{
+    int ret = system("rm results_kissdb*");
     ZC_ASSERT(!ret);
 }
 
@@ -75,7 +81,7 @@ void run_kissdb_bench(int numRuns)
 
             free(cpu_stats_begin);
             free(cpu_stats_end);
-            removeKissDbs();
+            remove_kiss_dbs();
         }
 
         avg_runtime = total_runtime / numRuns;
@@ -113,6 +119,9 @@ void run_kissdb_dynamic(double run_time, int num_runs)
     Ocall: ocall_fwrite Count: 1577020
     Ocall: ocall_fread Count: 1349250 */
 
+    remove_kiss_dbs(); // clean old files
+    remove_kiss_results();
+    
     printf(">>>>>>>>>>>>>>>>> kissdb dynamic bench start >>>>>>>>>>>>>>>>>\n");
 
     int num_req = 2000; // number of requests issued by the callers
@@ -125,8 +134,8 @@ void run_kissdb_dynamic(double run_time, int num_runs)
 
     write_keys_dynamic(num_req, num_writers, run_time);
 
-    char path[30];
-    snprintf(path, 30, "results_kissdb_dynamic.csv");
+    // char path[30];
+    // snprintf(path, 30, "results_kissdb_dynamic.csv");
 
     // ZC_ASSERT(test);
 

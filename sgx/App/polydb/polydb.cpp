@@ -261,10 +261,11 @@ double do_request(int num_keys, int thread_id)
 
 char *create_results_file(int thread_id)
 {
-    char path[30];
-    snprintf(path, 30, "results_kissdb_dynamic_%d.csv", thread_id);
+    char *path = (char *)malloc(RES_FILE_LEN);
+    snprintf(path, RES_FILE_LEN, "results_kissdb_dynamic_%d.csv", thread_id);
     return path;
 }
+
 /**
  * Writes nKeys kv pairs in paldb with nThreads
  * The number of kv pairs will be divided among the number of threads more or less evenly.
