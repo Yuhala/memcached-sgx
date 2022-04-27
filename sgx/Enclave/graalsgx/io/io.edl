@@ -64,8 +64,10 @@ enclave {
 
 
 
-       ssize_t ocall_read(int fd, [out, size=count]void *buf, size_t count);
-       ssize_t ocall_write(int fd, [in, size=count]const void *buf, size_t count);
+       ssize_t ocall_read(int fd, [out, size=count]void *buf, size_t count) transition_using_threads;
+       ssize_t ocall_write(int fd, [in, size=count]const void *buf, size_t count) transition_using_threads;
+
+
        int ocall_fscanf(SGX_FILE stream, [in, string]const char *format);
        int ocall_fprintf(SGX_FILE stream, [in,string]const char *str);
        void ocall_fgets([out,size=n]char *str, int n, SGX_FILE stream);

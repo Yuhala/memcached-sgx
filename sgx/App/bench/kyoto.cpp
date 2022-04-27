@@ -59,7 +59,7 @@ void run_kyoto_bench(int num_runs)
             start_clock(&start);
 
             cpu_stats_begin = read_cpu();
-            write_keys(i, num_writers);
+            write_bench(i, num_writers);
             cpu_stats_end = read_cpu();
 
             stop_clock(&stop);

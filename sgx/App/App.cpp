@@ -97,6 +97,26 @@ extern unsigned int num_active_zc_workers;
 int sdk_switchless = 0;
 int zc_switchless = 0;
 
+/**
+ * get the number of active (not sleeping) workers
+ * for the switchless system being used.
+ */
+unsigned int get_num_active_workers()
+{
+    if (sdk_switchless)
+    {
+        return 2;
+    }
+    else if (zc_switchless)
+    {
+        return num_active_zc_workers;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 void gen_sighandler(int sig, siginfo_t *si, void *arg)
 {
     printf("Caught signal: %d\n", sig);
@@ -309,7 +329,7 @@ int main(int argc, char *argv[])
     int id = global_eid;
     double run_time = 30.0;
 
-    run_kissdb_dynamic(run_time, 1);
+    run_bench_dynamic(run_time, 1);
 
     // init_memcached(num_mcd_workers);
     // run_kissdb_bench(5);

@@ -87,7 +87,7 @@ void runTestMulti(int num_runs)
         {
             // printf("<--------------------- running test multi ----------------------->\n", i);
             start_clock(&start);
-            write_keys(i, numThreads);
+            write_bench(i, numThreads);
             // read_keys(i, numReaders);
             stop_clock(&stop);
             total_runtime += time_diff(&start, &stop, SEC);
@@ -129,7 +129,7 @@ void run_zc_fg(int numRuns)
             start_clock(&start);
 
             cpu_stats_begin = read_cpu();
-            write_keys(i, numWriters);
+            write_bench(i, numWriters);
             cpu_stats_end = read_cpu();
 
             stop_clock(&stop);
@@ -180,7 +180,7 @@ void run_zc_micro(int num_runs)
         {
             // printf("<--------------------- running test multi ----------------------->\n", i);
             start_clock(&start);
-            write_keys(i, numWriters);
+            write_bench(i, numWriters);
             // read_keys(i, numReaders);
             stop_clock(&stop);
             total_runtime += time_diff(&start, &stop, SEC);

@@ -18,17 +18,17 @@ static double diff;
 static unsigned long long **cpu_stats_begin;
 static unsigned long long **cpu_stats_end;
 
-void remove_kiss_dbs()
+void remove_old_dbs()
 {
     // printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
-    int ret = system("rm kissdb*");
-    ZC_ASSERT(!ret);
+    int ret = system("rm kissdb* lmbench*");
+    //ZC_ASSERT(!ret);
 }
 
-void remove_kiss_results()
+void remove_old_results()
 {
-    int ret = system("rm results_kissdb*");
-    ZC_ASSERT(!ret);
+    int ret = system("rm results_kissdb* results_lmbench*");
+    //ZC_ASSERT(!ret);
 }
 
 void run_kissdb_bench(int numRuns)
@@ -72,7 +72,7 @@ void run_kissdb_bench(int numRuns)
             start_clock(&start);
 
             cpu_stats_begin = read_cpu();
-            write_keys(i, num_writers);
+            write_bench(i, num_writers);
             cpu_stats_end = read_cpu();
 
             stop_clock(&stop);
@@ -81,7 +81,7 @@ void run_kissdb_bench(int numRuns)
 
             free(cpu_stats_begin);
             free(cpu_stats_end);
-            remove_kiss_dbs();
+            remove_old_dbs();
         }
 
         avg_runtime = total_runtime / numRuns;
@@ -112,15 +112,15 @@ void run_kissdb_bench(int numRuns)
  * The sleeping logic is done in the writer_thread routine in Polydb.cpp
  *
  */
-void run_kissdb_dynamic(double run_time, int num_runs)
+void run_bench_dynamic(double run_time, int num_runs)
 {
     // most frequent ocalls
     /* Ocall: ocall_fseeko Count: 2399250
     Ocall: ocall_fwrite Count: 1577020
     Ocall: ocall_fread Count: 1349250 */
 
-    remove_kiss_dbs(); // clean old files
-    remove_kiss_results();
+    remove_old_dbs(); // clean old files
+    remove_old_results();
     
     printf(">>>>>>>>>>>>>>>>> kissdb dynamic bench start >>>>>>>>>>>>>>>>>\n");
 
@@ -128,11 +128,10 @@ void run_kissdb_dynamic(double run_time, int num_runs)
 
     int min_keys = 500;
     int max_keys = 10000;
-    int step = 500;
-    int num_writers = 2;
-    int num_readers = 2;
+    int step = 500;    
+    int num_threads = 2;;
 
-    write_keys_dynamic(num_req, num_writers, run_time);
+    bench_dynamic(num_req, num_threads, run_time);
 
     // char path[30];
     // snprintf(path, 30, "results_kissdb_dynamic.csv");

@@ -170,6 +170,28 @@ Kyoto_Libs := -lpthread -lm -lssl -lcrypto
 Kyoto_Inc_Paths := -I$(Kyoto_Src_In) 
 
 
+########## Lmbench Settings ########
+
+# lmbench source
+Lmbench_Src_In := ./Enclave/lmbench
+
+
+# lmbench c files
+Lmbench_C_Files_In := $(wildcard $(Lmbench_Src_In)/*.c)
+
+
+# lmbench headers
+Lmbench_Headers_In := $(wildcard $(Lmbench_Src_In)/*.h)
+
+
+# lmbench objects
+Lmbench_Objs_In := $(Lmbench_C_Files_In:.c=.o)
+
+# lmbench libs
+Lmbench_Libs := -lpthread -lm -lssl -lcrypto
+
+# lmbench include paths
+Lmbench_Inc_Paths := -I$(Lmbench_Src_In) 
 
 
 ######## App Settings ########
@@ -344,6 +366,15 @@ $(Kyoto_Src_Out)/%.o: $(Kyoto_Src_Out)/%.cc $(Kyoto_Headers_Out)
 		$(CXX)  $(SGX_COMMON_CFLAGS) $(App_Cpp_Flags) -I$(Kyoto_Src_Out) -c $< -o $@
 
 
+####### Build Lmbench Objects ######
+
+$(Lmbench_Src_In)/%.o: $(Lmbench_Src_In)/%.c $(Lmbench_Headers_In)
+		$(CC)  $(SGX_COMMON_CFLAGS) $(Enclave_C_Flags) $(Lmbench_Inc_Paths) -c $< -o $@
+		@echo "CXX <= $<"
+
+
+
+
 ######## App Objects ########
 
 App/Enclave_u.h: $(SGX_EDGER8R) Enclave/Enclave.edl
@@ -385,7 +416,7 @@ Enclave/%.o: Enclave/%.cpp Enclave/Enclave_t.h
 
 prot: $(Signed_Enclave_Name)
 
-$(Enclave_Name): Enclave/Enclave_t.o  $(Enclave_Cpp_Objects) $(Graal_Objects_In) $(Memcached_Objs_In) $(Kyoto_Objs_In)
+$(Enclave_Name): Enclave/Enclave_t.o  $(Enclave_Cpp_Objects) $(Graal_Objects_In) $(Memcached_Objs_In) $(Kyoto_Objs_In) $(Lmbench_Objs_In) 
 	@$(CXX) $^ -o $@ $(Enclave_Link_Flags)
 	@echo "LINK =>  $@"
 
@@ -397,4 +428,4 @@ $(Signed_Enclave_Name): $(Enclave_Name)
 
 clean:
 	@rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.* \
-	$(Memcached_Objs_In) $(Memcached_Objs_Out) $(Kyoto_Objs_In) $(Kyoto_Objs_Out)
+	$(Memcached_Objs_In) $(Memcached_Objs_Out) $(Kyoto_Objs_In) $(Kyoto_Objs_Out) $(Lmbench_Objs_In) 

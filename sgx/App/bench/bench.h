@@ -9,12 +9,16 @@
 
 // pyuhala: prototypes for all the bench routines
 void run_kissdb_bench(int num_runs);
+void run_bench_dynamic(double run_time, int num_runs);
+
 void runTestMulti(int num_runs);
 void run_zc_micro(int num_runs);
 void run_kyoto_bench();
 void remove_kc_dbs();
-void remove_kiss_results();
-void remove_kiss_dbs();
+
+void remove_old_results();
+void remove_old_dbs();
+
 void run_kyoto_bench(int num_runs);
 void run_zc_fg(int num_runs);
 

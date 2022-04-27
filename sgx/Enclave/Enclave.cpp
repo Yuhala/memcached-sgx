@@ -51,6 +51,8 @@
 
 #include "zcTrusted/zc_in.h"
 
+#include "lmbench/lmbench.h"
+
 /* Global variables */
 sgx_enclave_id_t global_eid;
 bool enclave_initiated;
@@ -68,15 +70,15 @@ SGX_FILE stdin = SGX_STDIN;
 SGX_FILE stdout = SGX_STDOUT;
 SGX_FILE stderr = SGX_STDERR;
 
-//pyuhala: should we return 0 or not in the should_be_switchless routine
-// by default do not use zc switchless, ie return_zero = 1
+// pyuhala: should we return 0 or not in the should_be_switchless routine
+//  by default do not use zc switchless, ie return_zero = 1
 int return_zero = 1;
 
 /**
  * For kissdb
  * pyuhala: this global handle causes race issues
  */
-//KISSDB writes_db;
+// KISSDB writes_db;
 static sgx_spinlock_t writer_lock = SGX_SPINLOCK_INITIALIZER;
 
 void readKissdb(int n, int storeId);
@@ -98,19 +100,37 @@ void ecall_test()
     // replace with your custom test routine
 }
 
+void ecall_do_lmbench_op(int num_ops, int thread_id, int op, void *cookie)
+{
+
+    switch (op)
+    {
+    case READ_OP:
+        lmbench_do_read(num_ops, thread_id, cookie);
+        break;
+
+    case WRITE_OP:
+        lmbench_do_write(num_ops, thread_id, cookie);
+        break;
+
+    default:
+        break;
+    }
+}
+
 /**
  * microbenchmark to run fast(f) and long(g) ocalls
  */
 void ecall_run_fg(int total, int tid)
 {
-    double fpercent = 10.0; //50,90
+    double fpercent = 10.0; // 50,90
 
     double temp = (fpercent / 100.0) * total;
 
     int numF = (int)temp;
     int numG = total - numF;
 
-    //printf(">>> zc fg micro: Total: %d %fF numF calls: %d , numG calls: %d >>>\n", total, fpercent, numF, numG);
+    // printf(">>> zc fg micro: Total: %d %fF numF calls: %d , numG calls: %d >>>\n", total, fpercent, numF, numG);
 
     for (int i = 0; i < numF; i++)
     {
@@ -125,7 +145,7 @@ void ecall_run_fg(int total, int tid)
 
 void ecall_read_kyoto(int numKeys, int readerId)
 {
-    //todo
+    // todo
 }
 
 void ecall_write_kyotodb(int numKeys, int writerId)
@@ -168,8 +188,8 @@ void ocall_switchless(struct buffer *switchless_buffer)
     }
 }
 
-/* 
- * printf: 
+/*
+ * printf:
  *   Invokes OCALL to display the enclave buffer to the terminal.
  */
 int printf(const char *fmt, ...)
@@ -186,7 +206,7 @@ int printf(const char *fmt, ...)
 void fill_array()
 {
     printf("Filling inside array\n");
-    unsigned int size = 1024 * 1024 * 4; //16mb
+    unsigned int size = 1024 * 1024 * 4; // 16mb
     int *array = (int *)malloc(sizeof(int) * size);
     int idx = 0;
     for (int i = 0; i < size; i++)
@@ -209,9 +229,9 @@ void rw_benchmark(int n)
 
     /* read switchless */
     /*if ((fdr = open("/dev/zero", O_RDONLY)) == -1)
-	printf("\e[1;31mErreur !\e[0m\n");
+    printf("\e[1;31mErreur !\e[0m\n");
     for (i=0; i<100000; i++)
-	ret = read(fdr, buf, n);*/
+    ret = read(fdr, buf, n);*/
     /* read not switchless */
     if ((fdr = open("/dev/zero", O_RDONLY)) == -1)
         printf("\e[1;31mErreur !\e[0m\n");
@@ -219,14 +239,14 @@ void rw_benchmark(int n)
         ocall_read(&ret, fdr, buf, n);
     /* write switchless */
     /*if ((fdw = open("/dev/null", O_WRONLY | O_APPEND)) == -1)
-	printf("\e[1;31mErreur !\e[0m\n");
+    printf("\e[1;31mErreur !\e[0m\n");
     for (i=0; i<100000; i++)
-	ret = write(fdw, buf, n);*/
+    ret = write(fdw, buf, n);*/
     /* write not switchless */
     /*if ((fdw = open("/dev/null", O_WRONLY | O_APPEND)) == -1)
-	printf("\e[1;31mErreur !\e[0m\n");
+    printf("\e[1;31mErreur !\e[0m\n");
     for (i=0; i<10000000; i++)
-	ocall_write(&ret, fdw, buf, n);*/
+    ocall_write(&ret, fdw, buf, n);*/
 }
 
 void ecall_bench_thread(struct buffer *bs, struct buffer *b, void **sl_fn, void **fn, sig_atomic_t *sl_count, sig_atomic_t *f_count, int *workers)
@@ -250,8 +270,8 @@ void ecall_bench_thread(struct buffer *bs, struct buffer *b, void **sl_fn, void 
             empty(0);
         else
             empty(5);
-    //ret = write(fdw, buf, 8192);
-    //ocall_write(&ret, fdw, buf, 0);
+    // ret = write(fdw, buf, 8192);
+    // ocall_write(&ret, fdw, buf, 0);
 }
 
 void ecall_run_main(int id)
@@ -259,7 +279,7 @@ void ecall_run_main(int id)
     global_eid = id;
     enclave_initiated = true;
     printf("In ecall run main. Global eid: %d \n", id);
-    //run_main(1, NULL);
+    // run_main(1, NULL);
 }
 
 void test_routine(int n)
@@ -274,7 +294,7 @@ void readKissdb(int n, int storeId)
 {
     log_zc_routine(__func__);
     /**
-     * Reading the db should not cause race issues for threads if 
+     * Reading the db should not cause race issues for threads if
      * all handles are local to the threads
      */
     uint64_t i, j;
@@ -286,7 +306,7 @@ void readKissdb(int n, int storeId)
     const char storeFile[16];
     snprintf(storeFile, 16, "kissdb%d.db", storeId);
 
-    //printf("ecall_readKissdb::Opening database %s...\n", storeFile);
+    // printf("ecall_readKissdb::Opening database %s...\n", storeFile);
 
     if (KISSDB_open(&db, storeFile, KISSDB_OPEN_MODE_RDONLY, 1024, 8, sizeof(v)))
     {
@@ -294,7 +314,7 @@ void readKissdb(int n, int storeId)
         return;
     }
 
-    //printf("Getting %d 64-byte values in kissdb...\n", n);
+    // printf("Getting %d 64-byte values in kissdb...\n", n);
 
     for (i = 0; i < n; ++i)
     {
@@ -303,7 +323,7 @@ void readKissdb(int n, int storeId)
         {
             printf("KISSDB_get (2) failed (%" PRIu64 ") (%d)\n", i, q);
             return;
-            //continue;
+            // continue;
         }
 
         for (j = 0; j < 8; ++j)
@@ -316,7 +336,7 @@ void readKissdb(int n, int storeId)
         }
     }
 
-    //printf("Closing database...\n");
+    // printf("Closing database...\n");
 
     KISSDB_close(&db);
 }
@@ -326,9 +346,9 @@ void writeKissdb(int n, int storeId)
     log_zc_routine(__func__);
     uint64_t i, j;
     uint64_t v[8];
-    //KISSDB db;
+    // KISSDB db;
     KISSDB writes_db;
-    //char got_all_values[10000];
+    // char got_all_values[10000];
     int q;
 
     const char storeFile[16];
@@ -338,8 +358,8 @@ void writeKissdb(int n, int storeId)
      * pyuhala - lock the db: multiple threads cannot safely write concurrently to the db as of now
      */
 
-    //sgx_spin_lock(&writer_lock);
-    //printf("ecall_writeKissdb::Opening new empty database %s...\n", storeFile);
+    // sgx_spin_lock(&writer_lock);
+    // printf("ecall_writeKissdb::Opening new empty database %s...\n", storeFile);
 
     int retOpen = KISSDB_open(&writes_db, storeFile, KISSDB_OPEN_MODE_RWREPLACE, 1024, 8, sizeof(v));
 
@@ -349,7 +369,7 @@ void writeKissdb(int n, int storeId)
         return;
     }
 
-    //printf("Adding %d 64-byte kv pairs in kissdb...\n", n);
+    // printf("Adding %d 64-byte kv pairs in kissdb...\n", n);
 
     for (i = 0; i < n; ++i)
     {
@@ -372,24 +392,24 @@ void writeKissdb(int n, int storeId)
         */
     }
 
-    //printf("Closing database...\n");
+    // printf("Closing database...\n");
 
     KISSDB_close(&writes_db);
 
-    //sgx_spin_unlock(&writer_lock);
+    // sgx_spin_unlock(&writer_lock);
 }
 
 void ecall_readKissdb(int n, int storeId)
 {
-    //readKissdb(n, storeId);
-    //read_micro(n, storeId);
+    // readKissdb(n, storeId);
+    // read_micro(n, storeId);
 }
 
 void ecall_writeKissdb(int n, int storeId)
 {
     writeKissdb(n, storeId);
-    //runTestMulti(n);
-    //write_micro(n, storeId);
+    // runTestMulti(n);
+    // write_micro(n, storeId);
 }
 
 /**
@@ -433,8 +453,8 @@ void write_micro(int num_writes, int storeId)
 
 void ecall_kissdb_test()
 {
-    //printf("In ecall kissdb test\n");
-    //return;
+    // printf("In ecall kissdb test\n");
+    // return;
 
     uint64_t i, j;
     uint64_t v[8];

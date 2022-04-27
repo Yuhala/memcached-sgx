@@ -19,6 +19,10 @@
 #include <signal.h>
 #include <stddef.h>
 
+#include "zc_types.h"
+
+#include <fcntl.h>
+
 extern sgx_enclave_id_t global_eid;
 extern struct buffer switchless_buffers[];
 extern __thread struct buffer *switchless_buffer;
@@ -31,6 +35,12 @@ extern void *shim_functions[];
 extern bool use_zc_switchless;
 
 extern unsigned int num_active_zc_workers;
+
+/**
+ * specifies if caller threads
+ * should start their work or not
+ */
+volatile int start = 0;
 
 /**
  * number of seconds for the min request frequency
@@ -48,7 +58,7 @@ static double min_sleep = 0.03125;
  * register start time for the writer threads.
  * this is done by the main thread
  */
-static struct timespec write_start_time;
+static struct timespec bench_start_time;
 
 /**
  * time spent since atleast one of the caller threads began sending requests
@@ -63,7 +73,7 @@ static int write_store_counter = 0;
 static int read_store_counter = 0;
 pthread_mutex_t kissdb_lock;
 
-pthread_mutex_t write_timer_lock;
+pthread_mutex_t bench_timer_lock;
 
 struct thread_args
 {
@@ -72,7 +82,62 @@ struct thread_args
     int rw_id;
     /*bench time in secs*/
     double run_time;
+    /* operation type*/
+    op_type operation;
+    /* fd and file path*/
+    _state *file_info;
 };
+
+/**
+ * flags specifying which system to use
+ */
+extern int sdk_switchless;
+extern int zc_switchless;
+
+/**
+ * lmbench reads from /dev/zero
+ */
+_state *get_read_cookie()
+{
+
+    _state *cookie = (_state *)malloc(sizeof(_state));
+    cookie->fd = open("/dev/zero", O_RDONLY);
+    cookie->file = NULL; // we already know it will be /dev/zero
+
+    return cookie;
+}
+
+/**
+ * lmbench writes to /dev/null
+ */
+_state *get_write_cookie()
+{
+
+    _state *cookie = (_state *)malloc(sizeof(_state));
+    cookie->fd = open("/dev/null", O_WRONLY);
+    cookie->file = NULL; // we already know it will be /dev/zero
+
+    return cookie;
+}
+
+/**
+ * pyuhala:
+ * reader/writer threads should wait
+ * for the main thread to finish creating all threads
+ * and set the start flag before they begin reading/writing. 
+ * This minimizes the lag between the spawned threads.
+ */
+
+void wait_for_start()
+{
+    /**
+     * busy wait loop 
+     */
+    while (__atomic_load_n(&start, __ATOMIC_RELAXED) != 1)
+    {
+        ZC_PAUSE();
+    }
+}
 
 void *reader_thread(void *input)
 {
@@ -108,8 +173,10 @@ void *writer_thread(void *input)
 /**
  * writer thread routine for dynamic workload
  */
-void *writer_thread_dynamic(void *input)
+void *thread_dynamic(void *input)
 {
+
+    wait_for_start();
     // pthread_mutex_lock(&lock);
     // id = write_store_counter++;
     int id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
@@ -121,6 +188,8 @@ void *writer_thread_dynamic(void *input)
     unsigned long long **cpu_stats_end;
 
     int num_req = ((struct thread_args *)input)->num_keys;
+    int operation = ((struct thread_args *)input)->operation;
+    void *cookie = (void *)((struct thread_args *)input)->file_info;
 
     // probably not the cleanest practice
     unsigned int sleep_micro = static_cast<unsigned int>(max_sleep * MICRO_SECS);
@@ -170,7 +239,7 @@ void *writer_thread_dynamic(void *input)
         case INCREASE:
             printf(">>> INCREASING FREQUENCY >>>\n");
             /**
-             * Send num_req write requests to kissdb in enclave.
+             * Send num_req write requests to the enclave.
              * We could calculate time spent out of the switch
              * block, but I think it makes sense to have it just after
              * performing the requests in each case,
@@ -178,13 +247,13 @@ void *writer_thread_dynamic(void *input)
              */
 
             // cpu_stats_begin = read_cpu();
-            req_time_inc = do_request(num_req, id);
+            req_time_inc = do_request(num_req, id, operation, cookie);
 
-            pthread_mutex_lock(&write_timer_lock);
-            time_spent = elapsed_time(&write_start_time);
-            pthread_mutex_unlock(&write_timer_lock);
+            pthread_mutex_lock(&bench_timer_lock);
+            time_spent = elapsed_time(&bench_start_time);
+            pthread_mutex_unlock(&bench_timer_lock);
 
-            register_results_dynamic(res_file, time_spent, num_req / req_time_inc, num_active_zc_workers);
+            register_results_dynamic(res_file, time_spent, num_req / req_time_inc, get_num_active_workers());
 
             // cpu_stats_end = read_cpu();
             // cpu_usage = get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
@@ -200,13 +269,13 @@ void *writer_thread_dynamic(void *input)
         case CONSTANT:
             printf(">>> CONSTANT FREQUENCY >>>\n");
 
-            req_time_const = do_request(num_req, id);
+            req_time_const = do_request(num_req, id, operation, cookie);
 
-            pthread_mutex_lock(&write_timer_lock);
-            time_spent = elapsed_time(&write_start_time);
-            pthread_mutex_unlock(&write_timer_lock);
+            pthread_mutex_lock(&bench_timer_lock);
+            time_spent = elapsed_time(&bench_start_time);
+            pthread_mutex_unlock(&bench_timer_lock);
 
-            register_results_dynamic(res_file, time_spent, num_req / req_time_const, num_active_zc_workers);
+            register_results_dynamic(res_file, time_spent, num_req / req_time_const, get_num_active_workers());
             /**
              * sleep time remains constant here
              */
@@ -215,13 +284,13 @@ void *writer_thread_dynamic(void *input)
             break;
         case DECREASE:
             printf(">>> DECREASING FREQUENCY >>>\n");
-            req_time_dec = do_request(num_req, id);
+            req_time_dec = do_request(num_req, id, operation, cookie);
 
-            pthread_mutex_lock(&write_timer_lock);
-            time_spent = elapsed_time(&write_start_time);
-            pthread_mutex_unlock(&write_timer_lock);
+            pthread_mutex_lock(&bench_timer_lock);
+            time_spent = elapsed_time(&bench_start_time);
+            pthread_mutex_unlock(&bench_timer_lock);
 
-            register_results_dynamic(res_file, time_spent, num_req / req_time_dec, num_active_zc_workers);
+            register_results_dynamic(res_file, time_spent, num_req / req_time_dec, get_num_active_workers());
 
             /**
              * sleep time remains constant here
@@ -236,22 +305,27 @@ void *writer_thread_dynamic(void *input)
         default:
             break;
         }
+
+        /**
+         * leave the loop
+         */
     }
 }
 
 /**
- * Perform a write request in kissdb via an ecall.
+ * Perform a read request via an ecall.
  * The time taken for the request to complete is returned.
+ * cookie struct contains fd and file path
  */
-double do_request(int num_keys, int thread_id)
+double do_request(int num_ops, int thread_id, int operation, void *cookie)
 {
     struct timespec req_start, req_stop;
 
     start_clock(&req_start);
-    ecall_writeKissdb(global_eid, num_keys, thread_id);
+    ecall_do_lmbench_op(global_eid, num_ops, thread_id, operation, cookie);
     stop_clock(&req_stop);
     double req_time = time_diff(&req_start, &req_stop, SEC);
-    printf(">>> kissdb write request complete: num_keys: %d thread_id: %d tput: %f OP/s >>\n", num_keys, thread_id, num_keys / req_time);
+    printf(">>> request complete: num_ops: %d thread_id: %d tput: %f OP/s >>\n", num_ops, thread_id, num_ops / req_time);
     return req_time;
 }
 
@@ -262,7 +336,8 @@ double do_request(int num_keys, int thread_id)
 char *create_results_file(int thread_id)
 {
     char *path = (char *)malloc(RES_FILE_LEN);
-    snprintf(path, RES_FILE_LEN, "results_kissdb_dynamic_%d.csv", thread_id);
+    // snprintf(path, RES_FILE_LEN, "results_kissdb_dynamic_%d.csv", thread_id);
+    snprintf(path, RES_FILE_LEN, "results_lmbench_dynamic_%d.csv", thread_id);
     return path;
 }
 
@@ -271,7 +346,7 @@ char *create_results_file(int thread_id)
  * The number of kv pairs will be divided among the number of threads more or less evenly.
  */
 
-void write_keys(int num_keys, int num_threads)
+void write_bench(int num_keys, int num_threads)
 {
     struct thread_args *args = (struct thread_args *)malloc(sizeof(struct thread_args));
     /**
@@ -292,37 +367,67 @@ void write_keys(int num_keys, int num_threads)
     free(args);
 }
 
-void write_keys_dynamic(int num_keys, int num_threads, double run_time)
+/**
+ * Half of the threads will do reads and the others writes
+ */
+void bench_dynamic(int num_ops, int num_threads, double run_time)
 {
-    struct thread_args *args = (struct thread_args *)malloc(sizeof(struct thread_args));
+    int read_threads = num_threads / 2;
+    int write_threads = num_threads - read_threads;
+
+    int half_ops = num_ops / 2;
+
+    struct thread_args *reader_args = (struct thread_args *)malloc(sizeof(struct thread_args));
     /**
-     * Roughly divide the number of keys among the threads
+     * Roughly divide the number of ops among the threads
      */
-    args->num_keys = num_keys / num_threads;
-    args->rw_id = 0;
-    args->run_time = run_time;
+    reader_args->num_keys = half_ops / read_threads;
+    reader_args->rw_id = 0;
+    reader_args->run_time = run_time;
+    reader_args->operation = READ_OP;
+    reader_args->file_info = get_read_cookie();
+
+    struct thread_args *writer_args = (struct thread_args *)malloc(sizeof(struct thread_args));
+    /**
+     * Roughly divide the number of ops among the threads
+     */
+    writer_args->num_keys = half_ops / write_threads;
+    writer_args->rw_id = 1;
+    writer_args->run_time = run_time;
+    writer_args->operation = WRITE_OP;
+    writer_args->file_info = get_write_cookie();
 
     pthread_t id[num_threads];
 
-    pthread_mutex_init(&write_timer_lock, NULL);
+    pthread_mutex_init(&bench_timer_lock, NULL);
+
+    for (int i = 0; i < read_threads; i++)
+    {
+        pthread_create(&id[i], NULL, thread_dynamic, (void *)reader_args);
+    }
+    for (int i = read_threads; i < num_threads; i++)
+    {
+        pthread_create(&id[i], NULL, thread_dynamic, (void *)writer_args);
+    }
 
     /**
-     * a small delta time is spent to spawn the threads in pthread_create,
-     * but lets assume writing starts here
+     * the thread_dynamic routines will begin
+     * reading/writing only after start is 1.
+     * this helps to prevent lag between the spawned
+     * threads as they work with the same global timer.
      */
-    clock_gettime(CLOCK_MONOTONIC_RAW, &write_start_time);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &bench_start_time);
+    start = 1;
 
-    for (int i = 0; i < num_threads; i++)
-    {
-        pthread_create(&id[i], NULL, writer_thread_dynamic, (void *)args);
-    }
     for (int i = 0; i < num_threads; i++)
     {
         pthread_join(id[i], NULL);
     }
-    free(args);
 
-    pthread_mutex_destroy(&write_timer_lock);
+    free(reader_args);
+    free(writer_args);
+
+    pthread_mutex_destroy(&bench_timer_lock);
 }
 
 /**
@@ -330,7 +435,7 @@ void write_keys_dynamic(int num_keys, int num_threads, double run_time)
  * The number of keys will be divided among the number of threads more or less evenly.
  */
 
-void read_keys(int num_keys, int num_threads)
+void read_bench(int num_keys, int num_threads)
 {
     struct thread_args *args = (struct thread_args *)malloc(sizeof(struct thread_args));
     /**
