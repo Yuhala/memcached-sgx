@@ -14,6 +14,8 @@
 
 //#define ZC_LOGGING
 
+#define RETRIES_B4_FALLBACK 1000
+
 void do_zc_switchless_request(zc_req *request, unsigned int pool_index);
 int reserve_worker();
 void release_worker(unsigned int pool_index);

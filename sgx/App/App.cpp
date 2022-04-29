@@ -132,7 +132,7 @@ int getCpus()
 /**
  * Set main thread attribs
  */
-void setMainAttribs()
+void set_main_attribs()
 {
     main_thread_id = pthread_self();
     pthread_attr_t *attr = (pthread_attr_t *)malloc(sizeof(pthread_attr_t));
@@ -200,7 +200,7 @@ long ocall_gettid(void)
 int normal_run(int arg)
 {
 
-    setMainAttribs();
+    set_main_attribs();
 
     attr_map.insert(pair<pthread_t, pthread_attr_t *>(0, NULL));
     /* Initialize the enclave */
@@ -217,7 +217,7 @@ int normal_run(int arg)
     ecall_run_main(global_eid, id);
 
     printf("Number of ocalls: %d\n", ocall_count);
-    showOcallLog(50);
+    show_ocall_log(50);
 
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);
@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
     // int ret = normal_run(arg1);
     // return ret;
 
-    setMainAttribs();
+    set_main_attribs();
     pthread_mutex_init(&ocall_counter_lock, NULL);
 
     attr_map.insert(pair<pthread_t, pthread_attr_t *>(0, NULL));
@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
 
     /* Initialize the enclave */
 
-    if (!sdk_switchless)
+    if (sdk_switchless == 0)
     {
         // do not use switchless
         if (initialize_enclave_no_switchless() < 0)
@@ -289,13 +289,18 @@ int main(int argc, char *argv[])
             return -1;
         }
     }
-    else
+    else if (sdk_switchless == 1)
     {
         // use intel sdk switchless
-        printf("########################## running in INTEL-SDK-SWITCHLESS mode ##########################");
+        printf("########################## running in INTEL-SDK-SWITCHLESS mode. #workers: %d ##########################\n", num_sl_workers);
         us_config.num_uworkers = num_sl_workers;
         // pyuhala: we are not concerned with switchless ecalls so no trusted workers
         us_config.num_tworkers = 0;
+        /**
+         * define the number of retries before fallback.
+         */
+        us_config.retries_before_fallback = 0;
+
         if (initialize_enclave(&us_config) < 0)
         {
             printf("Enter a character before exit ...\n");
@@ -313,7 +318,7 @@ int main(int argc, char *argv[])
 
     if (zc_switchless)
     {
-        printf("########################## running in ZC-SWITCHLESS mode ##########################\n");
+        printf("########################## running in ZC-SWITCHLESS mode. # workers: %d ##########################\n", num_sl_workers);
         ret_zero = 0;
         // init_switchless();
         init_zc(num_sl_workers);
@@ -329,10 +334,12 @@ int main(int argc, char *argv[])
     int id = global_eid;
     double run_time = 30.0;
 
-    run_bench_dynamic(run_time, 1);
+    // run_bench_dynamic(run_time, 1);
+
+    // run_lmbench(3);
 
     // init_memcached(num_mcd_workers);
-    // run_kissdb_bench(5);
+    run_kissdb_bench(3);
     // run_zc_micro(1);
     // run_kyoto_bench(5);
 
@@ -373,12 +380,12 @@ int main(int argc, char *argv[])
         }
 
         printf("<<<< COMPLETE ZC SWITCHLESS CALLS: %ld ZC FALLBACK CALLS: %ld >>>>\n", sl, fb);
-        showOcallLog(5);
+        show_ocall_log(5);
         printf("Total OCALLS (switchless + not) = %d\n", ocall_count);
     }
     else
     {
-        showOcallLog(5);
+        show_ocall_log(5);
     }
 
     // finalize_zc();
@@ -393,7 +400,7 @@ int main(int argc, char *argv[])
 
     // ecall_kissdb_test(global_eid);
 
-    showOcallLog(10);
+    show_ocall_log(10);
 
     return 0;
 
@@ -403,7 +410,7 @@ int main(int argc, char *argv[])
     }
 
     printf("Number of ocalls: %d\n", ocall_count);
-    showOcallLog(10);
+    show_ocall_log(10);
 
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);

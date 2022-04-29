@@ -27,6 +27,13 @@
 #define Q1_INDEX (MEDIAN_INDEX / 2)                // starting index for 1st quartile
 #define Q3_INDEX (NUM_ITERATIONS - (Q1_INDEX + 1)) // starting index for 3rd quartile
 
+/**
+ * sometimes we have many data points.
+ * The register results funtion can use this value to skip
+ * some points
+ */
+#define POINT_FREQ 150
+
 typedef enum
 {
     MILLI,
@@ -47,6 +54,8 @@ double elapsed_time(struct timespec *start);
 void register_results(const char *path, int numKeys, double runTime);
 void register_results(const char *path, int numKeys, double runTime, double tput);
 void register_results(const char *path, int numKeys, double runTime, double tput, double cpu);
-void register_results_dynamic(const char *path, double timestamp, double req_tput, unsigned int num_workers);
+void register_results_dynamic(const char *path, double timestamp, double req_tput, unsigned int num_workers, double cpu_usage);
+
+double get_tput(int num_ops, double time);
 
 #endif /* BENCHTOOLS_H */

@@ -39,6 +39,8 @@ void run_kissdb_bench(int numRuns)
     Ocall: ocall_fwrite Count: 1577020
     Ocall: ocall_fread Count: 1349250 */
 
+    remove_old_results();
+
     printf(">>>>>>>>>>>>>>>>> kissdb bench START >>>>>>>>>>>>>>>>>\n");
     int min_keys = 500;
     int max_keys = 10000;

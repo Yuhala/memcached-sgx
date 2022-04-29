@@ -9,6 +9,7 @@
 #include "Enclave_u.h"
 #include "sgx_urts.h"
 #include "bench/benchtools.h"
+#include "bench/cpu_usage.h"
 
 #include <time.h>
 #include <unistd.h>
@@ -124,14 +125,14 @@ _state *get_write_cookie()
  * pyuhala:
  * reader/writer threads should wait
  * for the main thread to finish creating all threads
- * and set the start flag before they begin reading/writing. 
+ * and set the start flag before they begin reading/writing.
  * This minimizes the lag between the spawned threads.
  */
 
 void wait_for_start()
 {
     /**
-     * busy wait loop 
+     * busy wait loop
      */
     while (__atomic_load_n(&start, __ATOMIC_RELAXED) != 1)
     {
@@ -148,7 +149,7 @@ void *reader_thread(void *input)
     // int id = (write_store_counter > 0) ? write_store_counter - 1 : 0;
     int id = __atomic_fetch_add(&read_store_counter, 1, __ATOMIC_RELAXED);
 
-    ecall_readKissdb(global_eid, n, id);
+    ecall_read_kissdb(global_eid, n, id);
 }
 
 /**
@@ -166,7 +167,7 @@ void *writer_thread(void *input)
     // pthread_mutex_unlock(&lock);
 
     // ecall_write_kyotodb(global_eid, n, id);
-    ecall_writeKissdb(global_eid, n, id);
+    ecall_write_kissdb(global_eid, n, id);
     // ecall_run_fg(global_eid, n, id);
 }
 
@@ -181,11 +182,6 @@ void *thread_dynamic(void *input)
     // id = write_store_counter++;
     int id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
     // pthread_mutex_unlock(&lock);
-
-    // cpu usage variables
-
-    unsigned long long **cpu_stats_begin;
-    unsigned long long **cpu_stats_end;
 
     int num_req = ((struct thread_args *)input)->num_keys;
     int operation = ((struct thread_args *)input)->operation;
@@ -204,6 +200,13 @@ void *thread_dynamic(void *input)
 
     // create results file
     char *res_file = create_results_file(id);
+
+    /**
+     * cpu usage stats
+     */
+    unsigned long long **cpu_stats_begin;
+    unsigned long long **cpu_stats_end;
+    double cpu_usage = 0.0;
 
     while (time_spent < run_time)
     {
@@ -246,17 +249,16 @@ void *thread_dynamic(void *input)
              *  and computing cpu usage during the request period.
              */
 
-            // cpu_stats_begin = read_cpu();
+            cpu_stats_begin = read_cpu();
             req_time_inc = do_request(num_req, id, operation, cookie);
+            cpu_stats_end = read_cpu();
 
             pthread_mutex_lock(&bench_timer_lock);
             time_spent = elapsed_time(&bench_start_time);
             pthread_mutex_unlock(&bench_timer_lock);
 
-            register_results_dynamic(res_file, time_spent, num_req / req_time_inc, get_num_active_workers());
-
-            // cpu_stats_end = read_cpu();
-            // cpu_usage = get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
+            cpu_usage = get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
+            register_results_dynamic(res_file, time_spent, get_tput(num_req, req_time_inc), get_num_active_workers(), cpu_usage);
 
             usleep(sleep_micro);
             /**
@@ -269,13 +271,16 @@ void *thread_dynamic(void *input)
         case CONSTANT:
             printf(">>> CONSTANT FREQUENCY >>>\n");
 
+            cpu_stats_begin = read_cpu();
             req_time_const = do_request(num_req, id, operation, cookie);
+            cpu_stats_end = read_cpu();
 
             pthread_mutex_lock(&bench_timer_lock);
             time_spent = elapsed_time(&bench_start_time);
             pthread_mutex_unlock(&bench_timer_lock);
 
-            register_results_dynamic(res_file, time_spent, num_req / req_time_const, get_num_active_workers());
+            cpu_usage = get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
+            register_results_dynamic(res_file, time_spent, get_tput(num_req, req_time_const), get_num_active_workers(), cpu_usage);
             /**
              * sleep time remains constant here
              */
@@ -284,13 +289,16 @@ void *thread_dynamic(void *input)
             break;
         case DECREASE:
             printf(">>> DECREASING FREQUENCY >>>\n");
+            cpu_stats_begin = read_cpu();
             req_time_dec = do_request(num_req, id, operation, cookie);
+            cpu_stats_end = read_cpu();
 
             pthread_mutex_lock(&bench_timer_lock);
             time_spent = elapsed_time(&bench_start_time);
             pthread_mutex_unlock(&bench_timer_lock);
 
-            register_results_dynamic(res_file, time_spent, num_req / req_time_dec, get_num_active_workers());
+            cpu_usage = get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
+            register_results_dynamic(res_file, time_spent, get_tput(num_req, req_time_dec), get_num_active_workers(), cpu_usage);
 
             /**
              * sleep time remains constant here
@@ -365,6 +373,82 @@ void write_bench(int num_keys, int num_threads)
         pthread_join(id[i], NULL);
     }
     free(args);
+}
+
+/**
+ * simple lmbench --> no dynamic stuff
+ */
+void lmbench_simple(int num_ops, int num_threads)
+{
+    int read_threads = num_threads / 2;
+    int write_threads = num_threads - read_threads;
+
+    int half_ops = num_ops / 2;
+
+    struct thread_args *reader_args = (struct thread_args *)malloc(sizeof(struct thread_args));
+    /**
+     * Roughly divide the number of ops among the threads
+     */
+    reader_args->num_keys = half_ops / read_threads;
+    reader_args->rw_id = 0;
+    reader_args->run_time = 0;
+    reader_args->operation = READ_OP;
+    reader_args->file_info = get_read_cookie();
+
+    struct thread_args *writer_args = (struct thread_args *)malloc(sizeof(struct thread_args));
+    /**
+     * Roughly divide the number of ops among the threads
+     */
+    writer_args->num_keys = half_ops / write_threads;
+    writer_args->rw_id = 1;
+    writer_args->run_time = 0;
+    writer_args->operation = WRITE_OP;
+    writer_args->file_info = get_write_cookie();
+
+    pthread_t id[num_threads];
+
+    pthread_mutex_init(&bench_timer_lock, NULL);
+
+    for (int i = 0; i < read_threads; i++)
+    {
+        pthread_create(&id[i], NULL, lm_thread, (void *)reader_args);
+    }
+    for (int i = read_threads; i < num_threads; i++)
+    {
+        pthread_create(&id[i], NULL, lm_thread, (void *)writer_args);
+    }
+
+    /**
+     * let all the threads start
+     * at approx the same time
+     */
+    clock_gettime(CLOCK_MONOTONIC_RAW, &bench_start_time);
+    start = 1;
+
+    for (int i = 0; i < num_threads; i++)
+    {
+        pthread_join(id[i], NULL);
+    }
+
+    free(reader_args);
+    free(writer_args);
+
+    pthread_mutex_destroy(&bench_timer_lock);
+}
+
+/**
+ * lmbench thread
+ */
+void *lm_thread(void *input)
+{
+
+    wait_for_start();
+    int thread_id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
+    int num_ops = ((struct thread_args *)input)->num_keys;
+    int operation = ((struct thread_args *)input)->operation;
+    void *cookie = (void *)((struct thread_args *)input)->file_info;
+
+    ecall_do_lmbench_op(global_eid, num_ops, thread_id, operation, cookie);
 }
 
 /**

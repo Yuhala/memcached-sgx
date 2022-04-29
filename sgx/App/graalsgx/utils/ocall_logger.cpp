@@ -53,7 +53,7 @@ void log_ocall(const char *func)
 /**
  * Print top num frequent ocalls
  */
-void showOcallLog(int num)
+void show_ocall_log(int num)
 {
     //create vector with map kv pairs
     vector<pair<string, int>> vect;

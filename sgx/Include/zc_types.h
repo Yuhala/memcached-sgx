@@ -15,6 +15,8 @@
 #include <sys/types.h>
 #include "struct/sgx_stdio_struct.h"
 
+#include "zc_atomics.h"
+
 #include "memcached/mpool.h"
 
 #define ZC_BUFFER_SZ 1024 * 1024 /* 1mb default buffer size should be enough for static buffers */
@@ -186,7 +188,7 @@ struct zc_request
     zc_routine func_name;
     int req_status;
     //volatile int is_done;        /* do not cache this int */
-    volatile int is_done;        /* do not cache this int */
+    volatile uint64_t is_done;        /* do not cache this int */
     unsigned int req_pool_index; /* pool index of worker thread */
 };
 
@@ -343,6 +345,7 @@ typedef struct zc_worker_args zc_worker_args;
 
 typedef struct zc_mpool_array zc_mpool_array;
 
+#define ZC_LOCK_INC lock_inc64
 #define ZC_PAUSE() __asm__ __volatile__("pause" \
                                         :       \
                                         :       \

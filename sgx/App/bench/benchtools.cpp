@@ -99,6 +99,10 @@ double get_SD(std::vector<double> &data)
     return sqrt(sd / data.size());
 }
 
+double get_tput(int num_ops, double time)
+{
+    return (1.0 * num_ops) / time;
+}
 /* Calculates time diff between two timestamps in m */
 
 double time_diff(timespec *start, timespec *stop, granularity gran)
@@ -145,7 +149,6 @@ void register_results(const char *path, int numKeys, double runTime, double tput
 
 void register_results(const char *path, int numKeys, double runTime)
 {
-
     FILE *fptr = fopen(path, "ab+");
     fprintf(fptr, "%d, %f\n", numKeys, runTime);
     fclose(fptr);
@@ -167,10 +170,15 @@ void register_results(const char *path, int numKeys, double runTime, double tput
  * register results in a file after completion
  * The number of workers = number of worker threads in intel or number of workers in zc
  */
-void register_results_dynamic(const char *path, double timestamp, double req_tput, unsigned int num_workers)
+void register_results_dynamic(const char *path, double timestamp, double req_tput, unsigned int num_workers, double cpu_usage)
 {
-    FILE *fptr = fopen(path, "ab+");
-    // printf(">>>>> after fopen register_results\n");
-    fprintf(fptr, "%f, %f, %d\n", timestamp, req_tput, num_workers);
-    fclose(fptr);
+    static unsigned int counter = 0;
+    if ((counter % POINT_FREQ) == 0)
+    {
+        FILE *fptr = fopen(path, "ab+");
+        // printf(">>>>> after fopen register_results\n");
+        fprintf(fptr, "%f, %f, %d, %f\n", timestamp, req_tput, num_workers, 0);
+        fclose(fptr);
+    }
+    counter++;
 }

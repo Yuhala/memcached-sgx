@@ -81,8 +81,8 @@ int return_zero = 1;
 // KISSDB writes_db;
 static sgx_spinlock_t writer_lock = SGX_SPINLOCK_INITIALIZER;
 
-void readKissdb(int n, int storeId);
-void writeKissdb(int n, int storeId);
+void read_kissdb(int n, int storeId);
+void write_kissdb(int n, int storeId);
 
 void read_micro(int num_reads, int storeId);
 void write_micro(int num_writes, int storeId);
@@ -290,7 +290,7 @@ void test_routine(int n)
     }
 }
 
-void readKissdb(int n, int storeId)
+void read_kissdb(int n, int storeId)
 {
     log_zc_routine(__func__);
     /**
@@ -306,7 +306,7 @@ void readKissdb(int n, int storeId)
     const char storeFile[16];
     snprintf(storeFile, 16, "kissdb%d.db", storeId);
 
-    // printf("ecall_readKissdb::Opening database %s...\n", storeFile);
+    // printf("ecall_read_kissdb::Opening database %s...\n", storeFile);
 
     if (KISSDB_open(&db, storeFile, KISSDB_OPEN_MODE_RDONLY, 1024, 8, sizeof(v)))
     {
@@ -341,7 +341,7 @@ void readKissdb(int n, int storeId)
     KISSDB_close(&db);
 }
 
-void writeKissdb(int n, int storeId)
+void write_kissdb(int n, int storeId)
 {
     log_zc_routine(__func__);
     uint64_t i, j;
@@ -359,7 +359,7 @@ void writeKissdb(int n, int storeId)
      */
 
     // sgx_spin_lock(&writer_lock);
-    // printf("ecall_writeKissdb::Opening new empty database %s...\n", storeFile);
+    // printf("ecall_write_kissdb::Opening new empty database %s...\n", storeFile);
 
     int retOpen = KISSDB_open(&writes_db, storeFile, KISSDB_OPEN_MODE_RWREPLACE, 1024, 8, sizeof(v));
 
@@ -399,15 +399,15 @@ void writeKissdb(int n, int storeId)
     // sgx_spin_unlock(&writer_lock);
 }
 
-void ecall_readKissdb(int n, int storeId)
+void ecall_read_kissdb(int n, int storeId)
 {
-    // readKissdb(n, storeId);
+    // read_kissdb(n, storeId);
     // read_micro(n, storeId);
 }
 
-void ecall_writeKissdb(int n, int storeId)
+void ecall_write_kissdb(int n, int storeId)
 {
-    writeKissdb(n, storeId);
+    write_kissdb(n, storeId);
     // runTestMulti(n);
     // write_micro(n, storeId);
 }

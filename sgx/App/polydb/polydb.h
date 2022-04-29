@@ -65,6 +65,10 @@ extern "C"
     double do_request(int num_ops, int thread_id, int operation, void *cookie);
     char *create_results_file(int thread_id);
 
+    //lmbench specific
+    void *lm_thread(void *input);
+    void lmbench_simple(int num_ops, int num_threads);
+
 #if defined(__cplusplus)
 }
 #endif

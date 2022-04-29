@@ -32,30 +32,30 @@
 
 #define NANO (1000 * 1000 * 1000)
 
-//zc_arg_list *main_arg_list;
+// zc_arg_list *main_arg_list;
 
-//pyuhala: some useful global variables
+// pyuhala: some useful global variables
 extern sgx_enclave_id_t global_eid;
 
-//zc switchless worker thread ids
+// zc switchless worker thread ids
 pthread_t *workers;
 
 // statistics of the switchless run
 zc_stats *zc_statistics;
 
-//number of initialized workers
+// number of initialized workers
 unsigned int num_workers = 0;
 unsigned int num_initialized_workers = 0;
 
 // cpu frequency in MHz
 int cpu_freq;
 
-//number of requests on the request queue
+// number of requests on the request queue
 extern volatile unsigned int num_items;
 
-//globals from scheduler module
-//extern int time_quantum;
-//extern int number_of_useful_schedulings;
+// globals from scheduler module
+// extern int time_quantum;
+// extern int number_of_useful_schedulings;
 
 bool use_zc_scheduler = false;
 
@@ -68,7 +68,7 @@ static __thread int sl_calls_treated;
 extern struct mpmcq *req_mpmcq;
 extern struct mpmcq *resp_mpmcq;
 
-//pyuhala: forward declarations
+// pyuhala: forward declarations
 static void zc_worker_loop(zc_worker_args *args);
 static int getOptimalWorkers(int);
 static void create_zc_worker_threads();
@@ -83,12 +83,11 @@ static void refresh_paused_worker(int index);
 static void wait_for_pool_release(int index);
 static void set_worker_priority(pthread_attr_t *attr, int priority);
 
-static inline void asm_pause(void);
 
-//for scheduler
+// for scheduler
 void zc_create_scheduling_thread();
 
-//useful globals
+// useful globals
 int num_cores = -1;
 
 zc_mpool_array *pools;
@@ -108,7 +107,7 @@ void init_zc(int num_sl_workers)
 {
 
     log_zc_routine(__func__);
-    //get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
+    // get the number of cores on the cpu; this may be bad if these cores are already "strongly taken"
     num_cores = get_nprocs();
     /* if (num_cores < 1)
     {
@@ -117,7 +116,7 @@ void init_zc(int num_sl_workers)
     } */
 
     printf("<<<<<<<<<<<<<<<<< number of cores found: %d >>>>>>>>>>>>>>>>>>>\n", num_cores);
-    //num_workers = num_cores / 2;
+    // num_workers = num_cores / 2;
 
     num_workers = num_sl_workers;
 
@@ -126,9 +125,9 @@ void init_zc(int num_sl_workers)
     printf("CPU frequency: %d MHz >>>>>>>>>>>>>\n", cpu_freq);
 
     // make sure num of default pools >= num of workers
-    //ZC_ASSERT(numWorkers <= NUM_POOLS);
+    // ZC_ASSERT(numWorkers <= NUM_POOLS);
 
-    //init_arg_buffers_out(opt_worker);
+    // init_arg_buffers_out(opt_worker);
 
     if (use_queues)
     {
@@ -141,25 +140,25 @@ void init_zc(int num_sl_workers)
     zc_statistics->num_zc_fallback_calls = 0;
     zc_statistics->max_workers = num_workers;
 
-    //allocate memory pools
+    // allocate memory pools
     init_pools();
 
-    //init locks
+    // init locks
     pthread_mutex_init(&pool_index_lock, NULL);
 
-    //create zc switchless worker threads
+    // create zc switchless worker threads
     create_zc_worker_threads();
 
-    //create scheduling thread
+    // create scheduling thread
     if (use_zc_scheduler)
     {
-        //zc_create_scheduling_thread();
+        // zc_create_scheduling_thread();
         init_zc_scheduler();
     }
 }
 
 /**
- * Initialize untrusted memory pools which will be 
+ * Initialize untrusted memory pools which will be
  * used by enclave threads for untrusted memory allocations (for arguments, request buffers etc)
  */
 static void init_pools()
@@ -167,10 +166,10 @@ static void init_pools()
 {
     log_zc_routine(__func__);
 
-    //allocate memory pools
+    // allocate memory pools
     init_mem_pools();
 
-    //send main_arg_list and memory pools handle to the enclave
+    // send main_arg_list and memory pools handle to the enclave
     ecall_init_mem_pools(global_eid, (void *)pools, (void *)zc_statistics);
 }
 
@@ -186,7 +185,7 @@ static void init_mem_pools()
     pools->memory_pools = (zc_mpool **)malloc(sizeof(zc_mpool *) * n);
     pools->num_pools = n;
 
-    //initializing memory pools
+    // initializing memory pools
     printf("<<<<<<<<<<<<<<< initializing memory pools >>>>>>>>>>>>>>>>\n");
 
     for (int i = 0; i < n; i++)
@@ -202,7 +201,7 @@ static void init_mem_pools()
         {
             /**
              * pyuhala: when using queues, the memory pools are simply used by
-             * in-enclave threads for untrusted mem allocation independent of 
+             * in-enclave threads for untrusted mem allocation independent of
              * worker threads. The worker threads only dequeue and handle requests.
              * So activate all the pools.
              */
@@ -211,8 +210,8 @@ static void init_mem_pools()
         else
         {
             /**
-             * when using our per-worker buffer/pool system, each worker 
-             * "owns" a pool and this active status will be set only when a 
+             * when using our per-worker buffer/pool system, each worker
+             * "owns" a pool and this active status will be set only when a
              * corresponding worker is created, so we don't have caller threads
              * using pools w/o a worker.
              */
@@ -246,7 +245,7 @@ void *zc_worker_thread(void *input)
 {
     log_zc_routine(__func__);
 
-    //register signal handler
+    // register signal handler
     signal(ZC_SIGNAL, zc_signal_handler);
 
     /*  if (use_queues)
@@ -254,7 +253,7 @@ void *zc_worker_thread(void *input)
         zc_worker_loop_q();
     } */
 
-    //use worker thread buffers/pool system
+    // use worker thread buffers/pool system
     zc_worker_args *args = (zc_worker_args *)input;
     zc_worker_loop(args);
 }
@@ -262,7 +261,7 @@ void *zc_worker_thread(void *input)
 /**
  * This function "refreshes" a paused worker. That is:
  * the worker resets the necessary variables (e.g buffer status etc) to make it
- * available again to callers. Only called by workers. 
+ * available again to callers. Only called by workers.
  */
 static void refresh_paused_worker(int index)
 {
@@ -277,7 +276,11 @@ static void refresh_paused_worker(int index)
  */
 static void wait_for_pool_release(int index)
 {
-    while (__atomic_load_n(&pools->memory_pools[index]->pool_status, __ATOMIC_RELAXED) != (int)DONE)
+    /* while (__atomic_load_n(&pools->memory_pools[index]->pool_status, __ATOMIC_RELAXED) != (int)DONE)
+    {
+        asm_pause();
+    } */
+    while (pools->memory_pools[index]->pool_status != (int)DONE)
     {
         asm_pause();
     }
@@ -299,8 +302,8 @@ static void zc_worker_loop(zc_worker_args *args)
         if (sched_setscheduler(0, SCHED_RR, &param) == -1)
         {
             printf("Unable to change the policy of a worker thread to SCHED_RR\n");
-            //perror("Unable to change the policy of a worker thread to SCHED_RR");
-            //exit(1);
+            // perror("Unable to change the policy of a worker thread to SCHED_RR");
+            // exit(1);
         }
     }
 
@@ -313,10 +316,10 @@ static void zc_worker_loop(zc_worker_args *args)
     int pool_index = args->pool_index;
     pools->memory_pools[pool_index]->request = NULL;
 
-    //pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
-    //pools->memory_pools[pool_index]->active = 1; /* pool is assigned to this thread */
+    // pools->memory_pools[pool_index]->pool_status = (int)UNUSED;
+    // pools->memory_pools[pool_index]->active = 1; /* pool is assigned to this thread */
 
-    //pools->memory_pools[pool_index]->scheduler_pause = 0;
+    // pools->memory_pools[pool_index]->scheduler_pause = 0;
     volatile zc_pool_status pool_state;
     volatile int status;
     volatile int state;
@@ -330,7 +333,7 @@ static void zc_worker_loop(zc_worker_args *args)
     {
 
         state = __atomic_load_n(&pools->memory_pools[pool_index]->pool_status, __ATOMIC_RELAXED);
-        //pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
+        // pool_state = (zc_pool_status)pools->memory_pools[pool_index]->pool_status;
         pool_state = (zc_pool_status)state;
 
         /**
@@ -348,21 +351,21 @@ static void zc_worker_loop(zc_worker_args *args)
 
             goto leave;
             /**
-         * Check for pause signal from scheduler. Compare and swap
-         * atomically in case the buffer is unused. Atomic compare and swap important
-         * to prevent caller inside from reserving at the same time.
-         *
-         */
+             * Check for pause signal from scheduler. Compare and swap
+             * atomically in case the buffer is unused. Atomic compare and swap important
+             * to prevent caller inside from reserving at the same time.
+             *
+             */
             if (__atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_RELAXED) == 1)
             {
-                //printf("--------------------------- worker scheduled to  pause ------------------------\n");
+                // printf("--------------------------- worker scheduled to  pause ------------------------\n");
                 bool success = __atomic_compare_exchange_n(&pools->memory_pools[pool_index]->pool_status,
                                                            &unused, paused, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
                 /**
-             * Pause worker only if we succeeded in setting the pool status to PAUSED.
-             * Otherwise, maybe a caller already reserved atomically. We will/may only
-             * pause after it sets the status to DONE.
-             */
+                 * Pause worker only if we succeeded in setting the pool status to PAUSED.
+                 * Otherwise, maybe a caller already reserved atomically. We will/may only
+                 * pause after it sets the status to DONE.
+                 */
                 if (success)
                 {
                     __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
@@ -390,32 +393,32 @@ static void zc_worker_loop(zc_worker_args *args)
 
         case PROCESSING: /* caller is done setting up request, call the corresponding routine */
         {
-            //printf("------zc worker handling a request--------\n");
+            // printf("------zc worker handling a request--------\n");
             zc_req *req = pools->memory_pools[pool_index]->request;
             /**
              * pyuhala: if req = NULL, pause and try again
              */
             if (req == NULL)
             {
-                //printf("------------ null or stale request -------------\n");
-                //goto resume;
+                // printf("------------ null or stale request -------------\n");
+                // goto resume;
                 break;
             }
-            //don't treat stale request
+            // don't treat stale request
             else
             {
                 if (req->req_status != STALE_REQUEST)
                 {
                     handle_zc_switchless_request(req, pool_index);
                     // caller thread is waiting for this unlock
-                    //zc_spin_unlock(&req->is_done);
+                    // zc_spin_unlock(&req->is_done);
                     req->req_status = STALE_REQUEST;
                     sl_calls_treated++;
                     /**
                      * Wait for caller to complete.
                      * pyuhala: to be remove.. not really needed
                      */
-                    //wait_for_pool_release(pool_index);
+                    // wait_for_pool_release(pool_index);
                 }
             }
         }
@@ -426,7 +429,7 @@ static void zc_worker_loop(zc_worker_args *args)
             /**
              * A caller has released this buffer. Check for pause signal from scheduler.
              * If pause is set, pause. Otherwise set the state to UNUSED so other callers
-             * can use this buffer. Only callers set this. Pausing/activating in here is safe b/c we 
+             * can use this buffer. Only callers set this. Pausing/activating in here is safe b/c we
              * are 100% sure the last caller using this buffer completed its work.
              */
 
@@ -447,7 +450,7 @@ static void zc_worker_loop(zc_worker_args *args)
                  * resume loop.
                  */
                 __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
-                //goto resume_loop;
+                // goto resume_loop;
             }
         }
         break;
@@ -460,11 +463,11 @@ static void zc_worker_loop(zc_worker_args *args)
         }
         break;
 
-        } //end switch case
+        } // end switch case
 
         if (exit)
         {
-            //leave while loop
+            // leave while loop
             break;
         }
 
@@ -478,8 +481,8 @@ static void zc_worker_loop(zc_worker_args *args)
  */
 void zc_signal_handler(int sig)
 {
-    //printf("Thread caught signal %d\n", sig);
-    //do nothing
+    // printf("Thread caught signal %d\n", sig);
+    // do nothing
 }
 
 /**
@@ -489,7 +492,7 @@ static bool could_have_pending_request(int pool_index)
 {
     bool test = false;
     // pyuhala: I don't think there is any use for locks here.
-    //zc_spin_lock(&pools->memory_pools[pool_index]->pool_lock);
+    // zc_spin_lock(&pools->memory_pools[pool_index]->pool_lock);
     if (pools->memory_pools[pool_index]->request != NULL)
     {
         if (pools->memory_pools[pool_index]->request->req_status != STALE_REQUEST)
@@ -498,7 +501,7 @@ static bool could_have_pending_request(int pool_index)
             test = true;
         }
     }
-    //zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
+    // zc_spin_unlock(&pools->memory_pools[pool_index]->pool_lock);
 
     return test;
 }
@@ -510,7 +513,7 @@ static bool could_have_pending_request(int pool_index)
 static void zc_worker_loop_q()
 {
     log_zc_routine(__func__);
-    //set pool states
+    // set pool states
 
     // worker initialization complete
     int val = __atomic_fetch_add(&num_workers, 1, __ATOMIC_RELAXED);
@@ -530,14 +533,14 @@ static void zc_worker_loop_q()
             int ret = mpmc_dequeue(req_mpmcq, (void **)&request);
             if (ret == 1)
             {
-                //printf("------------------- request dequeued ----------------\n");
+                // printf("------------------- request dequeued ----------------\n");
             }
             handle_zc_switchless_request(request, -1);
         }
 
-        //TODO: sleep or something to save cpu cycles
+        // TODO: sleep or something to save cpu cycles
     }
-    //printf("xxxxxxxxxxxxxxxxxxxxx ------------------zc thread broke out of infinite loop -------------------xxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+    // printf("xxxxxxxxxxxxxxxxxxxxx ------------------zc thread broke out of infinite loop -------------------xxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
 }
 
 /**
@@ -596,28 +599,28 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
         zc_f(request);
         break;
 
-    case ZC_G:  
+    case ZC_G:
         zc_g(request);
         break;
 
     default:
-        //printf("----------- cannot handle zc switchless request -------------\n");
+        // printf("----------- cannot handle zc switchless request -------------\n");
         break;
     }
 
     /**
      * Finalize request: change its status to done,
-     * 
+     *
      */
 
-    //request->is_done = ZC_REQUEST_DONE; /* w/o atomic store */
+    // request->is_done = ZC_REQUEST_DONE; /* w/o atomic store */
     __atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_SEQ_CST); /* with atomic store */
 
-    if (pool_index != -1)
-    {
-        // we do not do this for the queue system; callers find any free pools for arg allocation, independent of workers
-        //__atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)WAITING, __ATOMIC_RELAXED);
-    }
+    /* Notify the caller that the switchless request is done by updating the status.
+     * The memory barrier ensures that switchless results are visible to the
+     * caller when it finds out that the status becomes ZC_REQUEST_DONE. */
+    //request->is_done = ZC_REQUEST_DONE;
+    //sgx_mfence();
 }
 
 static void free_mem_pools()
@@ -644,7 +647,7 @@ static void create_zc_worker_threads()
     {
 
         args = (zc_worker_args *)malloc(sizeof(zc_worker_args));
-        args->pool_index = i; //curr_pool_index++;
+        args->pool_index = i; // curr_pool_index++;
         args->worker_pool = pools->memory_pools[i];
         args->worker_id = i;
 
@@ -662,7 +665,7 @@ static void create_zc_worker_threads()
 
     /**
      * pyuhala: wait for workers to initialize.
-     * I don't want the main thread spawning callers when workers are 
+     * I don't want the main thread spawning callers when workers are
      * not yet set
      */
     while (num_initialized_workers < num_workers)
@@ -692,11 +695,11 @@ static void set_worker_priority(pthread_attr_t *attr, int priority)
 
 void finalize_zc()
 {
-    //print stats
-    //printf("number of useful schedulings : %d\n", number_of_useful_schedulings);
-    //printf("time_quantum : %d\n", time_quantum);
+    // print stats
+    // printf("number of useful schedulings : %d\n", number_of_useful_schedulings);
+    // printf("time_quantum : %d\n", time_quantum);
 
-    //stop all zc threads
+    // stop all zc threads
     for (int i = 0; i < num_cores / 2; i++)
     {
         pools->memory_pools[i]->pool_status = (int)EXIT;
@@ -708,7 +711,7 @@ void finalize_zc()
         }
     }
 
-    //deallocate mem pools
+    // deallocate mem pools
     free_mem_pools();
 }
 
@@ -726,41 +729,33 @@ int get_cpu_freq()
     double val;
     int cpu_freq_mhz = DEFAULT_CPU_FREQ;
 
-    //memset(&tz, 0, sizeof(tz));
+    // memset(&tz, 0, sizeof(tz));
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-    //gettimeofday(&tvstart, NULL);
+    // gettimeofday(&tvstart, NULL);
     cycles[0] = rdtscp();
-    //gettimeofday(&tvstart, NULL);
+    // gettimeofday(&tvstart, NULL);
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
     usleep(250000);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &stop);
-    //gettimeofday(&tvstop, NULL);
+    // gettimeofday(&tvstop, NULL);
     cycles[1] = rdtscp();
-    //gettimeofday(&tvstop, NULL);
+    // gettimeofday(&tvstop, NULL);
     clock_gettime(CLOCK_MONOTONIC_RAW, &stop);
 
-    //microseconds = ((tvstop.tv_sec - tvstart.tv_sec) * 1000000) + (tvstop.tv_usec - tvstart.tv_usec);
+    // microseconds = ((tvstop.tv_sec - tvstart.tv_sec) * 1000000) + (tvstop.tv_usec - tvstart.tv_usec);
 
     nanoseconds = ((stop.tv_sec - start.tv_sec) * 1.0e9) + (stop.tv_nsec - start.tv_nsec);
 
     val = (double)(cycles[1] - cycles[0]) / (nanoseconds / 1.0e3);
 
-    //printf("%f MHz\n", val);
+    // printf("%f MHz\n", val);
 
     cpu_freq_mhz = (int)val;
 
     return cpu_freq_mhz;
-}
-
-static inline void asm_pause(void)
-{
-    __asm__ __volatile__("pause"
-                         :
-                         :
-                         : "memory");
 }
 
 #define ZC_LOGGING 1
@@ -771,6 +766,6 @@ void log_zc_routine(const char *func)
 #ifdef ZC_LOGGING
     printf("ZC untrusted function: %s\n", func);
 #else
-//do nothing
+// do nothing
 #endif
 }

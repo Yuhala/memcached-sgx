@@ -1489,7 +1489,7 @@ void event_handler(const evutil_socket_t fd, const short which, void *arg)
 {
     //log_routine(__func__);
 
-    //showOcallLog(10);
+    //show_ocall_log(10);
 
     evutil_socket_t sfd = fd;
     short wch = which;

@@ -30,6 +30,9 @@ void print_stack_protector_checks();
 void init_switchless(void);
 void destroy_switchless(void);
 
+// lmbench benchmarks
+void run_lmbench(int num_runs);
+void remove_old_results(const char *cmd);
 // dynamic benchmarks
 void run_kissdb_dynamic(double run_time, int num_runs);
 

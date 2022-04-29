@@ -9,7 +9,7 @@ extern "C"
 #endif
 
     void log_ocall(const char *func);
-    void showOcallLog(int num);
+    void show_ocall_log(int num);
 
 #if defined(__cplusplus)
 }
