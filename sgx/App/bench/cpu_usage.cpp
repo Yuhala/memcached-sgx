@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <cmath>
 
 #define PROCSTAT "/proc/stat"
 /*
@@ -68,6 +69,7 @@ unsigned long long
     array = (unsigned long long **)calloc((cpus + 1), sizeof(unsigned long long));
 
     fp = fopen(PROCSTAT, "r");
+    unsigned long long temp = 0;
 
     for (i = 0; i < cpus + 1; i++)
     {
@@ -76,6 +78,7 @@ unsigned long long
                &array[i][0], &array[i][1], &array[i][2], &array[i][3],
                &ignore[0], &ignore[1], &ignore[2], &ignore[3], &ignore[4], &ignore[5]);
     }
+
     fclose(fp);
     return array;
 } /* -----  end of function read_cpu  ----- */
@@ -97,10 +100,30 @@ get_cpu_percentage(unsigned long long *a1, unsigned long long *a2)
     // double fraction_idle = (double)(a1[3] - a2[3]) / total_cpu_time;
     // double cpu_percent = (double)((1 - fraction_idle) * 100);
 
-    double cpu_percent = (double)(((double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2])) /
+    /**
+     * pyuhala: check for nan values:
+     * if nan value is returned, the a[i][j] probably contains a string,
+     * which indicates the core must not be working, and is offline.
+     * So in theory it should be at zero percent usage. Src: stackoverflow
+     */
+
+    double diff1 = double((a1[0] - a2[0])); //>= 0 ? double((a1[0] - a2[0])) : 0.0;
+    double diff2 = double((a1[1] - a2[1])); // >= 0 ? double((a1[1] - a2[1])) : 0.0;
+    double diff3 = double((a1[2] - a2[2])); // >= 0 ? double((a1[2] - a2[2])) : 0.0;
+    double diff4 = double((a1[3] - a2[3])); // >= 0 ? double((a1[3] - a2[3])) : 0.0;
+
+    //printf("Diff values: dif1: %f  diff2: %f  diff3: %f diff4: %f >>>>>>>>>>>>>>>>\n");
+
+    double denom = (diff1 + diff2 + diff3 + diff4);
+    double cpu_percent = 100 * (diff1 + diff2 + diff3) / denom;
+
+    return (denom != 0) ? cpu_percent : 0.0;
+
+    /* double cpu_percent = (double)(((double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2])) /
                                    (double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2]) + (a1[3] - a2[3]))) *
-                                  100);
-    //printf(">>>>>>>>>>>>>>>>> get_cpu_percentage is: %f >>>>>>>>>>>>>>>>>>\n", cpu_percent);
+                                  100); */
+
+    // printf(">>>>>>>>>>>>>>>>> get_cpu_percentage is: %f >>>>>>>>>>>>>>>>>>\n", cpu_percent);
     return cpu_percent;
 
 } /* -----  end of function get_cpu_percentage  ----- */
@@ -161,6 +184,6 @@ double get_avg_cpu_usage(unsigned long long **stop, unsigned long long **start)
         total_percentage += get_cpu_percentage(stop[i], start[i]);
     }
 
-    double avg_usage = total_percentage / num_of_cpus;
+    double avg_usage = total_percentage / (double)num_of_cpus;
     return avg_usage;
 }

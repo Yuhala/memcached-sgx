@@ -83,7 +83,6 @@ static void refresh_paused_worker(int index);
 static void wait_for_pool_release(int index);
 static void set_worker_priority(pthread_attr_t *attr, int priority);
 
-
 // for scheduler
 void zc_create_scheduling_thread();
 
@@ -433,11 +432,19 @@ static void zc_worker_loop(zc_worker_args *args)
              * are 100% sure the last caller using this buffer completed its work.
              */
 
-            if (__atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_RELAXED) == 1)
+            /**
+             * pyuhala: on a second thought, this really isn't a critical section: if the status is at
+             * DONE, then no caller can touch this pool/worker and we can safely do the following changes w/o locks/atomics
+             */
+
+            if (/*__atomic_load_n(&pools->memory_pools[pool_index]->scheduler_pause, __ATOMIC_RELAXED) == 1*/ pools->memory_pools[pool_index]->scheduler_pause == 1)
             {
 
-                __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)PAUSED, __ATOMIC_SEQ_CST);
-                __atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
+                //__atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)PAUSED, __ATOMIC_SEQ_CST);
+                //__atomic_store_n(&pools->memory_pools[pool_index]->active, 0, __ATOMIC_SEQ_CST);
+
+                pools->memory_pools[pool_index]->pool_status = PAUSED;
+                pools->memory_pools[pool_index]->active = 0;
 
                 pause();
                 // I'm done pausing; refresh my state
@@ -449,7 +456,8 @@ static void zc_worker_loop(zc_worker_args *args)
                  * Worker not scheduled to pause, set buffer state to UNUSED and resume loop.
                  * resume loop.
                  */
-                __atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
+                //__atomic_store_n(&pools->memory_pools[pool_index]->pool_status, (int)UNUSED, __ATOMIC_SEQ_CST);
+                pools->memory_pools[pool_index]->pool_status = UNUSED;
                 // goto resume_loop;
             }
         }
@@ -544,10 +552,10 @@ static void zc_worker_loop_q()
 }
 
 /**
- * pyuhala: Routine to handle switchless routines. Using switch is probably not the smartest way,
+ * pyuhala: Function to handle switchless routines. Using switch is probably not the smartest way,
  * but OK for a POC with a few shim functions.
  * Try using a function table to resolve the corresponding functions
- * Change status of the pool when done
+ * Change status of the pool when done.
  */
 void handle_zc_switchless_request(zc_req *request, int pool_index)
 {
@@ -609,6 +617,7 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     }
 
     /**
+     * 
      * Finalize request: change its status to done,
      *
      */
@@ -619,8 +628,8 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     /* Notify the caller that the switchless request is done by updating the status.
      * The memory barrier ensures that switchless results are visible to the
      * caller when it finds out that the status becomes ZC_REQUEST_DONE. */
-    //request->is_done = ZC_REQUEST_DONE;
-    //sgx_mfence();
+    // request->is_done = ZC_REQUEST_DONE;
+    // sgx_mfence();
 }
 
 static void free_mem_pools()
@@ -672,6 +681,8 @@ static void create_zc_worker_threads()
     {
         ZC_PAUSE();
     }
+
+    // printf(">>>>>>>>>>>>>>>>> initialized all zc workers >>>>>>>>>>>>>>>>>>>\n");
 }
 
 static void set_worker_priority(pthread_attr_t *attr, int priority)

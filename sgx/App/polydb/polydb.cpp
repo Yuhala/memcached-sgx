@@ -240,7 +240,7 @@ void *thread_dynamic(void *input)
         switch (state)
         {
         case INCREASE:
-            printf(">>> INCREASING FREQUENCY >>>\n");
+            //printf(">>> INCREASING FREQUENCY >>>\n");
             /**
              * Send num_req write requests to the enclave.
              * We could calculate time spent out of the switch
@@ -269,7 +269,7 @@ void *thread_dynamic(void *input)
             break;
 
         case CONSTANT:
-            printf(">>> CONSTANT FREQUENCY >>>\n");
+            //printf(">>> CONSTANT FREQUENCY >>>\n");
 
             cpu_stats_begin = read_cpu();
             req_time_const = do_request(num_req, id, operation, cookie);
@@ -288,7 +288,7 @@ void *thread_dynamic(void *input)
 
             break;
         case DECREASE:
-            printf(">>> DECREASING FREQUENCY >>>\n");
+            //printf(">>> DECREASING FREQUENCY >>>\n");
             cpu_stats_begin = read_cpu();
             req_time_dec = do_request(num_req, id, operation, cookie);
             cpu_stats_end = read_cpu();
@@ -330,10 +330,11 @@ double do_request(int num_ops, int thread_id, int operation, void *cookie)
     struct timespec req_start, req_stop;
 
     start_clock(&req_start);
-    ecall_do_lmbench_op(global_eid, num_ops, thread_id, operation, cookie);
+    // ecall_do_lmbench_op(global_eid, num_ops, thread_id, operation, cookie);
+    ecall_write_kissdb(global_eid, num_ops, thread_id);
     stop_clock(&req_stop);
     double req_time = time_diff(&req_start, &req_stop, SEC);
-    printf(">>> request complete: num_ops: %d thread_id: %d tput: %f OP/s >>\n", num_ops, thread_id, num_ops / req_time);
+    //printf(">>> request complete: num_ops: %d thread_id: %d tput: %f OP/s >>\n", num_ops, thread_id, num_ops / req_time);
     return req_time;
 }
 

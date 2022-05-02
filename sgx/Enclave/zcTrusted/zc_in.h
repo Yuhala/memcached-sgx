@@ -3,7 +3,7 @@
  * Created on Tue Sep 28 2021
  *
  * Copyright (c) 2021 Peterson Yuhala, IIUN
- * 
+ *
  * See here for cost of cpu pause: https://community.intel.com/t5/Intel-ISA-Extensions/Pause-instruction-cost-and-proper-use-in-spin-loops/m-p/1137387
  */
 
@@ -22,7 +22,7 @@ void release_worker(unsigned int pool_index);
 void ZC_REQUEST_WAIT(zc_req *request);
 int get_free_pool();
 
-//logging
+// logging
 void log_zc_routine(const char *func);
 
 #if defined(__cplusplus)

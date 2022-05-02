@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = get_nprocs() / 2;
+    int num_sl_workers = 2;//get_nprocs() / 2;
 
     /**
      * use zc: ./async-sgx 1 0
@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
     if (zc_switchless && sdk_switchless)
     {
         printf("xxxxxxxxxxxxxxx cannot activate both SDK and ZC switchless at the same time xxxxxxxxxxxxxxxxxx\n");
-        printf("usage: ./memcached-sgx [zc_switchless] [sdk_switchless]\n");
+        printf("usage: ./async-sgx [zc_switchless] [sdk_switchless]\n");
         return 0;
     }
 
@@ -299,7 +299,7 @@ int main(int argc, char *argv[])
         /**
          * define the number of retries before fallback.
          */
-        us_config.retries_before_fallback = 0;
+        //us_config.retries_before_fallback = 0;
 
         if (initialize_enclave(&us_config) < 0)
         {
@@ -334,12 +334,16 @@ int main(int argc, char *argv[])
     int id = global_eid;
     double run_time = 30.0;
 
-    // run_bench_dynamic(run_time, 1);
+    //-------------------------------------------
+    run_bench_dynamic(run_time, 1);
 
-    // run_lmbench(3);
+    //run_lmbench(5);
+
+    // run_kissdb_bench(2);
+
+    //-------------------------------------------
 
     // init_memcached(num_mcd_workers);
-    run_kissdb_bench(3);
     // run_zc_micro(1);
     // run_kyoto_bench(5);
 

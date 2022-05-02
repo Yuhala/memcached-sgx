@@ -5,11 +5,11 @@
  * Copyright (c) 2020 Peterson Yuhala, IIUN
  */
 
-/** 
- * Quick note on TODOs: most of the routines should be simple to reimplement with ocalls. 
- * A few may require special attention. For example routines with struct or other complex 
+/**
+ * Quick note on TODOs: most of the routines should be simple to reimplement with ocalls.
+ * A few may require special attention. For example routines with struct or other complex
  * types as return or param types.
-*/
+ */
 
 #include "checks.h"  //for pointer checks
 #include "Enclave.h" //for printf
@@ -17,12 +17,12 @@
 #include "ocall_manager.h"
 #include "zcTrusted/zc_in.h"
 
-//forward declarations
+// forward declarations
 void copy_stats(struct stat *dest, struct stat *src);
 
 void empty(int repeats)
 {
-    //log_ocall(FN_TOKEN_EMPTY);
+    // log_ocall(FN_TOKEN_EMPTY);
     if (should_be_switchless(FN_TOKEN_EMPTY))
         empty_switchless(repeats);
     else
@@ -273,19 +273,19 @@ int puts(const char *str)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //log_ocall(FN_TOKEN_CLOSE);
-    //if (should_be_switchless(FN_TOKEN_CLOSE))
-    //   ret = puts_switchless(str);
-    //else
-    //    ocall_puts(&ret, str);
+    // log_ocall(FN_TOKEN_CLOSE);
+    // if (should_be_switchless(FN_TOKEN_CLOSE))
+    //    ret = puts_switchless(str);
+    // else
+    //     ocall_puts(&ret, str);
     ocall_puts(&ret, str);
     return ret;
 }
 int fscanf(SGX_FILE stream, const char *fmt, ...)
-{ //undefined behaviour at runtime
+{ // undefined behaviour at runtime
     GRAAL_SGX_INFO();
     int ret = 0;
-    //obtain additional arguments
+    // obtain additional arguments
     char buf[BUFSIZ] = {'\0'};
     va_list ap;
     va_start(ap, fmt);
@@ -298,20 +298,20 @@ int fprintf(SGX_FILE stream, const char *fmt, ...)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //obtain additional arguments
+    // obtain additional arguments
     char buf[BUFSIZ] = {'\0'};
     va_list ap;
     va_start(ap, fmt);
     vsnprintf(buf, BUFSIZ, fmt, ap);
     va_end(ap);
-    //int len = (int)strnlen(buf, BUFSIZ - 1) + 1;
+    // int len = (int)strnlen(buf, BUFSIZ - 1) + 1;
     ocall_fprintf(&ret, stream, buf);
     return ret;
 }
 char *fgets(char *str, int n, SGX_FILE stream)
 {
     GRAAL_SGX_INFO();
-    //printf("Fget str: %s\n", str);
+    // printf("Fget str: %s\n", str);
     ocall_fgets(str, n, stream);
     return str;
 }
@@ -320,19 +320,6 @@ ssize_t read(int fd, void *buf, size_t count)
 {
     GRAAL_SGX_INFO();
     ssize_t ret = 0;
-    /* log_ocall(FN_TOKEN_READ);
-    if (should_be_switchless(FN_TOKEN_READ))
-    {
-
-        ret = read_switchless(fd, buf, count);
-    }
-
-    else
-    {
-        ocall_read(&ret, fd, buf, count);
-    } */
-
-    //printf("read fd: %d\n", fd);
 
     int index = reserve_worker();
 
@@ -352,11 +339,6 @@ ssize_t write(int fd, const void *buf, size_t count)
 {
     GRAAL_SGX_INFO();
     ssize_t ret = 0;
-    /* log_ocall(FN_TOKEN_WRITE);
-    if (should_be_switchless(FN_TOKEN_WRITE))
-        ret = write_switchless(fd, buf, count);
-    else
-        ocall_write(&ret, fd, buf, count); */
 
     int index = reserve_worker();
 
@@ -373,8 +355,8 @@ ssize_t write(int fd, const void *buf, size_t count)
 }
 int sprintf(char *str, const char *fmt, ...)
 {
-    //GRAAL_SGX_INFO();
-    //this should work but may need revision
+    // GRAAL_SGX_INFO();
+    // this should work but may need revision
     char buf[BUFSIZ] = {'\0'};
     va_list ap;
     va_start(ap, fmt);
@@ -386,7 +368,7 @@ int sprintf(char *str, const char *fmt, ...)
 int vfprintf(SGX_FILE *stream, const char *format, va_list ap)
 {
     GRAAL_SGX_INFO();
-    //TODO
+    // TODO
     return 0;
 }
 
@@ -411,7 +393,7 @@ void *opendir(const char *name)
     return ret;
 }
 
-//void *fdopendir(int fd);
+// void *fdopendir(int fd);
 int closedir(void *dirp)
 {
     GRAAL_SGX_INFO();
@@ -419,7 +401,7 @@ int closedir(void *dirp)
     ocall_closedir(&ret, dirp);
     return ret;
 }
-//struct dirent *readdir(void *dirp);
+// struct dirent *readdir(void *dirp);
 int readdir64_r(void *dirp, struct dirent *entry, struct dirent **result)
 {
     GRAAL_SGX_INFO();
@@ -427,7 +409,7 @@ int readdir64_r(void *dirp, struct dirent *entry, struct dirent **result)
     ocall_readdir64_r(&ret, dirp, entry, result);
     return ret;
 }
-//int remove(const char *pathname);
+// int remove(const char *pathname);
 ssize_t readlink(const char *pathname, char *buf, size_t bufsiz)
 {
     GRAAL_SGX_INFO();
@@ -517,14 +499,14 @@ char *getenv(const char *name)
 {
     char *retval;
     sgx_status_t status = ocall_getenv(&retval, name);
-    //CHECK_STATUS(status);
+    // CHECK_STATUS(status);
     return retval;
 }
 
 ulong crc32(ulong crc, const Byte *buf, uint len)
 {
     GRAAL_SGX_INFO();
-    //TODO
+    // TODO
 }
 
 int mkdir(const char *pathname, mode_t mode)
@@ -563,20 +545,20 @@ int ftruncate64(int fd, off_t length)
 int ftruncate(int fd, off_t length)
 {
     GRAAL_SGX_INFO();
-    //TODO: is calling ftruncate64 correct ?
+    // TODO: is calling ftruncate64 correct ?
     return ftruncate64(fd, length);
 }
 void *mmap64(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 {
     /**
-    * mmap64 is mostly used to map [large]files in the application VAS. 
-    * To our knowledge so far, graal uses mmap to allocate heap memory for apps; we allocate that 
-    * in sgx reserved memory. mmap64 does not use sgx reserve memory for now. fd != -1 here. 
-    */
+     * mmap64 is mostly used to map [large]files in the application VAS.
+     * To our knowledge so far, graal uses mmap to allocate heap memory for apps; we allocate that
+     * in sgx reserved memory. mmap64 does not use sgx reserve memory for now. fd != -1 here.
+     */
 
     GRAAL_SGX_INFO();
-    //printf("In mmap 64: fd = %d\n", fd);
-    //return mmap(addr, len, prot, flags, fd, off);
+    // printf("In mmap 64: fd = %d\n", fd);
+    // return mmap(addr, len, prot, flags, fd, off);
     void *ret = nullptr;
     ocall_mmap64(&ret, addr, len, prot, flags, fd, off);
     return ret;
@@ -636,7 +618,7 @@ int utimes(const char *filename, const struct timeval times[2])
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 int chown(const char *pathname, uid_t owner, gid_t group)
@@ -744,19 +726,19 @@ ulong adler32(ulong adler, const Bytef *buf, size_t len)
     ocall_adler32(&ret, adler, buf, len);
     return ret;
 }
-//correct: extern **char environ
+// correct: extern **char environ
 int environ(void)
 {
     GRAAL_SGX_INFO();
     return 0;
 }
 
-//Added for graal 21.0
+// Added for graal 21.0
 int __libc_current_sigrtmax(void)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 off_t lseek(int fd, off_t offset, int whence)
@@ -769,14 +751,14 @@ off_t lseek(int fd, off_t offset, int whence)
 struct dirent *readdir(DIR *dirp)
 {
     GRAAL_SGX_INFO();
-    //TODO
+    // TODO
     return nullptr;
 }
 struct dirent *readdir64(DIR *dirp)
 {
     GRAAL_SGX_INFO();
 
-    //TODO
+    // TODO
     return nullptr;
 }
 int ioctl(int fd, unsigned long request, ...)
@@ -821,7 +803,7 @@ const char *gai_strerror(int ecode)
 {
     GRAAL_SGX_INFO();
     const char *ret = "gai_strerror";
-    //TODO
+    // TODO
     return ret;
 }
 ssize_t pread(int fd, void *buf, size_t count, off_t offset)
@@ -913,7 +895,7 @@ int fstatvfs64(int fd, struct statvfs *buf)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 
@@ -929,28 +911,28 @@ int pthread_kill(pthread_t thread, int sig)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 int inflateInit2_(z_streamp strm, int windowBits, char *version, int stream_size)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 int inflate(z_streamp stream, int flush)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 int inflateEnd(z_streamp stream)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 
@@ -958,7 +940,7 @@ int dup(int oldfd)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 
@@ -966,7 +948,7 @@ int access(const char *pathname, int mode)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 int chdir(const char *path)
@@ -1014,7 +996,7 @@ int sscanf(const char *str, const char *format, ...)
 {
     GRAAL_SGX_INFO();
     int ret = 0;
-    //TODO
+    // TODO
     return ret;
 }
 
@@ -1070,7 +1052,7 @@ ssize_t getline(char **lineptr, size_t *n,
                 SGX_FILE *stream)
 {
     ssize_t ret = 0;
-    //ocall_getline(&ret, lineptr, n, stream);
+    // ocall_getline(&ret, lineptr, n, stream);
     return ret;
 }
 

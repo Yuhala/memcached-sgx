@@ -222,11 +222,11 @@ static void do_configuration()
         wasted_cycles[micro_q_index] = wasted_cycles_mq;
 
         // print config every 100 calls
-        if (counter % COUNTER == 0 && false)
+       /*  if (counter % COUNTER == 0 && false)
         {
             printf("config nThreads: %d num sl calls: %d num fb calls: %d wasted cycles: %lld sl_ratio: %f >>>>>>>>>>>>>>>\n",
                    micro_q_index, num_sl_mq, num_fb_mq, wasted_cycles_mq, sl_ratio_mq);
-        }
+        } */
         micro_q_index++;
     }
 
@@ -263,7 +263,7 @@ static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, ve
         for (int i = 0; i < num_micro_q; i++)
         {
             // pyuhala: my observation: the min almost always (or always!) corresponds to i = 0
-            // TODO: change to < (just testing to see what > gets)
+            
             if (wasted_cycles[i] < wasted_cycles[min_index])
             {
                 min_index = i;

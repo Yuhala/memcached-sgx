@@ -99,10 +99,7 @@ int reserve_worker()
         return ZC_NO_FREE_POOL;
     }
 
-    // log_zc_routine(__func__);
-    int index = get_free_pool();
-
-    return index;
+    return get_free_pool();
 }
 
 /**
@@ -183,24 +180,12 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
 {
     log_zc_routine(__func__);
 
-    if (use_queues)
-    {
-        // enqueue request on request queue
+    // use worker thread buffers for request
 
-        int ret = mpmc_enqueue(req_mpmcq, (void *)req);
-        if (ret == 1)
-        {
-            // printf("--------------- caller successfully enqueued request -----------------\n");
-        }
-    }
-    else
-    {
-        // use worker thread buffers for request
+    mem_pools->memory_pools[pool_index]->request = req;
 
-        mem_pools->memory_pools[pool_index]->request = req;
-
-        __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_SEQ_CST);
-    }
+    // __atomic_store_n(&mem_pools->memory_pools[pool_index]->pool_status, (int)PROCESSING, __ATOMIC_SEQ_CST);
+    mem_pools->memory_pools[pool_index]->pool_status = (int)PROCESSING;
 
     // wait for response
     /**
@@ -219,17 +204,19 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
 void ZC_REQUEST_WAIT(zc_req *request)
 {
     log_zc_routine(__func__);
-    // volatile int done;
 
-    /**
-     * w/ atomics
-     */
-    while (__atomic_load_n(&request->is_done, __ATOMIC_RELAXED) != ZC_REQUEST_DONE)
+    /*
+      while (__atomic_load_n(&request->is_done, __ATOMIC_RELAXED) != ZC_REQUEST_DONE)
+      {
+          // ZC_PAUSE();
+
+      }
+   */
+
+    while (!request->is_done)
     {
-        ZC_PAUSE();
+        //asm_pause();
     }
-
-    
 }
 
 /**

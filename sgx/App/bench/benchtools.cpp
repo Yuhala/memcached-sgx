@@ -177,7 +177,7 @@ void register_results_dynamic(const char *path, double timestamp, double req_tpu
     {
         FILE *fptr = fopen(path, "ab+");
         // printf(">>>>> after fopen register_results\n");
-        fprintf(fptr, "%f, %f, %d, %f\n", timestamp, req_tput, num_workers, 0);
+        fprintf(fptr, "%f, %f, %d, %f\n", timestamp, req_tput, num_workers, cpu_usage);
         fclose(fptr);
     }
     counter++;
