@@ -165,7 +165,6 @@ static void init_pools()
 {
     log_zc_routine(__func__);
 
-    // allocate memory pools
     init_mem_pools();
 
     // send main_arg_list and memory pools handle to the enclave
@@ -186,11 +185,22 @@ static void init_mem_pools()
 
     // initializing memory pools
     printf("<<<<<<<<<<<<<<< initializing memory pools >>>>>>>>>>>>>>>>\n");
+#ifdef USE_MEMSYS5
+    pools->memsys5_pool = (memsys5_t *)malloc(sizeof(memsys5_t));
+    pools->memsys5_pool->pBuf = malloc(POOL_SIZE);
+    pools->memsys5_pool->szBuf = POOL_SIZE;
+#endif
 
     for (int i = 0; i < n; i++)
     {
         pools->memory_pools[i] = (zc_mpool *)malloc(sizeof(zc_mpool));
+
+#ifdef USE_MEMSYS5
+/* do nothing */
+#else
         pools->memory_pools[i]->pool = mpool_create(POOL_SIZE);
+#endif
+
         pools->memory_pools[i]->pool_id = i;
         pools->memory_pools[i]->pool->mpool_id = i;
         pools->memory_pools[i]->pool_lock = 0;
@@ -217,6 +227,16 @@ static void init_mem_pools()
             pools->memory_pools[i]->active = 0;
         }
     }
+}
+
+/**
+ * free old memsys5 pool and reallocate
+ */
+void *ocall_memsys5_realloc(void *old_pool, int pool_id)
+{
+    printf(">>>>>>>>>>>>>>>>>>>> REALLOCATING MEMSYS5 POOL >>>>>>>>>>>>>>>>>>>\n");
+    free(old_pool);
+    return malloc(POOL_SIZE);
 }
 
 /**
@@ -617,7 +637,7 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
     }
 
     /**
-     * 
+     *
      * Finalize request: change its status to done,
      *
      */

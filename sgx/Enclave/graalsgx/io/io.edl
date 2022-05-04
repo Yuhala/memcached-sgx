@@ -64,7 +64,7 @@ enclave {
 
 
 
-       ssize_t ocall_read(int fd, [out, size=count]void *buf, size_t count) transition_using_threads;
+       ssize_t ocall_read(int fd, [out, size=count]void *buf, size_t count) ;
        ssize_t ocall_write(int fd, [in, size=count]const void *buf, size_t count) transition_using_threads;
 
 

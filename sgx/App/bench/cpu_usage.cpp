@@ -112,19 +112,20 @@ get_cpu_percentage(unsigned long long *a1, unsigned long long *a2)
     double diff3 = double((a1[2] - a2[2])); // >= 0 ? double((a1[2] - a2[2])) : 0.0;
     double diff4 = double((a1[3] - a2[3])); // >= 0 ? double((a1[3] - a2[3])) : 0.0;
 
-    //printf("Diff values: dif1: %f  diff2: %f  diff3: %f diff4: %f >>>>>>>>>>>>>>>>\n");
+    // printf("Diff values: dif1: %f  diff2: %f  diff3: %f diff4: %f >>>>>>>>>>>>>>>>\n");
 
     double denom = (diff1 + diff2 + diff3 + diff4);
     double cpu_percent = 100 * (diff1 + diff2 + diff3) / denom;
 
     return (denom != 0) ? cpu_percent : 0.0;
+    // return cpu_percent;
 
     /* double cpu_percent = (double)(((double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2])) /
                                    (double)((a1[0] - a2[0]) + (a1[1] - a2[1]) + (a1[2] - a2[2]) + (a1[3] - a2[3]))) *
                                   100); */
 
     // printf(">>>>>>>>>>>>>>>>> get_cpu_percentage is: %f >>>>>>>>>>>>>>>>>>\n", cpu_percent);
-    return cpu_percent;
+    // return cpu_percent;
 
 } /* -----  end of function get_cpu_percentage  ----- */
 

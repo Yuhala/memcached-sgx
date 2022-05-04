@@ -8,7 +8,7 @@ f(x)=1000000
 
 NX=3
 NY=2
-# Size of graphs
+# Size of graphs|
 SX=0.001
 SY=0.18
 

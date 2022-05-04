@@ -19,6 +19,7 @@
 #include <stddef.h>
 
 #include "zc_mpmc_queue.h"
+#include "zc_mem.h"
 
 //#define ZC_LOGGING 1
 
@@ -28,6 +29,8 @@
 extern struct mpmcq *req_mpmcq;
 extern struct mpmcq *resp_mpmcq;
 static bool use_queues = false;
+
+void *current_mempool = NULL;
 
 zc_mpool_array *mem_pools;
 
@@ -69,7 +72,17 @@ void ecall_init_mem_pools(void *pools, void *statistics)
 
     // init pools
     mem_pools = (zc_mpool_array *)pools;
-    // zc_malloc_test();
+// zc_malloc_test();
+
+// init memsys5 allocator
+#ifdef USE_MEMSYS5
+    current_mempool = mem_pools->memsys5_pool->pBuf;
+    int rc = memsys5Init(NULL, mem_pools->memsys5_pool->pBuf, mem_pools->memsys5_pool->szBuf, MN_REQ);
+    if (rc != 0)
+    {
+        ZC_ASSERT(false);
+    }
+#endif
 
     // set address of num fallback requests
     switchless_stats = (zc_stats *)statistics;
@@ -83,6 +96,34 @@ void ecall_init_mem_pools(void *pools, void *statistics)
 
     // active zc
     zc_switchless_active = true;
+}
+
+/**
+ * Free memsys5 memory and reallocate if
+ * memory left is less than a certain threshold
+ */
+void realloc_check(size_t mem_used)
+{
+    if ((POOL_SIZE - mem_used) > REALLOC_MIN)
+    {
+        return;
+    }
+    printf(">>>>>>>>>>>> ocall memsys5 realloc >>>>>>>>>>>>>>>>>>\n");
+    void *new_pool;
+    /**
+     * lock so other caller threads don't
+     * try to allocate any memory from the pool
+     */
+    memsys5Enter();
+    ocall_memsys5_realloc(&new_pool, current_mempool, 0);
+    current_mempool = new_pool;
+    // reinitialize memsys5 with new pool
+    int rc = memsys5Init(NULL, new_pool, POOL_SIZE, MN_REQ);
+    if (rc != 0)
+    {
+        ZC_ASSERT(false);
+    }
+    memsys5Leave();
 }
 
 /**
@@ -215,7 +256,7 @@ void ZC_REQUEST_WAIT(zc_req *request)
 
     while (!request->is_done)
     {
-        //asm_pause();
+        asm_pause();
     }
 }
 

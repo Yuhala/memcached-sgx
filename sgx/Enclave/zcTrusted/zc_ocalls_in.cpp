@@ -36,7 +36,9 @@ ssize_t zc_read(int fd, void *buf, size_t count, int pool_index)
 
     // release worker/memory pool
     release_worker(pool_index);
-
+    //zc_free(arg->buf);
+    //zc_free(arg);    
+    //zc_free(request);
     // return
     return ret;
 }
@@ -50,7 +52,7 @@ ssize_t zc_write(int fd, const void *buf, size_t count, int pool_index)
     arg->fd = fd;
     arg->count = count;
     arg->buf = zc_malloc(pool_index, count);
-    //TODO:pointer checks
+    // TODO:pointer checks
     memcpy(arg->buf, buf, count);
 
     // do request
@@ -65,10 +67,14 @@ ssize_t zc_write(int fd, const void *buf, size_t count, int pool_index)
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
-    return ((write_arg_zc *)request->args)->ret;
+    ssize_t ret = ((write_arg_zc *)request->args)->ret;
+    //zc_free(arg->buf);
+    //zc_free(arg);
+    //zc_free(request);
+    return ret;
 }
 
 size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_index)
@@ -76,8 +82,8 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
     static int count = 0;
 
     log_zc_routine(__func__);
-    //printf("--------------------- num zc fwrites: %d ---------------------\n", ++count);
-    // allocate memory for args
+    // printf("--------------------- num zc fwrites: %d ---------------------\n", ++count);
+    //  allocate memory for args
     fwrite_arg_zc *arg = (fwrite_arg_zc *)zc_malloc(pool_index, sizeof(fwrite_arg_zc));
     // copy args from enclave to untrusted memory
     arg->size = size;
@@ -85,7 +91,7 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
     arg->stream = stream;
     size_t total_bytes = size * nmemb;
     arg->buf = zc_malloc(pool_index, total_bytes);
-    //TODO: do we do pointer checks ?
+    // TODO: do we do pointer checks ?
     memcpy(arg->buf, ptr, total_bytes);
 
     // do request
@@ -100,15 +106,18 @@ size_t zc_fwrite(const void *ptr, size_t size, size_t nmemb, SGX_FILE stream, in
 
     // release worker/memory pool
     /**
-     * pyuhala: can use pool_index variable but it seems 
+     * pyuhala: can use pool_index variable but it seems
      * caller is not changing the pool status
      */
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
     ssize_t ret = ((fwrite_arg_zc *)request->args)->ret;
-    //printf("---------------zc fwrite ret: %d ---------------------\n", ret);
+    // printf("---------------zc fwrite ret: %d ---------------------\n", ret);
+    //zc_free(arg->buf);
+    //zc_free(arg);
+    //zc_free(request);
     return ret;
 }
 
@@ -140,10 +149,13 @@ size_t zc_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream, int pool_
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
-    //printf("--------------- zc fread expected: %d actually read: %d ---------------------\n", total_bytes, ret);
+    // printf("--------------- zc fread expected: %d actually read: %d ---------------------\n", total_bytes, ret);
+    //zc_free(arg->buf);
+    //zc_free(arg);
+    //zc_free(request);
     return ret;
 }
 
@@ -170,11 +182,13 @@ int zc_fseeko(SGX_FILE stream, off_t offset, int whence, int pool_index)
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
     int ret = ((fseeko_arg_zc *)request->args)->ret;
-    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    // printf("---------------zc fread ret: %d ---------------------\n", ret);
+    //zc_free(arg);
+    //zc_free(request);
     return ret;
 }
 
@@ -195,18 +209,20 @@ ssize_t zc_sendmsg(int sockfd, const struct msghdr *msg, int flags, int pool_ind
     request->func_name = ZC_SENDMSG;
     request->is_done = 0;
     request->req_status = 0;
-    //TODO: not complete
+    // TODO: not complete
     do_zc_switchless_request(request, pool_index);
 
     // copy response to enclave if needed
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
     ssize_t ret = ((sendmsg_arg_zc *)request->args)->ret;
-    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    // printf("---------------zc fread ret: %d ---------------------\n", ret);
+    //zc_free(arg);
+    //zc_free(request);
     return ret;
 }
 
@@ -225,18 +241,20 @@ void *zc_transmit_prepare(int pool_index)
     request->func_name = ZC_TRANSMIT_PREPARE;
     request->is_done = 0;
     request->req_status = 0;
-    //TODO: not complete
+    // TODO: not complete
     do_zc_switchless_request(request, pool_index);
 
     // copy response to enclave if needed
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
     void *ret = ((transmit_prepare_arg_zc *)request->args)->ret;
-    //printf("---------------zc sendmsg ret: %d ---------------------\n", ret);
+    // printf("---------------zc sendmsg ret: %d ---------------------\n", ret);
+    //zc_free(arg);
+    //zc_free(request);
     return ret;
 }
 
@@ -263,11 +281,13 @@ int zc_test(int a, int b, int pool_index)
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
     int ret = ((test_arg_zc *)request->args)->ret;
-    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    // printf("---------------zc fread ret: %d ---------------------\n", ret);
+    //zc_free(arg);
+    //zc_free(request);
     return ret;
 }
 
@@ -291,11 +311,13 @@ int zc_fsync(int fd, int pool_index)
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
     int ret = ((fsync_arg_zc *)request->args)->ret;
-    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    // printf("---------------zc fread ret: %d ---------------------\n", ret);
+    //zc_free(arg);
+    //zc_free(request);
     return ret;
 }
 void zc_sync(int pool_index)
@@ -318,12 +340,12 @@ void zc_sync(int pool_index)
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
-    //int ret = ((sync_arg_zc *)request->args)->ret;
-    //printf("---------------zc fread ret: %d ---------------------\n", ret);
-    //return ret;
+    // int ret = ((sync_arg_zc *)request->args)->ret;
+    // printf("---------------zc fread ret: %d ---------------------\n", ret);
+    // return ret;
 }
 int zc_ftruncate64(int fd, off_t length, int pool_index)
 {
@@ -346,11 +368,13 @@ int zc_ftruncate64(int fd, off_t length, int pool_index)
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
 
     // return
     int ret = ((ftruncate64_arg_zc *)request->args)->ret;
-    //printf("---------------zc fread ret: %d ---------------------\n", ret);
+    // printf("---------------zc fread ret: %d ---------------------\n", ret);
+    //zc_free(arg);
+    //zc_free(request);
     return ret;
 }
 
@@ -372,7 +396,9 @@ void zc_micro_f(int pool_index)
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    // request->req_status = STALE_REQUEST;
+    //zc_free(arg);
+    //zc_free(request);
 }
 
 void zc_micro_g(int pool_index)
@@ -393,5 +419,7 @@ void zc_micro_g(int pool_index)
 
     // release worker/memory pool
     release_worker(pool_index);
-    //request->req_status = STALE_REQUEST;
+    //zc_free(arg);
+    //zc_free(request);
+    // request->req_status = STALE_REQUEST;
 }

@@ -5,8 +5,6 @@
  * Copyright (c) 2021 Peterson Yuhala, IIUN
  * Copied from eleos sync utils
  *
- *
- *
  */
 
 #include <sgx_spinlock.h>

@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 2;//get_nprocs() / 2;
+    int num_sl_workers = 4;//get_nprocs() / 2;
 
     /**
      * use zc: ./async-sgx 1 0
@@ -335,11 +335,11 @@ int main(int argc, char *argv[])
     double run_time = 30.0;
 
     //-------------------------------------------
-    run_bench_dynamic(run_time, 1);
+    //run_bench_dynamic(run_time, 1);
 
-    //run_lmbench(5);
+    //run_lmbench(3);
 
-    // run_kissdb_bench(2);
+     run_kissdb_bench(2);
 
     //-------------------------------------------
 

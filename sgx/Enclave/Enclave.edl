@@ -105,6 +105,8 @@ enclave {
     untrusted {
     	void* ocall_malloc(size_t size);
     	void* ocall_realloc([user_check] void* ptr, size_t size);
+        void* ocall_memsys5_realloc([user_check] void* old_pool, int pool_id);
+            
         void ocall_print_string([in, string] const char *str);
 	long ocall_gettid(void);
 	

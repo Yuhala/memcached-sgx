@@ -2,9 +2,9 @@
  * Created on Wed Sep 29 2021
  *
  * Copyright (c) 2021 Peterson Yuhala, IIUN
- * 
- * For the proof of concept I implement specific structures which will hold the 
- * arguments of each switchless function. Untrusted memory pools will be pre-allocated for each enclave thread 
+ *
+ * For the proof of concept I implement specific structures which will hold the
+ * arguments of each switchless function. Untrusted memory pools will be pre-allocated for each enclave thread
  * on which switchless requests + arguments will be allocated.
  * ZC == zero config (as in zero config/dynamic switchless call system)
  */
@@ -26,8 +26,12 @@
 
 #define ZC_NO_FREE_POOL -1 /* if there is not free pool in the pool array return -1 index */
 
-#define POOL_SIZE 64 * 1024 * 1024 /* surely 64 mb should be enough for realistic tests/benchmarks */
+#define POOL_SIZE 32 * 1024 * 1024 /* surely 64 mb should be enough for realistic tests/benchmarks */
 #define NUM_POOLS 8                /* the number of memory pools to create; == number max threads in enclave */
+
+#define MN_REQ 16               /* minimum memsys5 request size */
+#define REALLOC_MIN 512 * 1024 /* min memory left to trigger reallocation */
+#define USE_MEMSYS5 1
 
 #define ZC_REQUEST_DONE 1
 
@@ -38,7 +42,7 @@
 #define SCHED_PAUSE 1
 
 /**
- * structure containing pointers to argument buffers. 
+ * structure containing pointers to argument buffers.
  * Some of these structures will be "cross-enclave data structures".
  * The request id will be an integer variable and will be unique for each call.
  */
@@ -50,7 +54,7 @@
  * code. Then, the enclave code creates an trusted object out of the given,
  * untrusted object; this is called "clone". This clone operation will do all
  * proper security checks. Finally, the enclave code can access and manipuate
- * its cloned object securely. 
+ * its cloned object securely.
  *
  */
 
@@ -144,7 +148,7 @@ struct ftruncate64_arg
     int ret;
 };
 
-//Type definitions
+// Type definitions
 typedef struct fread_arg fread_arg_zc;
 typedef struct fwrite_arg fwrite_arg_zc;
 typedef struct read_arg read_arg_zc;
@@ -161,7 +165,7 @@ typedef struct ftruncate64_arg ftruncate64_arg_zc;
 
 typedef struct no_arg no_arg_zc;
 
-//Special types for each zc switchless routine
+// Special types for each zc switchless routine
 enum zc_routine
 {
     ZC_FREAD = 0,
@@ -181,14 +185,14 @@ enum zc_routine
 typedef enum zc_routine zc_routine;
 
 //---------------------- zc req/resp queues -----------------------
-//Request and response structs
+// Request and response structs
 struct zc_request
 {
     void *args;
     zc_routine func_name;
     int req_status;
-    //volatile int is_done;        /* do not cache this int */
-    volatile uint64_t is_done;        /* do not cache this int */
+    // volatile int is_done;        /* do not cache this int */
+    volatile uint64_t is_done;   /* do not cache this int */
     unsigned int req_pool_index; /* pool index of worker thread */
 };
 
@@ -258,8 +262,8 @@ typedef enum zc_queue_type zc_q_type;
 //---------------------- zc arg list -----------------------
 
 /**
- * Argument list/slots for different libc routines/ocalls. This list/struct will have an entry for 
- * each switchless ocall routine. 
+ * Argument list/slots for different libc routines/ocalls. This list/struct will have an entry for
+ * each switchless ocall routine.
  * The size of each argument array will depend on the number of the size of the request queue.
  */
 
@@ -317,11 +321,22 @@ struct zc_mpool
     zc_req *request; /* caller request */
 };
 
+/**
+ * for the memsys5 allocator
+ */
+typedef struct memsys5_t
+{
+    void *pBuf;   // pre-allocated memory to be sent to enclave
+    size_t szBuf; // size of pBuf in bytes
+
+} memsys5_t;
+
 typedef struct zc_mpool zc_mpool;
 
 struct zc_mpool_array
 {
     zc_mpool **memory_pools;
+    memsys5_t *memsys5_pool; /* used for allocations with memsys5 */
     int num_pools;
 };
 

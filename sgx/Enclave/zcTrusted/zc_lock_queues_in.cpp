@@ -4,7 +4,7 @@
  * Copyright (c) 2021 Peterson Yuhala, IIUN
  * Request and response queue implementations enclave side. It is more or less the same thing
  * in the non-enclave side.
- * 
+ *
  */
 
 #include "Enclave.h"
@@ -16,6 +16,8 @@
 #include "zc_queues_in.h"
 
 #include "memcached/mpool.h"
+
+#include "zc_mem.h"
 
 /**
  * linked list/queue with zc switchless requests and responses
@@ -90,7 +92,7 @@ void init_zc_pool_lock()
 }
 
 /**
- * pyuhala:Routines to allocate and deallocate memory from 
+ * pyuhala:Routines to allocate and deallocate memory from
  * preallocated untrusted memory pool.
  */
 
@@ -112,15 +114,6 @@ void *zc_malloc(size_t siz)
     return (mpool_alloc(siz, mem_pools->memory_pools[pool_index]->pool));
 }
 
-/**
- * pyuhala: allocate memory from a specific memory pool.
- * This will be used by a caller thread who is searching for
- * an unused worker/pool.
- */
-void *zc_malloc(int index, size_t siz)
-{
-    return (mpool_alloc(siz, mem_pools->memory_pools[index]->pool));
-}
 
 /**
  * Add item to request or response queues.
@@ -167,14 +160,14 @@ void zc_enq(zc_q_type qt, void *info)
     }
     else
     {
-        //printf("req queue is full");
+        // printf("req queue is full");
     }
 }
 
 /**
  * get item from request or response queues.
  * For switchless ocalls, enclave will remove items from response q,
- * while non-enclave code will add items to response q. * 
+ * while non-enclave code will add items to response q. *
  */
 void *zc_dq(zc_q_type qt)
 {
@@ -200,7 +193,7 @@ void *zc_dq(zc_q_type qt)
     queue->count--;
     ZC_QUEUE_UNLOCK(qt);
 
-    //free(tmp_req);
+    // free(tmp_req);
 
     return return_val;
 }
@@ -226,7 +219,7 @@ int isempty(zc_q_type qt)
 
 void free_queues()
 {
-    //TODO: empty queues first
+    // TODO: empty queues first
     free(req_queue);
     free(resp_queue);
 }
