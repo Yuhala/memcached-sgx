@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 4;//get_nprocs() / 2;
+    int num_sl_workers = 2;//get_nprocs() / 2;
 
     /**
      * use zc: ./async-sgx 1 0
