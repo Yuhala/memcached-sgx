@@ -126,7 +126,7 @@ void run_bench_dynamic(double run_time, int num_runs)
     
     printf(">>>>>>>>>>>>>>>>> kissdb dynamic bench start >>>>>>>>>>>>>>>>>\n");
 
-    int num_req = 2000; // number of requests issued by the callers
+    int num_req = 100; // number of requests issued by the callers
 
     int min_keys = 500;
     int max_keys = 10000;

@@ -60,3 +60,5 @@ void spin_unlock(unsigned char volatile *p)
 	asm volatile(""); // acts as a memory barrier.
 	*p = 0;
 }
+
+

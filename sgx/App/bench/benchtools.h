@@ -32,7 +32,7 @@
  * The register results funtion can use this value to skip
  * some points
  */
-#define POINT_FREQ 10
+#define POINT_FREQ 1
 
 typedef enum
 {

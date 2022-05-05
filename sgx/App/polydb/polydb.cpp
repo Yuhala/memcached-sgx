@@ -48,7 +48,7 @@ volatile int start = 0;
  * i.e numReq will be issued every maxSleep for the lowest frequency
  * I chose 1s here because it corresponds to the max usleep time i.e 1000 000 in useconds_t
  */
-static double max_sleep = 1.0;
+static double max_sleep = 0.5;
 /**
  * number of secs for the min request frequency
  * todo: find a better value
@@ -180,9 +180,10 @@ void *thread_dynamic(void *input)
     wait_for_start();
     // pthread_mutex_lock(&lock);
     // id = write_store_counter++;
-    int id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
+    //int id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
     // pthread_mutex_unlock(&lock);
 
+    int id = ((struct thread_args *)input)->rw_id;
     int num_req = ((struct thread_args *)input)->num_keys;
     int operation = ((struct thread_args *)input)->operation;
     void *cookie = (void *)((struct thread_args *)input)->file_info;
@@ -207,6 +208,7 @@ void *thread_dynamic(void *input)
     unsigned long long **cpu_stats_begin;
     unsigned long long **cpu_stats_end;
     double cpu_usage = 0.0;
+    int req_count = num_req;
 
     while (time_spent < run_time)
     {
@@ -240,7 +242,7 @@ void *thread_dynamic(void *input)
         switch (state)
         {
         case INCREASE:
-            //printf(">>> INCREASING FREQUENCY >>>\n");
+            // printf(">>> INCREASING FREQUENCY >>>\n");
             /**
              * Send num_req write requests to the enclave.
              * We could calculate time spent out of the switch
@@ -250,7 +252,7 @@ void *thread_dynamic(void *input)
              */
 
             cpu_stats_begin = read_cpu();
-            req_time_inc = do_request(num_req, id, operation, cookie);
+            req_time_inc = do_request(req_count, id, operation, cookie);
             cpu_stats_end = read_cpu();
 
             pthread_mutex_lock(&bench_timer_lock);
@@ -258,21 +260,22 @@ void *thread_dynamic(void *input)
             pthread_mutex_unlock(&bench_timer_lock);
 
             cpu_usage = get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
-            register_results_dynamic(res_file, time_spent, get_tput(num_req, req_time_inc), get_num_active_workers(), cpu_usage);
+            register_results_dynamic(res_file, time_spent, get_tput(req_count, req_time_inc), get_num_active_workers(), cpu_usage);
 
             usleep(sleep_micro);
+            req_count *= 2;
             /**
              * to increase the req frequency,
              * we decrease the sleep time
              */
-            sleep_micro /= 2;
+            // sleep_micro /= 2;
             break;
 
         case CONSTANT:
-            //printf(">>> CONSTANT FREQUENCY >>>\n");
+            // printf(">>> CONSTANT FREQUENCY >>>\n");
 
             cpu_stats_begin = read_cpu();
-            req_time_const = do_request(num_req, id, operation, cookie);
+            req_time_const = do_request(req_count, id, operation, cookie);
             cpu_stats_end = read_cpu();
 
             pthread_mutex_lock(&bench_timer_lock);
@@ -280,17 +283,17 @@ void *thread_dynamic(void *input)
             pthread_mutex_unlock(&bench_timer_lock);
 
             cpu_usage = get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
-            register_results_dynamic(res_file, time_spent, get_tput(num_req, req_time_const), get_num_active_workers(), cpu_usage);
+            register_results_dynamic(res_file, time_spent, get_tput(req_count, req_time_const), get_num_active_workers(), cpu_usage);
             /**
-             * sleep time remains constant here
+             * constant request frequency
              */
             usleep(sleep_micro);
 
             break;
         case DECREASE:
-            //printf(">>> DECREASING FREQUENCY >>>\n");
+            // printf(">>> DECREASING FREQUENCY >>>\n");
             cpu_stats_begin = read_cpu();
-            req_time_dec = do_request(num_req, id, operation, cookie);
+            req_time_dec = do_request(req_count, id, operation, cookie);
             cpu_stats_end = read_cpu();
 
             pthread_mutex_lock(&bench_timer_lock);
@@ -298,17 +301,18 @@ void *thread_dynamic(void *input)
             pthread_mutex_unlock(&bench_timer_lock);
 
             cpu_usage = get_avg_cpu_usage(cpu_stats_end, cpu_stats_begin);
-            register_results_dynamic(res_file, time_spent, get_tput(num_req, req_time_dec), get_num_active_workers(), cpu_usage);
+            register_results_dynamic(res_file, time_spent, get_tput(req_count, req_time_dec), get_num_active_workers(), cpu_usage);
 
             /**
-             * sleep time remains constant here
+             * decrease request num/frequency
              */
             usleep(sleep_micro);
+            req_count /= 2;
             /**
              * to decrease the req frequency,
              * we increase the sleep time
              */
-            sleep_micro *= 2;
+            //sleep_micro *= 2;
             break;
         default:
             break;
@@ -330,11 +334,11 @@ double do_request(int num_ops, int thread_id, int operation, void *cookie)
     struct timespec req_start, req_stop;
 
     start_clock(&req_start);
-    // ecall_do_lmbench_op(global_eid, num_ops, thread_id, operation, cookie);
-    ecall_write_kissdb(global_eid, num_ops, thread_id);
+    ecall_do_lmbench_op(global_eid, num_ops, thread_id, operation, cookie);
+    // ecall_write_kissdb(global_eid, num_ops, thread_id);
     stop_clock(&req_stop);
     double req_time = time_diff(&req_start, &req_stop, SEC);
-    //printf(">>> request complete: num_ops: %d thread_id: %d tput: %f OP/s >>\n", num_ops, thread_id, num_ops / req_time);
+    // printf(">>> request complete: num_ops: %d thread_id: %d tput: %f OP/s >>\n", num_ops, thread_id, num_ops / req_time);
     return req_time;
 }
 
@@ -467,7 +471,7 @@ void bench_dynamic(int num_ops, int num_threads, double run_time)
      * Roughly divide the number of ops among the threads
      */
     reader_args->num_keys = half_ops / read_threads;
-    reader_args->rw_id = 0;
+    reader_args->rw_id = 00;
     reader_args->run_time = run_time;
     reader_args->operation = READ_OP;
     reader_args->file_info = get_read_cookie();
@@ -477,7 +481,7 @@ void bench_dynamic(int num_ops, int num_threads, double run_time)
      * Roughly divide the number of ops among the threads
      */
     writer_args->num_keys = half_ops / write_threads;
-    writer_args->rw_id = 1;
+    writer_args->rw_id = 11;
     writer_args->run_time = run_time;
     writer_args->operation = WRITE_OP;
     writer_args->file_info = get_write_cookie();

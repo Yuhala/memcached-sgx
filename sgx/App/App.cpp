@@ -332,14 +332,14 @@ int main(int argc, char *argv[])
     printf("Enclave initialized\n");
 
     int id = global_eid;
-    double run_time = 30.0;
+    double run_time = 60.0;
 
     //-------------------------------------------
-    //run_bench_dynamic(run_time, 1);
+    run_bench_dynamic(run_time, 1);
 
     //run_lmbench(3);
 
-     run_kissdb_bench(2);
+    //run_kissdb_bench(2);
 
     //-------------------------------------------
 

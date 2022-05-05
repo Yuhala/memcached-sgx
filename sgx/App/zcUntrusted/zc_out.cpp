@@ -22,6 +22,7 @@
 #include "zc_ocalls_out.h"
 
 #include "zc_locks.h"
+#include "zc_spinlocks.h"
 
 #include "scheduler.h"
 #include <sched.h>
@@ -199,10 +200,10 @@ static void init_mem_pools()
 /* do nothing */
 #else
         pools->memory_pools[i]->pool = mpool_create(POOL_SIZE);
+        pools->memory_pools[i]->pool->mpool_id = i;
 #endif
 
         pools->memory_pools[i]->pool_id = i;
-        pools->memory_pools[i]->pool->mpool_id = i;
         pools->memory_pools[i]->pool_lock = 0;
         pools->memory_pools[i]->pool_status = (int)INACTIVE;
 
@@ -644,6 +645,7 @@ void handle_zc_switchless_request(zc_req *request, int pool_index)
 
     // request->is_done = ZC_REQUEST_DONE; /* w/o atomic store */
     __atomic_store_n(&request->is_done, ZC_REQUEST_DONE, __ATOMIC_SEQ_CST); /* with atomic store */
+    // request->is_done = 1;
 
     /* Notify the caller that the switchless request is done by updating the status.
      * The memory barrier ensures that switchless results are visible to the
@@ -659,6 +661,7 @@ static void free_mem_pools()
     for (int i = 0; i < n; i++)
     {
         mpool_destroy(pools->memory_pools[i]->pool);
+        free(pools->memory_pools[i]);
     }
 
     free(pools);

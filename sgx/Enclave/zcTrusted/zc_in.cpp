@@ -245,19 +245,23 @@ void do_zc_switchless_request(zc_req *req, unsigned int pool_index)
 void ZC_REQUEST_WAIT(zc_req *request)
 {
     log_zc_routine(__func__);
+    /**
+     * @brief
+     * wait in a pause loop while
+     * request.is_done is 0
+     */
+    // spin_lock(&request->is_done);
 
-    /*
-      while (__atomic_load_n(&request->is_done, __ATOMIC_RELAXED) != ZC_REQUEST_DONE)
-      {
-          // ZC_PAUSE();
-
-      }
-   */
-
-    while (!request->is_done)
+    while (__atomic_load_n(&request->is_done, __ATOMIC_RELAXED) != ZC_REQUEST_DONE)
     {
-        asm_pause();
+        // ZC_PAUSE();
+        __asm__("pause");
     }
+
+    /*  while (!request->is_done)
+     {
+         asm_pause();
+     } */
 }
 
 /**

@@ -51,7 +51,6 @@ enclave {
        ssize_t ocall_pread(int fd, [out,size=count]void *buf, size_t count, off_t offset);
        ssize_t ocall_pread64(int fd, [out,size=count]void *buf, size_t count, off64_t offset);
        ssize_t ocall_pwrite(int fd, [in,size=count]const void *buf, size_t count, off_t offset);
-
        
 
        SGX_FILE ocall_fopen([in,string]const char* filename, [in,string]const char* mode);
@@ -63,8 +62,7 @@ enclave {
        off_t ocall_ftello(SGX_FILE file);
 
 
-
-       ssize_t ocall_read(int fd, [out, size=count]void *buf, size_t count) ;
+       ssize_t ocall_read(int fd, [out, size=count]void *buf, size_t count);
        ssize_t ocall_write(int fd, [in, size=count]const void *buf, size_t count) transition_using_threads;
 
 
