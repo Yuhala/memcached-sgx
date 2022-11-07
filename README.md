@@ -134,3 +134,6 @@ mvn -pl site.ycsb:memcached-binding -am clean package
 ./bin/ycsb run memcached -s -P workloads/workloada -p "memcached.hosts=127.0.0.1" -threads 4 > outputRun.txt
 
 ```
+
+## Author
+- Peterson Yuhala 
