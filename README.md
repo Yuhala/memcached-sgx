@@ -136,4 +136,4 @@ mvn -pl site.ycsb:memcached-binding -am clean package
 ```
 
 ## Author
-- Peterson Yuhala (petersonyuhala@gmail.com)
+- Peterson Yuhala
