@@ -4,6 +4,10 @@
 #
 
 
+**/.config_HW*
+**/Enclave_u.*
+**/Enclave_t.*
+
 # Prerequisites
 *.d
 
