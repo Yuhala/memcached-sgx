@@ -152,7 +152,7 @@ void ecall_write_kyotodb(int numKeys, int writerId)
 {
 
     //printf("------------ writing kyoto: %d kv pairs in store %d \n--------\n", numKeys, writerId);
-    kc_set_bench(numKeys, writerId);
+    //kc_set_bench(numKeys, writerId);
 }
 
 void ecall_undef_stack_protector()

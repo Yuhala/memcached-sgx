@@ -147,27 +147,27 @@ Memcached_Inc_Paths := -I$(Memcached_Src_In)
 
 ########## Kyoto Settings ########
 
-# Kyoto source
-Kyoto_Src_In := ./Enclave/kyoto
-Kyoto_Src_Out := ./App/kyoto
+# # Kyoto source
+# Kyoto_Src_In := ./Enclave/kyoto
+# Kyoto_Src_Out := ./App/kyoto
 
-# Kyoto cc files
-Kyoto_Cpp_Files_In := $(wildcard $(Kyoto_Src_In)/*.cc)
-Kyoto_Cpp_Files_Out := $(wildcard $(Kyoto_Src_Out)/*.cc)
+# # Kyoto cc files
+# Kyoto_Cpp_Files_In := $(wildcard $(Kyoto_Src_In)/*.cc)
+# Kyoto_Cpp_Files_Out := $(wildcard $(Kyoto_Src_Out)/*.cc)
 
-# Kyoto headers
-Kyoto_Headers_In := $(wildcard $(Kyoto_Src_In)/*.h)
-Kyoto_Headers_Out := $(wildcard $(Kyoto_Src_Out)/*.h)
+# # Kyoto headers
+# Kyoto_Headers_In := $(wildcard $(Kyoto_Src_In)/*.h)
+# Kyoto_Headers_Out := $(wildcard $(Kyoto_Src_Out)/*.h)
 
-# Kyoto objects
-Kyoto_Objs_In := $(Kyoto_Cpp_Files_In:.cc=.o)
-Kyoto_Objs_Out := $(Kyoto_Cpp_Files_Out:.cc=.o)
+# # Kyoto objects
+# Kyoto_Objs_In := $(Kyoto_Cpp_Files_In:.cc=.o)
+# Kyoto_Objs_Out := $(Kyoto_Cpp_Files_Out:.cc=.o)
 
-# Kyoto libs
-Kyoto_Libs := -lpthread -lm -lssl -lcrypto
+# # Kyoto libs
+# Kyoto_Libs := -lpthread -lm -lssl -lcrypto
 
-# Kyoto include paths
-Kyoto_Inc_Paths := -I$(Kyoto_Src_In) 
+# # Kyoto include paths
+# Kyoto_Inc_Paths := -I$(Kyoto_Src_In) 
 
 
 ########## Lmbench Settings ########
@@ -358,12 +358,12 @@ $(Memcached_Src_Out)/%.o: $(Memcached_Src_Out)/%.c $(Memcached_Headers_Out)
 
 ####### Build Kyoto Objects ######
 
-$(Kyoto_Src_In)/%.o: $(Kyoto_Src_In)/%.cc $(Kyoto_Headers_In)
-		$(CXX)  $(SGX_COMMON_CFLAGS) $(Enclave_Cpp_Flags) $(Kyoto_Inc_Paths) -c $< -o $@
-		@echo "CXX <= $<"
+# $(Kyoto_Src_In)/%.o: $(Kyoto_Src_In)/%.cc $(Kyoto_Headers_In)
+# 		$(CXX)  $(SGX_COMMON_CFLAGS) $(Enclave_Cpp_Flags) $(Kyoto_Inc_Paths) -c $< -o $@
+# 		@echo "CXX <= $<"
 
-$(Kyoto_Src_Out)/%.o: $(Kyoto_Src_Out)/%.cc $(Kyoto_Headers_Out)
-		$(CXX)  $(SGX_COMMON_CFLAGS) $(App_Cpp_Flags) -I$(Kyoto_Src_Out) -c $< -o $@
+# $(Kyoto_Src_Out)/%.o: $(Kyoto_Src_Out)/%.cc $(Kyoto_Headers_Out)
+# 		$(CXX)  $(SGX_COMMON_CFLAGS) $(App_Cpp_Flags) -I$(Kyoto_Src_Out) -c $< -o $@
 
 
 ####### Build Lmbench Objects ######
@@ -391,7 +391,7 @@ App/%.o: App/%.cpp  App/Enclave_u.h
 	@$(CXX) $(SGX_COMMON_CXXFLAGS) $(App_Cpp_Flags) -c $< -o $@
 	@echo "CXX  <=  $<"
 
-$(App_Name): App/Enclave_u.o $(App_Cpp_Objects) $(Graal_Objects_Out) $(Memcached_Objs_Out) $(Kyoto_Objs_Out)
+$(App_Name): App/Enclave_u.o $(App_Cpp_Objects) $(Graal_Objects_Out) $(Memcached_Objs_Out) #$(Kyoto_Objs_Out)
 	@$(CXX) $^ -o $@ $(App_Link_Flags)
 	@echo "LINK =>  $@"
 
@@ -416,7 +416,7 @@ Enclave/%.o: Enclave/%.cpp Enclave/Enclave_t.h
 
 prot: $(Signed_Enclave_Name)
 
-$(Enclave_Name): Enclave/Enclave_t.o  $(Enclave_Cpp_Objects) $(Graal_Objects_In) $(Memcached_Objs_In) $(Kyoto_Objs_In) $(Lmbench_Objs_In) 
+$(Enclave_Name): Enclave/Enclave_t.o  $(Enclave_Cpp_Objects) $(Graal_Objects_In) $(Memcached_Objs_In)  $(Lmbench_Objs_In) #$(Kyoto_Objs_In)
 	@$(CXX) $^ -o $@ $(Enclave_Link_Flags)
 	@echo "LINK =>  $@"
 
@@ -428,4 +428,4 @@ $(Signed_Enclave_Name): $(Enclave_Name)
 
 clean:
 	@rm -f .config_* $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.* \
-	$(Memcached_Objs_In) $(Memcached_Objs_Out) $(Kyoto_Objs_In) $(Kyoto_Objs_Out) $(Lmbench_Objs_In) 
+	$(Memcached_Objs_In) $(Memcached_Objs_Out) $(Lmbench_Objs_In) $(Kyoto_Objs_In) $(Kyoto_Objs_Out)
