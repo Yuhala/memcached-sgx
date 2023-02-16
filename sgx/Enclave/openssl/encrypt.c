@@ -4,15 +4,6 @@
  * Copyright (c) 2023 Peterson Yuhala
  */
 
-// #include <openssl/conf.h>
-// #include <openssl/evp.h>
-// #include <openssl/err.h>
-// #include <string.h>
-// #include <stdlib.h>
-// #include <stdio.h>
-// #include <sys/types.h>
-// #include <unistd.h>
-
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
@@ -55,8 +46,21 @@ uint8_t *hash_bytes;
 // char *enc_filename="datax_enc.csv";
 // char *dec_filename="datax_dec.csv";
 
-char *enc_filename = "/home/ubuntu/memcached-sgx/sgx/ciphertext.txt";
-char *dec_filename = "/home/ubuntu/memcached-sgx/sgx/clairtext.txt";
+/**
+ * @brief
+ * Encryption thread's clairtext and ciphertext files
+ */
+char *enc_ciphertext = "/home/ubuntu/memcached-sgx/sgx/ciphertext.txt";
+char *enc_clairtext = "/home/ubuntu/memcached-sgx/sgx/clairtext.txt";
+
+/**
+ * @brief
+ * Decryption thread's ciphertext/secret file
+ */
+char *dec_secret = "/home/ubuntu/memcached-sgx/sgx/secret.txt";
+
+unsigned char *key = (unsigned char *)"01234567890123456789012345678901";
+unsigned char *iv = (unsigned char *)"someIV";
 
 int encrypt(unsigned char *plaintext,
             int plaintext_len,
@@ -158,27 +162,30 @@ int decrypt(unsigned char *ciphertext,
 
 void handleErrors(void)
 {
-    //ERR_print_errors_fp(stderr);
+    // ERR_print_errors_fp(stderr);
     abort();
 }
 
-void test_crypto ()
+void test_crypto()
 {
+    /**
+     * @brief
+     * pyuhala: preliminary test: reading and writing data to files
+     *
+     */
+
+    read_encrypt_write(enc_clairtext, enc_ciphertext, 40);
+
     /* Load the human readable error strings for libcrypto */
-    //ERR_load_crypto_strings();
-    printf(">>>> 1 >>>>\n");
+    // ERR_load_crypto_strings();
 
     /* Load all digest and cipher algorithms */
-    //OpenSSL_add_all_algorithms();
-
+    // OpenSSL_add_all_algorithms();
 
     /* Load config file, and other important initialisation */
     // OPENSSL_config(NULL);
-    //OPENSSL_no_config();
-     printf(">>>> 2 >>>>\n");
+    // OPENSSL_no_config();
 
-    unsigned char *key = (unsigned char *)"01234567890123456789012345678901";
-    unsigned char *iv = (unsigned char *)"someIV";
     unsigned char *plaintext = (unsigned char *)"Hello Peterson";
     unsigned char ciphertext[128];
     unsigned char decryptedtext[128];
@@ -187,7 +194,7 @@ void test_crypto ()
     int ciphertext_len = 0;
     ciphertext_len = encrypt(plaintext, strlen((char *)plaintext), key, iv, ciphertext);
     printf("Ciphertext is:\n");
-    //BIO_dump_fp(stdout, (const char *)ciphertext, ciphertext_len);
+    // BIO_dump_fp(stdout, (const char *)ciphertext, ciphertext_len);
 
     decryptedtext_len = decrypt(ciphertext, ciphertext_len, key, iv, decryptedtext);
     decryptedtext[decryptedtext_len] = '\0';
@@ -202,4 +209,95 @@ void test_crypto ()
 
     /* Remove error strings */
     ERR_free_strings();
+}
+
+/**
+ * @brief
+ * Read CHUNK_SIZE of data from a file
+ * @param pos
+ * @return unsigned*
+ */
+void read_encrypt_write(char *file_in, char *file_out, int max_bytes)
+{
+
+    unsigned char decrypted_data[CHUNK_SIZE + 1]; // adding 1 byte for end of string xter
+    unsigned char encrypted_data[CHUNK_SIZE + 1];
+
+    // file to be read from
+    SGX_FILE fs_in = fopen(file_in, "rb");
+    struct stat st;
+    stat(file_in, &st);
+    int filesize = st.st_size;
+    int max = (max_bytes < filesize) ? max_bytes : filesize;
+
+    // file to be written to
+    SGX_FILE fs_out = fopen(file_out, "w");
+
+    printf("The file size reported by stat is: %d\n", filesize);
+    unsigned char buffer[CHUNK_SIZE + 1];
+    // first read
+    size_t total_read = 0;
+    size_t count = 0;
+    while (total_read < max)
+    {
+        count = fread(&buffer, sizeof(char), CHUNK_SIZE, fs_in);
+        printf(">>>> Data read: %s\n", buffer);
+        /**
+         * @brief
+         * encrypt chunk
+         */
+        int ciphertext_len = encrypt(buffer, strlen((char *)buffer), key, iv, encrypted_data);
+        printf(">>>> Ciphertext is: %s\n");
+
+        int decryptedtext_len = decrypt(encrypted_data, ciphertext_len, key, iv, decrypted_data);
+        decrypted_data[decryptedtext_len] = '\0';
+        printf("Decrypted text is: %s\n", decrypted_data);
+        /**
+         * @brief
+         * write encrypted chunk
+         */
+        fwrite(encrypted_data, 1, CHUNK_SIZE + 1, fs_out);
+
+        total_read += count;
+    }
+
+    // close files
+    fclose(fs_in);
+    fclose(fs_out);
+}
+void read_decrypt(char *file_in, int max_bytes)
+{
+    unsigned char decrypted_data[CHUNK_SIZE + 1]; // adding 1 byte for end of string xter
+    unsigned char encrypted_data[CHUNK_SIZE + 1];
+
+    SGX_FILE fs_in = fopen(file_in, "rb"); // get file stream pointer
+    struct stat st;
+    stat(file_in, &st);
+    int filesize = st.st_size;
+    int max = (max_bytes < filesize) ? max_bytes : filesize;
+
+    printf("The file size reported by stat is: %d\n", filesize);
+    unsigned char buffer[CHUNK_SIZE + 1];
+    // first read
+    size_t total_read = 0;
+    size_t count = 0;
+    while (total_read < max)
+    {
+        count = fread(&buffer, sizeof(char), CHUNK_SIZE, fs_in);
+        printf(">>>> Data read: %s\n", buffer);
+        /**
+         * @brief
+         * Decrypt chunk
+         */
+        int ciphertext_len = count;
+
+        int decryptedtext_len = decrypt(buffer, ciphertext_len, key, iv, decrypted_data);
+        decrypted_data[decryptedtext_len] = '\0';
+        printf("Decrypted text is: %s\n", decrypted_data);
+
+        total_read += count;
+    }
+
+    // close file
+    fclose(fs_in);
 }

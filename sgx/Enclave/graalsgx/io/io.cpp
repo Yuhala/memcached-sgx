@@ -229,6 +229,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, SGX_FILE f)
     GRAAL_SGX_INFO();
     size_t ret = 0;
     int index = reserve_worker();
+    index = ZC_NO_FREE_POOL;
 
     if (index != ZC_NO_FREE_POOL)
     {

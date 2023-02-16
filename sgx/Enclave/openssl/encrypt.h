@@ -12,6 +12,7 @@
 #define SGX_AESGCM_IV_SIZE 12  // 96 bit iv
 #define CIPHERTEXT_SIZE 36
 #define ADD_ENC_DATA_SIZE (SGX_AESGCM_MAC_SIZE + SGX_AESGCM_IV_SIZE)
+#define CHUNK_SIZE 32 // bytes
 
 #define ENABLE_CRYPTO
 
@@ -52,7 +53,11 @@ extern "C"
                 unsigned char *plaintext);
 
     void handleErrors(void);
-    void test_crypto ();
+
+    void read_encrypt_write(char *filein, char *fileout, int max_bytes);
+    void read_decrypt(char *filein, int max_bytes);
+
+    void test_crypto();
 
 #ifdef __cplusplus
 }

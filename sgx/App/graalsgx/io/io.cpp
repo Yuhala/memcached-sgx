@@ -217,7 +217,7 @@ SGX_FILE ocall_fopen(const char *filename, const char *mode)
     SGX_FILE fd = num_fd++;
     FILE *f = NULL;
     f = fopen(filename, mode);
-    //printf("fopen filename: %s\n",filename);
+    printf("fopen filename: %s\n",filename);
     fd_array[fd] = f;
 
     return (f == NULL ? 0 : fd);
@@ -252,7 +252,7 @@ size_t ocall_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
     FILE *f = getFile(stream);
     ssize_t total_bytes = size * nmemb;
     ssize_t ret = fread(ptr, size, nmemb, f);
-    //printf("--------------- fread expected: %d actually read: %d ---------------------\n", total_bytes, ret);
+    printf("--------------- fread expected: %d actually read: %d ---------------------\n", total_bytes, ret);
     return ret;
 }
 
