@@ -81,7 +81,12 @@
         "valarray": "cpp",
         "charconv": "cpp",
         "cerrno": "cpp",
-        "graal_sgx_shim.h": "c"
+        "graal_sgx_shim.h": "c",
+        "enclave.h": "c",
+        "conf.h": "c",
+        "evp.h": "c",
+        "string.h": "c",
+        "graal_sgx_debug.h": "c"
     }
     
 }

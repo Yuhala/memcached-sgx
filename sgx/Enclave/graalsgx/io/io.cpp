@@ -907,13 +907,13 @@ int __xstat64(int ver, const char *path, struct stat *stat_buf)
     return ret;
 }
 
-int pthread_kill(pthread_t thread, int sig)
-{
-    GRAAL_SGX_INFO();
-    int ret = 0;
-    // TODO
-    return ret;
-}
+// int pthread_kill(pthread_t thread, int sig)
+// {
+//     GRAAL_SGX_INFO();
+//     int ret = 0;
+//     // TODO
+//     return ret;
+// }
 int inflateInit2_(z_streamp strm, int windowBits, char *version, int stream_size)
 {
     GRAAL_SGX_INFO();

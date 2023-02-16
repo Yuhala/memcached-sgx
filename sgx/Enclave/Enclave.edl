@@ -12,12 +12,15 @@ enclave {
     include "user_types.h" /* buffer_t */
     include "sgx_spinlock.h"
 
+    from "sgx_tsgxssl.edl" import *;
+    from "sgx_pthread.edl" import *;
+
     /* Import all libc ocalls */
     from "graalsgx/io/io.edl" import *;
     from "graalsgx/net/net.edl" import *;
     from "graalsgx/sys/sys.edl" import *;
-    from "graalsgx/thread/thread.edl" import *;
-    from "memcached/memcached_sgx.edl" import *;
+    //from "graalsgx/thread/thread.edl" import *;
+    //from "memcached/memcached_sgx.edl" import *;
     
     //from "graalsgx/edl/graalsgx_ecalls.edl" import *;
     //from "graalsgx/edl/graalsgx_ocalls.edl" import *;
@@ -75,6 +78,8 @@ enclave {
 
    trusted {
        
+       
+
        //public void ecall_create_enclave_isolate(); 
        public void ecall_run_main(int id);
 
@@ -103,6 +108,8 @@ enclave {
      *  [string]: specifies 'str' is a NULL terminated buffer.
      */
     untrusted {
+         void *ocall_free_reallocate_pool(unsigned int pool_id);
+
     	void* ocall_malloc(size_t size);
     	void* ocall_realloc([user_check] void* ptr, size_t size);
         void* ocall_memsys5_realloc([user_check] void* old_pool, int pool_id);

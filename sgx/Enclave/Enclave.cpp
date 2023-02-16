@@ -34,6 +34,7 @@
 #include <sgx_spinlock.h>
 
 #include "kissdb/kissdb.h"
+#include "openssl/encrypt.h"
 
 #include "kyoto/kc_main.h"
 
@@ -46,8 +47,8 @@
 #include "switchless_buffer.h"
 #include "graal_sgx_shim_switchless.h"
 
-#include "memcached/test.h"
-#include "memcached/memcached.h"
+//#include "memcached/test.h"
+//#include "memcached/memcached.h"
 
 #include "zcTrusted/zc_in.h"
 
@@ -97,7 +98,8 @@ void runTestMulti(int n);
 
 void ecall_test()
 {
-    // replace with your custom test routine
+    printf(">>>>>>>>>>> In ecall_test >>>>>>>>>\n");
+    test_crypto();
 }
 
 void ecall_do_lmbench_op(int num_ops, int thread_id, int op, void *cookie)

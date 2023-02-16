@@ -265,7 +265,7 @@ typedef __fsfilcnt64_t fsfilcnt64_t; /* Type to count file system inodes.  */
 
 /* Now add the thread types.  */
 #if defined __USE_POSIX199506 || defined __USE_UNIX98
-# include <sgx/bits/pthreadtypes.h>
+//# include <sgx/bits/pthreadtypes.h>
 #endif
 
 

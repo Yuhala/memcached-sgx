@@ -227,16 +227,16 @@ int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
     //ocall_sigprocmask(&ret, how, set, oldset);
     return ret;
 }
-__sighandler_t signal(int signum, __sighandler_t handler)
-{
-    GRAAL_SGX_INFO();
-    //TODO
-    printf("--- In enclave Signal num: %d-----\n", signum);
-    //handler = &sig_handler;
-    __sighandler_t ret = &sig_handler; //nullptr;
-    //ocall_signal(&ret, signum, handler);
-    return nullptr;
-}
+// __sighandler_t signal(int signum, __sighandler_t handler)
+// {
+//     GRAAL_SGX_INFO();
+//     //TODO
+//     printf("--- In enclave Signal num: %d-----\n", signum);
+//     //handler = &sig_handler;
+//     __sighandler_t ret = &sig_handler; //nullptr;
+//     //ocall_signal(&ret, signum, handler);
+//     return nullptr;
+// }
 
 void sig_handler(int param)
 {

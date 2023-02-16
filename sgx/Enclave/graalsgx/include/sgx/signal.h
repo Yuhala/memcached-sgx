@@ -76,7 +76,7 @@ typedef __uid_t uid_t;
 
 #if defined __USE_POSIX199309 || defined __USE_XOPEN_EXTENDED
 /* Get the `siginfo_t' type plus the needed symbols.  */
-# include <sgx/bits/siginfo.h>
+//# include <sgx/bits/siginfo.h>
 #endif
 
 

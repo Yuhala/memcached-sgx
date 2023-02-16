@@ -29,12 +29,12 @@
 
 #ifdef __USE_GNU
 # define __need_sigevent_t
-# include <sgx/bits/siginfo.h>
+//# include <sgx/bits/siginfo.h>
 # define __need_timespec
 # include <struct/sgx_time_struct.h>
 #endif
 
-#include <sgx/bits/netdb.h>
+//#include <sgx/bits/netdb.h>
 
 /* Type for length arguments in socket calls.  */
 #ifndef __socklen_t_defined

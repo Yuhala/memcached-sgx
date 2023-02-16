@@ -335,7 +335,8 @@ int main(int argc, char *argv[])
     double run_time = 60.0;
 
     //-------------------------------------------
-    run_bench_dynamic(run_time, 1);
+    // run_bench_dynamic(run_time, 1);
+    ecall_test(global_eid);
 
     //run_lmbench(3);
 

@@ -18,7 +18,7 @@
 #include "zc_logger.h"
 
 #include "zc_out.h"
-#include "memcached/mpool.h"
+#include "mpool.h"
 #include "zc_ocalls_out.h"
 
 #include "zc_locks.h"

@@ -9,7 +9,7 @@
 
 #include "zc_types.h"
 #include "zc_queues_in.h"
-#include "memcached/mpool.h"
+#include "mpool.h"
 #include "zc_in.h"
 #include "zc_lfu.h"
 #include "zc_spinlocks.h"

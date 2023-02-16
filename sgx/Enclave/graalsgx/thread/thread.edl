@@ -12,7 +12,7 @@ enclave {
 
     from "sgx_tstdc.edl" import *;
     from "sgx_pthread.edl" import *;
-    include "struct/sgx_pthread_struct.h"
+    /* include "struct/sgx_pthread_struct.h" */
 
     include "sgx/event.h"
 
