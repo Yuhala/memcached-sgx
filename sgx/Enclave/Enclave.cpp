@@ -47,8 +47,8 @@
 #include "switchless_buffer.h"
 #include "graal_sgx_shim_switchless.h"
 
-//#include "memcached/test.h"
-//#include "memcached/memcached.h"
+// #include "memcached/test.h"
+// #include "memcached/memcached.h"
 
 #include "zcTrusted/zc_in.h"
 
@@ -102,6 +102,40 @@ void ecall_test()
     test_crypto();
 }
 
+/**
+ * @brief
+ *  Ecall to do OpenSSL operation: encrypt(read,encrypt,write) or decrypt (read,decrypt)
+ * @param num_ops
+ * @param thread_id
+ * @param op
+ * @param cookie
+ */
+void ecall_do_openssl_op(int max_bytes, int thread_id, int op)
+{
+
+    switch (op)
+    {
+    case 0:
+        file_encrypt(max_bytes);
+        break;
+
+    case 1:
+        file_decrypt(max_bytes);
+        break;
+
+    default:
+        break;
+    }
+}
+
+/**
+ * @brief
+ *  Ecall to do lmbench operation: read or write
+ * @param num_ops
+ * @param thread_id
+ * @param op
+ * @param cookie
+ */
 void ecall_do_lmbench_op(int num_ops, int thread_id, int op, void *cookie)
 {
 
@@ -153,8 +187,8 @@ void ecall_read_kyoto(int numKeys, int readerId)
 void ecall_write_kyotodb(int numKeys, int writerId)
 {
 
-    //printf("------------ writing kyoto: %d kv pairs in store %d \n--------\n", numKeys, writerId);
-    //kc_set_bench(numKeys, writerId);
+    // printf("------------ writing kyoto: %d kv pairs in store %d \n--------\n", numKeys, writerId);
+    // kc_set_bench(numKeys, writerId);
 }
 
 void ecall_undef_stack_protector()

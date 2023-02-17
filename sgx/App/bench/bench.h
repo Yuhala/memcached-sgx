@@ -36,4 +36,7 @@ void remove_old_results(const char *cmd);
 // dynamic benchmarks
 void run_kissdb_dynamic(double run_time, int num_runs);
 
+// openssl
+void run_openssl_bench(int num_runs);
+
 #endif /* ADA85AB1_B070_4021_A635_BC51ABB8323E */

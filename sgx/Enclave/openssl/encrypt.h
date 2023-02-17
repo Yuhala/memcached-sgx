@@ -25,6 +25,12 @@ typedef enum
 
 typedef enum
 {
+    ENC, //
+    DEC
+} SSL_OP;
+
+typedef enum
+{
     GCM, //
     CTR
 } AES_ALGO;
@@ -34,13 +40,7 @@ extern "C"
 {
 #endif
 
-    /* Cryptography API */
-    void encryptData(void *dataIn, size_t len, char *dataOut, size_t lenOut, AES_ALGO algo);
-    void decryptData(char *dataIn, size_t len, void *dataOut, size_t lenOut, AES_ALGO algo);
-    /* encrypted memcpy i.e encrypt src and write ciphertext to dest */
-    // void enc_memcpy(void *dest, void *src, size_t n, ENC_FLAG flag);
-
-    int encrypt(unsigned char *plaintext,
+       int encrypt(unsigned char *plaintext,
                 int plaintext_len,
                 unsigned char *key,
                 unsigned char *iv,
@@ -54,8 +54,13 @@ extern "C"
 
     void handleErrors(void);
 
-    void read_encrypt_write(char *filein, char *fileout, int max_bytes);
-    void read_decrypt(char *filein, int max_bytes);
+    void read_encrypt_write(char *file_in, char *file_out, int max_bytes);
+    void read_decrypt(char *file_in, int max_bytes);
+
+    void file_encrypt(int max_bytes);
+    void file_decrypt(int max_bytes);
+
+    
 
     void test_crypto();
 

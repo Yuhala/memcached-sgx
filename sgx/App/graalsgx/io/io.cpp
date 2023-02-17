@@ -20,11 +20,11 @@
 
 #include "zc_types.h"
 
-//#include <libexplain/libexplain.h>
+// #include <libexplain/libexplain.h>
 #include "io.h"
 
 using namespace std;
-//max num of file descriptors open at once
+// max num of file descriptors open at once
 #define MAX_FILE_DES 50000
 #define MAX_DIR 1000
 #define MAX_STREAMS 50000
@@ -34,7 +34,7 @@ z_streamp *zs_array[MAX_STREAMS];
 FILE *fd_array[MAX_FILE_DES];
 DIR *dir_array[MAX_DIR];
 
-//std::map<char* name, DIR *> dir_map;
+// std::map<char* name, DIR *> dir_map;
 
 static int num_fd = SGX_STDERR + 1; //(3 files open by default: stdin, stdout, stderr)
 
@@ -66,10 +66,10 @@ void ocall_empty(int repeats)
 
 void copy_stat_buf()
 {
-    //todo
+    // todo
 }
 
-//DIR *getDir(const char*)
+// DIR *getDir(const char*)
 int ocall_fsync(int fd)
 {
     log_ocall(__func__);
@@ -184,7 +184,7 @@ int ocall_readdir64_r(void *dirp, void *entry, struct dirent **result)
     log_ocall(__func__);
     DIR *dir = (DIR *)dirp;
     return readdir64_r(dir, (struct dirent64 *)entry, (struct dirent64 **)result);
-    //TODO
+    // TODO
 }
 void *ocall_opendir(const char *name)
 {
@@ -204,7 +204,7 @@ long ocall_pathconf(const char *path, int name)
     return pathconf(path, name);
 }
 
-//all names with x prefix prevent possible redefinition problems
+// all names with x prefix prevent possible redefinition problems
 int ocall_xclose(int fd)
 {
     log_ocall(__func__);
@@ -217,7 +217,7 @@ SGX_FILE ocall_fopen(const char *filename, const char *mode)
     SGX_FILE fd = num_fd++;
     FILE *f = NULL;
     f = fopen(filename, mode);
-    printf("fopen filename: %s\n",filename);
+    // printf("fopen filename: %s\n",filename);
     fd_array[fd] = f;
 
     return (f == NULL ? 0 : fd);
@@ -226,7 +226,7 @@ SGX_FILE ocall_fopen(const char *filename, const char *mode)
 SGX_FILE ocall_fdopen(int fd, const char *mode)
 {
     log_ocall(__func__);
-    //FILE *f = fdopen(fd, mode);
+    // FILE *f = fdopen(fd, mode);
     return fd;
 }
 
@@ -252,7 +252,7 @@ size_t ocall_fread(void *ptr, size_t size, size_t nmemb, SGX_FILE stream)
     FILE *f = getFile(stream);
     ssize_t total_bytes = size * nmemb;
     ssize_t ret = fread(ptr, size, nmemb, f);
-    printf("--------------- fread expected: %d actually read: %d ---------------------\n", total_bytes, ret);
+    // printf("--------------- fread expected: %d actually read: %d ---------------------\n", total_bytes, ret);
     return ret;
 }
 
@@ -276,11 +276,11 @@ ssize_t ocall_read(int fd, void *buf, size_t count)
 
     ssize_t ret = read(fd, buf, count);
 
-    //ssize_t debug_ret = read(fd, 0, 0);
-    //printf("ocall read return value: %d Error num: %d >>>>>>>>>>>>>>>>>>>>>>\n", debug_ret, errno);
-    //printf("Read error: %s\n", explain_read(fd, buf, count));
-    //install libexplain-dev: sudo apt install libexplain-dev
-    //exit(EXIT_FAILURE);
+    // ssize_t debug_ret = read(fd, 0, 0);
+    // printf("ocall read return value: %d Error num: %d >>>>>>>>>>>>>>>>>>>>>>\n", debug_ret, errno);
+    // printf("Read error: %s\n", explain_read(fd, buf, count));
+    // install libexplain-dev: sudo apt install libexplain-dev
+    // exit(EXIT_FAILURE);
 
     return ret;
 }
@@ -312,8 +312,8 @@ int ocall_fprintf(SGX_FILE stream, const char *str)
 void ocall_print_string(const char *str)
 {
     log_ocall(__func__);
-    /* Proxy/Bridge will check the length and null-terminate 
-     * the input string to prevent buffer overflow. 
+    /* Proxy/Bridge will check the length and null-terminate
+     * the input string to prevent buffer overflow.
      */
     printf("%s", str);
 }
@@ -323,7 +323,7 @@ void ocall_fgets(char *str, int n, SGX_FILE stream)
     log_ocall(__func__);
     FILE *f = getFile(stream);
     char *ret = fgets(str, n, f);
-    //printf("Ocall_fgets: %s\n", ret);
+    // printf("Ocall_fgets: %s\n", ret);
 }
 SGX_FILE ocall_stderr()
 {
@@ -337,7 +337,7 @@ int ocall_puts(const char *str)
     return puts(str);
 }
 
-//used by graphchi
+// used by graphchi
 int ocall_mkdir(const char *pathname, mode_t mode)
 {
     log_ocall(__func__);
@@ -472,27 +472,27 @@ int ocall_deflateEnd(z_streamp stream)
 
     log_ocall(__func__);
 
-    return 0; //TODO: get zlib
+    return 0; // TODO: get zlib
 }
 int ocall_deflateParams(z_streamp stream, int level, int strategy)
 {
     log_ocall(__func__);
-    return 0; //TODO: get zlib
+    return 0; // TODO: get zlib
 }
 int ocall_deflate(z_streamp stream, int flush)
 {
     log_ocall(__func__);
-    return 0; //TODO: get zlib
+    return 0; // TODO: get zlib
 }
 int ocall_deflateInit2(z_streamp stream, int level, int method, int windowBits, int memLevel, int strategy)
 {
     log_ocall(__func__);
-    return 0; //TODO: get zlib
+    return 0; // TODO: get zlib
 }
 int ocall_inflateReset(z_streamp stream)
 {
     log_ocall(__func__);
-    return 0; //TODO: get zlib
+    return 0; // TODO: get zlib
 }
 ssize_t ocall_sendfile64(int out_fd, int in_fd, off_t *offset, size_t count)
 {
@@ -502,7 +502,7 @@ ssize_t ocall_sendfile64(int out_fd, int in_fd, off_t *offset, size_t count)
 ulong ocall_adler32(ulong adler, const Bytef *buf, size_t len)
 {
     log_ocall(__func__);
-    return 0; //TODO: get zlib
+    return 0; // TODO: get zlib
 }
 
 off_t ocall_lseek(int fd, off_t offset, int whence)
@@ -613,9 +613,9 @@ int ocall_test(int a, int b)
  */
 void ocall_f()
 {
-    //do nothing
-    //volatile int val1 = 234 * 567;
-    //volatile int val2 = val1 - 1234;
+    // do nothing
+    // volatile int val1 = 234 * 567;
+    // volatile int val2 = val1 - 1234;
 }
 
 void ocall_g()

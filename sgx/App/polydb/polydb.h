@@ -69,6 +69,11 @@ extern "C"
     void *lm_thread(void *input);
     void lmbench_simple(int num_ops, int num_threads);
 
+    //openssl bench
+    void *encrypt_thread(void *input);
+    void *decrypt_thread(void *input);
+    void openssl_bench(int max_bytes);
+
 #if defined(__cplusplus)
 }
 #endif

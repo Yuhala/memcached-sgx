@@ -82,7 +82,7 @@ extern std::map<std::string, int> ocall_map;
 extern unsigned int ocall_count;
 
 // pyuhala: for intel sdk switchless calls
-//#define SL_DEFAULT_FALLBACK_RETRIES 20000
+// #define SL_DEFAULT_FALLBACK_RETRIES 20000
 
 bool use_zc_switchless = false;
 
@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 2;//get_nprocs() / 2;
+    int num_sl_workers = 2; // get_nprocs() / 2;
 
     /**
      * use zc: ./async-sgx 1 0
@@ -299,7 +299,7 @@ int main(int argc, char *argv[])
         /**
          * define the number of retries before fallback.
          */
-        //us_config.retries_before_fallback = 0;
+        // us_config.retries_before_fallback = 0;
 
         if (initialize_enclave(&us_config) < 0)
         {
@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
     {
         printf("########################## running in ZC-SWITCHLESS mode. # workers: %d ##########################\n", num_sl_workers);
         ret_zero = 0;
-        // init_switchless();
+        //init_switchless();
         init_zc(num_sl_workers);
 
         // return 0;
@@ -336,31 +336,15 @@ int main(int argc, char *argv[])
 
     //-------------------------------------------
     // run_bench_dynamic(run_time, 1);
-    ecall_test(global_eid);
+    // ecall_test(global_eid);
 
-    //run_lmbench(3);
+    run_openssl_bench(2);
 
-    //run_kissdb_bench(2);
+    // run_lmbench(3);
 
-    //-------------------------------------------
+    // run_kissdb_bench(2);
 
-    // init_memcached(num_mcd_workers);
-    // run_zc_micro(1);
-    // run_kyoto_bench(5);
-
-    // run_zc_fg(5);
-
-    // return 0;
-
-    // ecall_create_enclave_isolate(global_eid);
-    /**
-     * Read/Write n kv pairs in paldb with m threads
-     * PYuhala
-     */
-
-    // ecall_kissdb_test(global_eid);
-
-    // runTestMulti(10);
+  
 
     if (zc_switchless)
     {
