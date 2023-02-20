@@ -280,6 +280,7 @@ int main(int argc, char *argv[])
     if (sdk_switchless == 0)
     {
         // do not use switchless
+        printf("########################## running in NON-SWITCHLESS mode ##########################\n");
         if (initialize_enclave_no_switchless() < 0)
         {
             printf("Enter a character before exit ...\n");
