@@ -36,7 +36,7 @@ void run_openssl_bench(int num_runs)
     printf(">>>>>>>>>>>>>>>>> lmbench bench START >>>>>>>>>>>>>>>>>\n");
     int min_bytes = 1024; // minimum number of bytes to read/encrypt/decrypt
     int max_bytes = 256 * 1024;
-    //int max_bytes = (16 * 1024 * 1024); // maximum number of bytes to read/encrypt/decrypt
+    // int max_bytes = (16 * 1024 * 1024); // maximum number of bytes to read/encrypt/decrypt
     int step = (int)(max_bytes / NUM_POINTS);
 
     double total_runtime;
@@ -44,6 +44,7 @@ void run_openssl_bench(int num_runs)
     double tput;
     double cpu_usage;
     double avg_cpu;
+    int num_workers_used = 0;
 
     for (int i = min_bytes; i <= max_bytes; i += step)
     {
@@ -65,12 +66,17 @@ void run_openssl_bench(int num_runs)
 
             free(cpu_stats_begin);
             free(cpu_stats_end);
+
+            if (zc_switchless == 1)
+            {
+                num_workers_used = zc_statistics->opt_workers;
+            }
         }
         avg_runtime = total_runtime / num_runs;
         tput = i / avg_runtime; // ops/sec
         avg_cpu = cpu_usage / num_runs;
 
-        register_results(path, i, avg_runtime, tput, avg_cpu);
+        register_results(path, i, avg_runtime, tput, avg_cpu, num_workers_used);
         printf(">>>>>>>>>>>>>>>>> OpenSSL bench: max_bytes: %d COMPLETE >>>>>>>>>>>>>>>>>\n", i);
     }
     printf(">>>>>>>>>>>>>>>>> OpenSSL bench END >>>>>>>>>>>>>>>>>\n");

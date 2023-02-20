@@ -186,7 +186,8 @@ void test_crypto()
 
     /* Load config file, and other important initialisation */
     // OPENSSL_config(NULL);
-    // OPENSSL_no_config();
+    // OPENSSL_no_config();   
+     
 
     unsigned char *plaintext = (unsigned char *)"Hello Peterson";
     unsigned char ciphertext[128];

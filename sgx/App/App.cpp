@@ -86,10 +86,7 @@ extern unsigned int ocall_count;
 
 bool use_zc_switchless = false;
 
-extern unsigned int num_workers;
-extern zc_stats *zc_statistics;
 
-extern unsigned int num_active_zc_workers;
 
 /**
  * flags specifying which system to use
@@ -244,6 +241,7 @@ int main(int argc, char *argv[])
 
     // number of switchless worker threads
     int num_sl_workers = 2; // get_nprocs() / 2;
+    int num_intel_workers = 4;
 
     /**
      * use zc: ./async-sgx 1 0
@@ -292,8 +290,8 @@ int main(int argc, char *argv[])
     else if (sdk_switchless == 1)
     {
         // use intel sdk switchless
-        printf("########################## running in INTEL-SDK-SWITCHLESS mode. #workers: %d ##########################\n", num_sl_workers);
-        us_config.num_uworkers = num_sl_workers;
+        printf("########################## running in INTEL-SDK-SWITCHLESS mode. #workers: %d ##########################\n", num_intel_workers);
+        us_config.num_uworkers = num_intel_workers;
         // pyuhala: we are not concerned with switchless ecalls so no trusted workers
         us_config.num_tworkers = 0;
         /**
@@ -338,7 +336,7 @@ int main(int argc, char *argv[])
     // run_bench_dynamic(run_time, 1);
     // ecall_test(global_eid);
 
-    run_openssl_bench(2);
+    run_openssl_bench(5);
 
     // run_lmbench(3);
 

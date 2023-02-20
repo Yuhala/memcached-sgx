@@ -17,6 +17,18 @@
 
 #define BUF_SIZ 1024
 
+
+#include <zc_types.h>
+
+extern int sdk_switchless;
+extern int zc_switchless;
+
+extern unsigned int num_workers;
+extern zc_stats *zc_statistics;
+extern unsigned int num_active_zc_workers;
+
+
+
 /**
  * dynamic workload state
  */

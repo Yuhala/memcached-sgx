@@ -27,11 +27,11 @@
 #define ZC_NO_FREE_POOL -1 /* if there is not free pool in the pool array return -1 index */
 
 #define POOL_SIZE 512 * 1024 * 1024 /* surely 64 mb should be enough for realistic tests/benchmarks */
-#define NUM_POOLS 8                /* the number of memory pools to create; == number max threads in enclave */
+#define NUM_POOLS 8                 /* the number of memory pools to create; == number max threads in enclave */
 
 #define MN_REQ 16              /* minimum memsys5 request size */
 #define REALLOC_MIN 512 * 1024 /* min memory left to trigger reallocation */
-//#define USE_MEMSYS5 1
+// #define USE_MEMSYS5 1
 
 #define ZC_REQUEST_DONE 1
 
@@ -352,6 +352,7 @@ struct zc_stats
     unsigned int num_zc_swtless_calls;
     unsigned int num_zc_fallback_calls;
     unsigned int max_workers;
+    unsigned int opt_workers; // number of optimum workers for a specific configuration phase
 };
 
 typedef zc_stats zc_stats;
