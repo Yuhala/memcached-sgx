@@ -86,8 +86,6 @@ extern unsigned int ocall_count;
 
 bool use_zc_switchless = false;
 
-
-
 /**
  * flags specifying which system to use
  */
@@ -280,7 +278,10 @@ int main(int argc, char *argv[])
     if (sdk_switchless == 0)
     {
         // do not use switchless
-        printf("########################## running in NON-SWITCHLESS mode ##########################\n");
+        if (zc_switchless == 0)
+        {
+            printf("########################## running in NON-SWITCHLESS mode ##########################\n");
+        }
         if (initialize_enclave_no_switchless() < 0)
         {
             printf("Enter a character before exit ...\n");
@@ -298,7 +299,7 @@ int main(int argc, char *argv[])
         /**
          * define the number of retries before fallback.
          */
-        // us_config.retries_before_fallback = 0;
+        //us_config.retries_before_fallback = 0;
 
         if (initialize_enclave(&us_config) < 0)
         {
@@ -319,7 +320,7 @@ int main(int argc, char *argv[])
     {
         printf("########################## running in ZC-SWITCHLESS mode. # workers: %d ##########################\n", num_sl_workers);
         ret_zero = 0;
-        //init_switchless();
+        // init_switchless();
         init_zc(num_sl_workers);
 
         // return 0;
@@ -341,9 +342,7 @@ int main(int argc, char *argv[])
 
     // run_lmbench(3);
 
-    // run_kissdb_bench(2);
-
-  
+    //run_kissdb_bench(5);
 
     if (zc_switchless)
     {

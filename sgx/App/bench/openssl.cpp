@@ -33,7 +33,7 @@ void run_openssl_bench(int num_runs)
     char path[20];
     snprintf(path, 20, "results_openssl.csv");
 
-    printf(">>>>>>>>>>>>>>>>> lmbench bench START >>>>>>>>>>>>>>>>>\n");
+    printf(">>>>>>>>>>>>>>>>> OpenSSL bench START >>>>>>>>>>>>>>>>>\n");
     int min_bytes = 1024; // minimum number of bytes to read/encrypt/decrypt
     int max_bytes = 256 * 1024;
     // int max_bytes = (16 * 1024 * 1024); // maximum number of bytes to read/encrypt/decrypt

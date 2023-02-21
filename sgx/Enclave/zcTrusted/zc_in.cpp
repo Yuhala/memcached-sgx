@@ -21,7 +21,7 @@
 #include "zc_mpmc_queue.h"
 #include "zc_mem.h"
 
-//#define ZC_LOGGING 1
+// #define ZC_LOGGING 1
 
 /**
  * Lock free queues for zc switchless calls
@@ -137,6 +137,7 @@ int reserve_worker()
 
     if (!zc_switchless_active)
     {
+        // printf("no free pool >>>>>>>>>>>>>>>>\n");
         return ZC_NO_FREE_POOL;
     }
 
@@ -315,7 +316,7 @@ void release_worker(unsigned int pool_index)
     // sgx_mfence();
 }
 
-//#define ZC_LOGGING_IN 1
+// #define ZC_LOGGING_IN 1
 
 void log_zc_routine(const char *func)
 {
