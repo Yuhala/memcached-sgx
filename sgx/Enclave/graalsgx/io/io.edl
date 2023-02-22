@@ -58,7 +58,7 @@ enclave {
        int ocall_fclose(SGX_FILE stream);
        size_t ocall_fwrite([in,size=size, count=nmemb]const void *ptr, size_t size, size_t nmemb, SGX_FILE stream) transition_using_threads;
        size_t ocall_fread([out,size=size, count=nmemb]void *ptr, size_t size, size_t nmemb, SGX_FILE stream);
-       int ocall_fseeko(SGX_FILE file, off_t offset, int whence) ;
+       int ocall_fseeko(SGX_FILE file, off_t offset, int whence);
        off_t ocall_ftello(SGX_FILE file);
 
 

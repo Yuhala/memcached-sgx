@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 2; // get_nprocs() / 2;
+    int num_zc_workers = 4; // get_nprocs() / 2;
     int num_intel_workers = 4;
 
     /**
@@ -247,7 +247,6 @@ int main(int argc, char *argv[])
      */
     if (argc == 3)
     {
-
         zc_switchless = atoi(argv[1]);
         sdk_switchless = atoi(argv[2]);
     }
@@ -268,7 +267,7 @@ int main(int argc, char *argv[])
 
     if (zc_switchless && sdk_switchless)
     {
-        printf("xxxxxxxxxxxxxxx cannot activate both SDK and ZC switchless at the same time xxxxxxxxxxxxxxxxxx\n");
+        printf("xxxxxxxxxxxxxxxxxxxx cannot activate both SDK and ZC switchless at the same time xxxxxxxxxxxxxxxxxx\n");
         printf("usage: ./async-sgx [zc_switchless] [sdk_switchless]\n");
         return 0;
     }
@@ -280,7 +279,7 @@ int main(int argc, char *argv[])
         // do not use switchless
         if (zc_switchless == 0)
         {
-            printf("########################## running in NON-SWITCHLESS mode ##########################\n");
+            printf("########################## running in NON-SWITCHLESS mode ########################\n");
         }
         if (initialize_enclave_no_switchless() < 0)
         {
@@ -292,7 +291,7 @@ int main(int argc, char *argv[])
     else if (sdk_switchless == 1)
     {
         // use intel sdk switchless
-        printf("########################## running in INTEL-SDK-SWITCHLESS mode. #workers: %d ##########################\n", num_intel_workers);
+        printf("########################## running in INTEL-SDK-SWITCHLESS mode. #workers: %d ########################\n", num_intel_workers);
         us_config.num_uworkers = num_intel_workers;
         // pyuhala: we are not concerned with switchless ecalls so no trusted workers
         us_config.num_tworkers = 0;
@@ -318,10 +317,10 @@ int main(int argc, char *argv[])
 
     if (zc_switchless)
     {
-        printf("########################## running in ZC-SWITCHLESS mode. # workers: %d ##########################\n", num_sl_workers);
+        printf("########################## running in ZC-SWITCHLESS mode. # workers: %d ##########################\n", num_zc_workers);
         ret_zero = 0;
         // init_switchless();
-        init_zc(num_sl_workers);
+        init_zc(num_zc_workers);
 
         // return 0;
     }
@@ -340,9 +339,9 @@ int main(int argc, char *argv[])
 
     run_openssl_bench(5);
 
-    // run_lmbench(3);
+    //run_lmbench(3);
 
-    //run_kissdb_bench(5);
+    //run_kissdb_bench(1);
 
     if (zc_switchless)
     {
