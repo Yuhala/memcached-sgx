@@ -21,13 +21,13 @@ static unsigned long long **cpu_stats_end;
 void remove_old_dbs()
 {
     // printf(">>>>>>>>>>>>>>..removing kissdb files..>>>>>>>>>>>>>>>>>\n");
-    int ret = system("rm kissdb* lmbench*");
+    int ret = system("rm kissdb*");
     //ZC_ASSERT(!ret);
 }
 
 void remove_old_results()
 {
-    int ret = system("rm results_kissdb* results_lmbench*");
+    int ret = system("rm results_kissdb* ");
     //ZC_ASSERT(!ret);
 }
 

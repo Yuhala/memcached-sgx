@@ -276,32 +276,32 @@ ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags)
     return ret;
 }
 
-void *transmit_prepare(void)
-{
-    GRAAL_SGX_INFO();
-    void *ret;
+// void *transmit_prepare(void)
+// {
+//     GRAAL_SGX_INFO();
+//     void *ret;
 
-    ocall_transmit_prepare(&ret);
-    return ret;
+//     ocall_transmit_prepare(&ret);
+//     return ret;
 
-    int index = reserve_worker();
+//     int index = reserve_worker();
 
-    if (index != ZC_NO_FREE_POOL)
-    {
+//     if (index != ZC_NO_FREE_POOL)
+//     {
 
-        ret = zc_transmit_prepare(index);
-    }
-    else
-    {
-        ocall_transmit_prepare(&ret);
-    }
+//         ret = zc_transmit_prepare(index);
+//     }
+//     else
+//     {
+//         ocall_transmit_prepare(&ret);
+//     }
 
-    /*   if (should_be_switchless(FN_TOKEN_TRANSMIT_PREPARE))
-        ret = transmit_prepare_switchless();
-    else
-        ocall_transmit_prepare(&ret); */
-    return ret;
-}
+//     /*   if (should_be_switchless(FN_TOKEN_TRANSMIT_PREPARE))
+//         ret = transmit_prepare_switchless();
+//     else
+//         ocall_transmit_prepare(&ret); */
+//     return ret;
+// }
 
 uint32_t htonl(uint32_t hostlong)
 {

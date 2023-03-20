@@ -2,7 +2,7 @@
  * Created on Fri Jul 24 2020
  *
  * Copyright (c) 2020 Peterson Yuhala, IIUN
- * 
+ *
  */
 
 #include <thread>
@@ -17,7 +17,7 @@
 #include <map>
 #include <event.h>
 
-#define GRAAL_SGX_STACK 0x40000UL //256kb
+#define GRAAL_SGX_STACK 0x40000UL // 256kb
 
 extern sgx_enclave_id_t global_eid;
 using namespace std;
@@ -41,7 +41,7 @@ void *generic_ecall_routine(void *arguments)
     internal_ecall_arg *ecall_arg = (internal_ecall_arg *)arguments;
     printf("Job id: %d, enclave eid: %d\n", ecall_arg->job_id, ecall_arg->eid);
     sgx_status_t ret = SGX_ERROR_UNEXPECTED;
-    ret = ecall_execute_job(global_eid, pthread_self(), ecall_arg->job_id);
+    // ret = ecall_execute_job(global_eid, pthread_self(), ecall_arg->job_id);
     print_error_message(ret);
     free(arguments);
 }
@@ -76,17 +76,17 @@ int ocall_pthread_create(pthread_t *new_thread, unsigned long int job_id, sgx_en
 
     /* Create attrib */
     pthread_attr_t *attr = (pthread_attr_t *)malloc(sizeof(pthread_attr_t));
-    //increase stack size
+    // increase stack size
 
     int ret = pthread_create(new_thread, NULL, generic_ecall_routine, (void *)arguments);
-    //int ret = pthread_create(new_thread, NULL, generic_ecall_routine, (void *)arguments);
+    // int ret = pthread_create(new_thread, NULL, generic_ecall_routine, (void *)arguments);
     pthread_attr_t *new_thread_attr;
-    //int attr_ret = pthread_getattr_np(*new_thread, new_thread_attr);
-    //pthread_attr_setstacksize(attr, GRAAL_SGX_STACK);
+    // int attr_ret = pthread_getattr_np(*new_thread, new_thread_attr);
+    // pthread_attr_setstacksize(attr, GRAAL_SGX_STACK);
 
-    //pthread_attr_setstacksize(attr, GRAAL_SGX_STACK);
+    // pthread_attr_setstacksize(attr, GRAAL_SGX_STACK);
     /* Add tid and attr pair to map */
-    //attr_map.insert(pair<pthread_t, pthread_attr_t *>(*new_thread, new_thread_attr));
+    // attr_map.insert(pair<pthread_t, pthread_attr_t *>(*new_thread, new_thread_attr));
     attr_map.insert(pair<pthread_t, pthread_attr_t *>(*new_thread, attr));
 
     void *val;
@@ -161,7 +161,7 @@ int ocall_pthread_attr_getstack(void **stk_addr, size_t *stack_size)
         size_t size;
         void **addr;
         ret = pthread_attr_getstack(attr, stk_addr, &size);
-        //printf("Stack addr out: %p\n", *stk_addr);
+        // printf("Stack addr out: %p\n", *stk_addr);
         *stack_size = size;
         //*stk_addr = *addr;
     }
@@ -173,9 +173,9 @@ int ocall_pthread_getattr_np(pthread_t tid)
     log_ocall(__func__);
     GRAAL_SGX_INFO();
     int ret = -1;
-    //printf("Attrib tid: %d \n", tid);
+    // printf("Attrib tid: %d \n", tid);
     pthread_attr_t *attr = getAttrib(tid);
-    //pthread_t thread = (pthread_t)attr;
+    // pthread_t thread = (pthread_t)attr;
     if (attr != NULL)
     {
         ret = pthread_getattr_np(tid, attr);
@@ -216,7 +216,8 @@ int ocall_event_del(struct event *ev)
 {
     log_ocall(__func__);
     GRAAL_SGX_INFO();
-    return event_del(ev);
+    // return event_del(ev);
+    return 0;
 }
 /* void ocall_event_set(struct event *ev, evutil_socket_t socketfd, short flags, void (*handler)(evutil_socket_t, short, void *), void *c)
 {
@@ -228,11 +229,13 @@ int ocall_event_base_set(struct event_base *evb, struct event *ev)
 {
     log_ocall(__func__);
     GRAAL_SGX_INFO();
-    return event_base_set(evb, ev);
+    // return event_base_set(evb, ev);
+    return 0;
 }
 int ocall_event_add(struct event *ev, const struct timeval *timeout)
 {
     log_ocall(__func__);
     GRAAL_SGX_INFO();
-    return event_add(ev, timeout);
+    // return event_add(ev, timeout);
+    return 0;
 }

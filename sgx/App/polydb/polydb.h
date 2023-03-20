@@ -17,6 +17,18 @@
 
 #define BUF_SIZ 1024
 
+
+#include <zc_types.h>
+
+extern int sdk_switchless;
+extern int zc_switchless;
+
+extern unsigned int num_workers;
+extern zc_stats *zc_statistics;
+extern unsigned int num_active_zc_workers;
+
+
+
 /**
  * dynamic workload state
  */
@@ -68,6 +80,11 @@ extern "C"
     //lmbench specific
     void *lm_thread(void *input);
     void lmbench_simple(int num_ops, int num_threads);
+
+    //openssl bench
+    void *encrypt_thread(void *input);
+    void *decrypt_thread(void *input);
+    void openssl_bench(int max_bytes);
 
 #if defined(__cplusplus)
 }

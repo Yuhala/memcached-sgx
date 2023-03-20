@@ -62,7 +62,7 @@
 
 //threads
 //#include <pthread.h>
-#include <struct/sgx_pthread_struct.h>
+//#include <struct/sgx_pthread_struct.h>
 #include <struct/sgx_stdio_struct.h>
 #include <sgx_thread.h>
 //#include <sgx_pthread.h>

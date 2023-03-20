@@ -82,14 +82,9 @@ extern std::map<std::string, int> ocall_map;
 extern unsigned int ocall_count;
 
 // pyuhala: for intel sdk switchless calls
-//#define SL_DEFAULT_FALLBACK_RETRIES 20000
+// #define SL_DEFAULT_FALLBACK_RETRIES 20000
 
 bool use_zc_switchless = false;
-
-extern unsigned int num_workers;
-extern zc_stats *zc_statistics;
-
-extern unsigned int num_active_zc_workers;
 
 /**
  * flags specifying which system to use
@@ -243,7 +238,8 @@ int main(int argc, char *argv[])
     use_zc_scheduler = true;
 
     // number of switchless worker threads
-    int num_sl_workers = 2;//get_nprocs() / 2;
+    int num_zc_workers = 4; // get_nprocs() / 2;
+    int num_intel_workers = 4;
 
     /**
      * use zc: ./async-sgx 1 0
@@ -251,7 +247,6 @@ int main(int argc, char *argv[])
      */
     if (argc == 3)
     {
-
         zc_switchless = atoi(argv[1]);
         sdk_switchless = atoi(argv[2]);
     }
@@ -272,7 +267,7 @@ int main(int argc, char *argv[])
 
     if (zc_switchless && sdk_switchless)
     {
-        printf("xxxxxxxxxxxxxxx cannot activate both SDK and ZC switchless at the same time xxxxxxxxxxxxxxxxxx\n");
+        printf("xxxxxxxxxxxxxxxxxxxx cannot activate both SDK and ZC switchless at the same time xxxxxxxxxxxxxxxxxx\n");
         printf("usage: ./async-sgx [zc_switchless] [sdk_switchless]\n");
         return 0;
     }
@@ -282,6 +277,10 @@ int main(int argc, char *argv[])
     if (sdk_switchless == 0)
     {
         // do not use switchless
+        if (zc_switchless == 0)
+        {
+            printf("########################## running in NON-SWITCHLESS mode ########################\n");
+        }
         if (initialize_enclave_no_switchless() < 0)
         {
             printf("Enter a character before exit ...\n");
@@ -292,8 +291,8 @@ int main(int argc, char *argv[])
     else if (sdk_switchless == 1)
     {
         // use intel sdk switchless
-        printf("########################## running in INTEL-SDK-SWITCHLESS mode. #workers: %d ##########################\n", num_sl_workers);
-        us_config.num_uworkers = num_sl_workers;
+        printf("########################## running in INTEL-SDK-SWITCHLESS mode. #workers: %d ########################\n", num_intel_workers);
+        us_config.num_uworkers = num_intel_workers;
         // pyuhala: we are not concerned with switchless ecalls so no trusted workers
         us_config.num_tworkers = 0;
         /**
@@ -318,10 +317,10 @@ int main(int argc, char *argv[])
 
     if (zc_switchless)
     {
-        printf("########################## running in ZC-SWITCHLESS mode. # workers: %d ##########################\n", num_sl_workers);
+        printf("########################## running in ZC-SWITCHLESS mode. # workers: %d ##########################\n", num_zc_workers);
         ret_zero = 0;
         // init_switchless();
-        init_zc(num_sl_workers);
+        init_zc(num_zc_workers);
 
         // return 0;
     }
@@ -335,31 +334,14 @@ int main(int argc, char *argv[])
     double run_time = 60.0;
 
     //-------------------------------------------
-    run_bench_dynamic(run_time, 1);
+    // run_bench_dynamic(run_time, 1);
+    // ecall_test(global_eid);
+
+    run_openssl_bench(5);
 
     //run_lmbench(3);
 
-    //run_kissdb_bench(2);
-
-    //-------------------------------------------
-
-    // init_memcached(num_mcd_workers);
-    // run_zc_micro(1);
-    // run_kyoto_bench(5);
-
-    // run_zc_fg(5);
-
-    // return 0;
-
-    // ecall_create_enclave_isolate(global_eid);
-    /**
-     * Read/Write n kv pairs in paldb with m threads
-     * PYuhala
-     */
-
-    // ecall_kissdb_test(global_eid);
-
-    // runTestMulti(10);
+    //run_kissdb_bench(1);
 
     if (zc_switchless)
     {

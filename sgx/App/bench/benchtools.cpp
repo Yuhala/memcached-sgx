@@ -166,6 +166,17 @@ void register_results(const char *path, int numKeys, double runTime, double tput
 }
 
 /**
+ * Some benchmark specific routines.
+ */
+void register_results(const char *path, int numKeys, double runTime, double tput, double cpu, int num_worker_threads)
+{
+
+    FILE *fptr = fopen(path, "ab+");
+    fprintf(fptr, "%d, %f, %f, %f, %d\n", numKeys, runTime, tput, cpu, num_worker_threads);
+    fclose(fptr);
+}
+
+/**
  * Each enclave caller thread will
  * register results in a file after completion
  * The number of workers = number of worker threads in intel or number of workers in zc

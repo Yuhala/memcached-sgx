@@ -33,11 +33,11 @@
 #include <sgx/linux/limits.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sgx/signal.h>
+//#include <sgx/signal.h>
 #include <unistd.h>
 #include <sgx/netdb.h>
 #include <struct/sgx_fcntl_struct.h>
-#include <sgx/sys/wait.h>
+//#include <sgx/sys/wait.h>
 //#include <sgx/sys/statvfs.h>
 
 //libevent
@@ -60,9 +60,9 @@
 
 //threads
 //#include <pthread.h>
-#include <struct/sgx_pthread_struct.h>
+//#include <struct/sgx_pthread_struct.h>
 #include <sgx_thread.h>
-//#include <sgx_pthread.h>
+
 
 #include "graal_sgx_debug.h"
 
@@ -134,12 +134,12 @@ extern "C"
     ssize_t getline(char **lineptr, size_t *n, SGX_FILE *stream);
 
     //>>>>>>>>>>>>>>>>>>>>> start signal shim >>>>>>>>>>>>>>>>>>>>>>>>>>
-    int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact); //TODO
-    int sigemptyset(sigset_t *set);
-    int sigaddset(sigset_t *set, int signum);
-    int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
-    sighandler_t signal(int signum, sighandler_t handler);
-    void sig_handler(int param);
+    // int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact); //TODO
+    // int sigemptyset(sigset_t *set);
+    // int sigaddset(sigset_t *set, int signum);
+    // int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
+    // sighandler_t signal(int signum, sighandler_t handler);
+    // void sig_handler(int param);
     int raise(int sig);
     int kill(pid_t pid, int sig);
     int nanosleep(const struct timespec *__requested_time, struct timespec *__remaining);
@@ -247,43 +247,43 @@ extern "C"
     uint16_t ntohs(uint16_t netshort);
 
     //>>>>>>>>>>>>>>>>>>>>> start pthread shim >>>>>>>>>>>>>>>>>>>>>>>>>>
-    int pthread_create(pthread_t *thread, GRAAL_SGX_PTHREAD_ATTR attr, void *(*start_routine)(void *), void *arg);
-    pthread_t pthread_self(void);
-    int pthread_join(pthread_t thread, void **retval); //better join outside after pthread_create :-)
+    //int pthread_create(pthread_t *thread, GRAAL_SGX_PTHREAD_ATTR attr, void *(*start_routine)(void *), void *arg);
+    // pthread_t pthread_self(void);
+    // int pthread_join(pthread_t thread, void **retval); //better join outside after pthread_create :-)
 
-    int pthread_attr_getguardsize(GRAAL_SGX_PTHREAD_ATTR attr, size_t *guardsize);
-    int pthread_attr_destroy(GRAAL_SGX_PTHREAD_ATTR attr);
-    int pthread_attr_getstack(pthread_attr_t *attr, void **stackaddr, size_t *stacksize);
-    int pthread_getattr_np(pthread_t thread, GRAAL_SGX_PTHREAD_ATTR attr);
-    int pthread_attr_setdetachstate(GRAAL_SGX_PTHREAD_ATTR attr, int detachstate);
-    int pthread_attr_init(GRAAL_SGX_PTHREAD_ATTR attr);
-    int pthread_setname_np(pthread_t thread, const char *name);
-    int pthread_getname_np(pthread_t thread, char *name, size_t len);
-    int pthread_attr_setstacksize(GRAAL_SGX_PTHREAD_ATTR attr, size_t stacksize);
+    // int pthread_attr_getguardsize(GRAAL_SGX_PTHREAD_ATTR attr, size_t *guardsize);
+    // int pthread_attr_destroy(GRAAL_SGX_PTHREAD_ATTR attr);
+    // int pthread_attr_getstack(pthread_attr_t *attr, void **stackaddr, size_t *stacksize);
+    // int pthread_getattr_np(pthread_t thread, GRAAL_SGX_PTHREAD_ATTR attr);
+    // int pthread_attr_setdetachstate(GRAAL_SGX_PTHREAD_ATTR attr, int detachstate);
+    // int pthread_attr_init(GRAAL_SGX_PTHREAD_ATTR attr);
+    // int pthread_setname_np(pthread_t thread, const char *name);
+    // int pthread_getname_np(pthread_t thread, char *name, size_t len);
+    // int pthread_attr_setstacksize(GRAAL_SGX_PTHREAD_ATTR attr, size_t stacksize);
 
-    int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock_id);
-    int pthread_condattr_init(pthread_condattr_t *attr);
-    int pthread_cond_timedwait(pthread_cond_t *__restrict__ cond, pthread_mutex_t *__restrict__ mutex, const struct timespec *__restrict__ abstime);
-    int pthread_cond_broadcast(pthread_cond_t *cond);
-    int pthread_cond_wait(pthread_cond_t *__restrict__ cond, pthread_mutex_t *__restrict__ mutex);
-    int pthread_cond_init(pthread_cond_t *__restrict__ cond, const pthread_condattr_t *__restrict__ attr);
+    // int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock_id);
+    // int pthread_condattr_init(pthread_condattr_t *attr);
+    // int pthread_cond_timedwait(pthread_cond_t *__restrict__ cond, pthread_mutex_t *__restrict__ mutex, const struct timespec *__restrict__ abstime);
+    // int pthread_cond_broadcast(pthread_cond_t *cond);
+    // int pthread_cond_wait(pthread_cond_t *__restrict__ cond, pthread_mutex_t *__restrict__ mutex);
+    // int pthread_cond_init(pthread_cond_t *__restrict__ cond, const pthread_condattr_t *__restrict__ attr);
 
-    int pthread_mutex_init(pthread_mutex_t *__restrict__ mutex, const pthread_mutexattr_t *__restrict__ attr);
-    int pthread_mutex_lock(pthread_mutex_t *mutex);
-    int pthread_mutex_trylock(pthread_mutex_t *mutex);
-    int pthread_mutex_unlock(pthread_mutex_t *mutex);
+    // int pthread_mutex_init(pthread_mutex_t *__restrict__ mutex, const pthread_mutexattr_t *__restrict__ attr);
+    // int pthread_mutex_lock(pthread_mutex_t *mutex);
+    // int pthread_mutex_trylock(pthread_mutex_t *mutex);
+    // int pthread_mutex_unlock(pthread_mutex_t *mutex);
 
-    int pthread_key_create(pthread_key_t *key, void (*destructor)(void *));
-    void *pthread_getspecific(pthread_key_t key);
-    int pthread_setspecific(pthread_key_t key, const void *value);
+    // int pthread_key_create(pthread_key_t *key, void (*destructor)(void *));
+    // void *pthread_getspecific(pthread_key_t key);
+    // int pthread_setspecific(pthread_key_t key, const void *value);
 
     //>>>>>>>>>>>>>>>>>>>>> end pthread shim >>>>>>>>>>>>>>>>>>>>>>>>>>
 
     int sched_yield(void);
 
     //job
-    bool get_pthreadid_from_sgxtheadid(sgx_thread_t sgx_id, pthread_t *pt);
-    void ecall_execute_job(pthread_t pthread_id, unsigned long int job_id);
+    //bool get_pthreadid_from_sgxtheadid(sgx_thread_t sgx_id, pthread_t *pt);
+    //void ecall_execute_job(pthread_t pthread_id, unsigned long int job_id);
     void *graal_job(void *arg); //graal_sgx_thread function
 
     //Added for graal 21.0
@@ -307,7 +307,7 @@ extern "C"
     ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset);
     int fcntl(int fd, int cmd, ... /* arg */);
     int fstatvfs64(int fd, struct statvfs *buf);
-    int pthread_kill(pthread_t thread, int sig);
+    //int pthread_kill(pthread_t thread, int sig);
     int inflateInit2_(z_streamp strm, int windowBits, char *version, int stream_size);
     int inflate(z_streamp stream, int flush);
     int inflateEnd(z_streamp stream);

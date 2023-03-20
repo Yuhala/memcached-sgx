@@ -55,6 +55,7 @@ void register_results(const char *path, int numKeys, double runTime);
 void register_results(const char *path, int numKeys, double runTime, double tput);
 void register_results(const char *path, int numKeys, double runTime, double tput, double cpu);
 void register_results_dynamic(const char *path, double timestamp, double req_tput, unsigned int num_workers, double cpu_usage);
+void register_results(const char *path, int numKeys, double runTime, double tput, double cpu, int num_worker_threads);
 
 double get_tput(int num_ops, double time);
 

@@ -87,6 +87,8 @@ struct thread_args
     op_type operation;
     /* fd and file path*/
     _state *file_info;
+    /* for openssl threads*/
+    int ssl_op;
 };
 
 /**
@@ -180,7 +182,7 @@ void *thread_dynamic(void *input)
     wait_for_start();
     // pthread_mutex_lock(&lock);
     // id = write_store_counter++;
-    //int id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
+    // int id = __atomic_fetch_add(&write_store_counter, 1, __ATOMIC_RELAXED);
     // pthread_mutex_unlock(&lock);
 
     int id = ((struct thread_args *)input)->rw_id;
@@ -312,7 +314,7 @@ void *thread_dynamic(void *input)
              * to decrease the req frequency,
              * we increase the sleep time
              */
-            //sleep_micro *= 2;
+            // sleep_micro *= 2;
             break;
         default:
             break;
@@ -544,4 +546,65 @@ void read_bench(int num_keys, int num_threads)
         pthread_join(id[i], NULL);
     }
     free(args);
+}
+
+/**
+ * @brief
+ * Author: Peterson Yuhala
+ *
+ * This routine will spawn 2 threads which will enter the enclave.
+ * The first thread will read chunks of data from a file, encrypt the chunks
+ * and write the ciphertexts into a different file.
+ *
+ * The second thread reads chunks of ciphertext from a file and decrypts them
+ * in the enclave.
+ *
+ * @param max_bytes
+ */
+void openssl_bench(int max_bytes)
+{
+
+    // create encryption thread
+    pthread_t enc_thread_id;
+    struct thread_args *args_enc = (struct thread_args *)malloc(sizeof(struct thread_args));
+    args_enc->num_keys = max_bytes;
+    args_enc->ssl_op = 0; // this corresponds to ENC
+    args_enc->rw_id = 0;     // just a number to identify thread in the enclave
+    pthread_create(&enc_thread_id, NULL, encrypt_thread, (void *)args_enc);
+
+    // create decryption thread
+    pthread_t dec_thread_id;
+    struct thread_args *args_dec = (struct thread_args *)malloc(sizeof(struct thread_args));
+    args_dec->num_keys = max_bytes;
+    args_dec->ssl_op = 1; // this corresponds to DEC
+    args_dec->rw_id = 1;     // just a number to identify the thread in the enclave
+    pthread_create(&dec_thread_id, NULL, decrypt_thread, (void *)args_dec);
+
+    // join threads to main
+    pthread_join(enc_thread_id, NULL);
+    pthread_join(dec_thread_id, NULL);
+
+    free(args_enc);
+    free(args_dec);
+}
+
+// The below functions are identical. Is it thread safe to use one only? It most probably is
+// TODO: use one function only: e.g openssl_op_thread
+
+void *encrypt_thread(void *input)
+{
+    int max_bytes = ((struct thread_args *)input)->num_keys;
+    int id = ((struct thread_args *)input)->rw_id;
+    int op = ((struct thread_args *)input)->ssl_op;
+
+    ecall_do_openssl_op(global_eid, max_bytes, id, op);
+}
+
+void *decrypt_thread(void *input)
+{
+    int max_bytes = ((struct thread_args *)input)->num_keys;
+    int id = ((struct thread_args *)input)->rw_id;
+    int op = ((struct thread_args *)input)->ssl_op;
+
+    ecall_do_openssl_op(global_eid, max_bytes, id, op);
 }

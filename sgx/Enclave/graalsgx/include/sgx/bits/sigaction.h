@@ -20,34 +20,34 @@
 # error "Never include <bits/sigaction.h> directly; use <signal.h> instead."
 #endif
 
-/* Structure describing the action to be taken when a signal arrives.  */
-struct sigaction
-  {
-    /* Signal handler.  */
-#ifdef __USE_POSIX199309
-    union
-      {
-	/* Used if SA_SIGINFO is not set.  */
-	__sighandler_t sa_handler;
-	/* Used if SA_SIGINFO is set.  */
-	void (*sa_sigaction) (int, siginfo_t *, void *);
-      }
-    __sigaction_handler;
-# define sa_handler	__sigaction_handler.sa_handler
-# define sa_sigaction	__sigaction_handler.sa_sigaction
-#else
-    __sighandler_t sa_handler;
-#endif
+// /* Structure describing the action to be taken when a signal arrives.  */
+// struct sigaction
+//   {
+//     /* Signal handler.  */
+// #ifdef __USE_POSIX199309
+//     union
+//       {
+// 	/* Used if SA_SIGINFO is not set.  */
+// 	__sighandler_t sa_handler;
+// 	/* Used if SA_SIGINFO is set.  */
+// 	void (*sa_sigaction) (int, siginfo_t *, void *);
+//       }
+//     __sigaction_handler;
+// # define sa_handler	__sigaction_handler.sa_handler
+// # define sa_sigaction	__sigaction_handler.sa_sigaction
+// #else
+//     __sighandler_t sa_handler;
+// #endif
 
-    /* Additional set of signals to be blocked.  */
-    __sigset_t sa_mask;
+//     /* Additional set of signals to be blocked.  */
+//     __sigset_t sa_mask;
 
-    /* Special flags.  */
-    int sa_flags;
+//     /* Special flags.  */
+//     int sa_flags;
 
-    /* Restore handler.  */
-    void (*sa_restorer) (void);
-  };
+//     /* Restore handler.  */
+//     void (*sa_restorer) (void);
+//   };
 
 /* Bits in `sa_flags'.  */
 #define	SA_NOCLDSTOP  1		 /* Don't send SIGCHLD when children stop.  */

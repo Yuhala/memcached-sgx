@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "zc_logger.h"
 
-//#include "zc_out.h"
+// #include "zc_out.h"
 #include "zc_types.h"
 #include "memcached/mpool.h"
 #include "zc_ocalls_out.h"
@@ -148,6 +148,9 @@ static void do_scheduling(int desired_workers)
     {
         printf("doing scheduling: nThreads = %d >>>>>>>>>\n", desired_workers);
     }
+    // set optimum workers for this scheduling phase
+    // printf(">>>>>>>>>>>>>>>> updating desired workers to: %d in zc switchless >>>>>>>>>>>>>>>>>\n", desired_workers);
+    zc_statistics->opt_workers = desired_workers;
 }
 /**
  * find best configuration/ie optimum number of workers for
@@ -222,11 +225,11 @@ static void do_configuration()
         wasted_cycles[micro_q_index] = wasted_cycles_mq;
 
         // print config every 100 calls
-       /*  if (counter % COUNTER == 0 && false)
-        {
-            printf("config nThreads: %d num sl calls: %d num fb calls: %d wasted cycles: %lld sl_ratio: %f >>>>>>>>>>>>>>>\n",
-                   micro_q_index, num_sl_mq, num_fb_mq, wasted_cycles_mq, sl_ratio_mq);
-        } */
+        /*  if (counter % COUNTER == 0 && false)
+         {
+             printf("config nThreads: %d num sl calls: %d num fb calls: %d wasted cycles: %lld sl_ratio: %f >>>>>>>>>>>>>>>\n",
+                    micro_q_index, num_sl_mq, num_fb_mq, wasted_cycles_mq, sl_ratio_mq);
+         } */
         micro_q_index++;
     }
 
@@ -263,7 +266,7 @@ static int get_optimum_workers(vector<unsigned long long int> &wasted_cycles, ve
         for (int i = 0; i < num_micro_q; i++)
         {
             // pyuhala: my observation: the min almost always (or always!) corresponds to i = 0
-            
+
             if (wasted_cycles[i] < wasted_cycles[min_index])
             {
                 min_index = i;
