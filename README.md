@@ -16,6 +16,6 @@
 ```
 
 ## System architecture
-![ZC switchless architecture](./imgs/architecture.pdf)
+![ZC switchless architecture](./imgs/zc.png)
 - The [in-application scheduler](./sgx/App/zcUntrusted/scheduler.cpp) periodically obtains application metrics such as number of fallback calls to determine the most appropriate number of worker threads to use for switchless calls.
 - The number of worker threads is chosen in such a way as to minimize waste of CPU resources while providing good performance relative to a non-switchless system.
