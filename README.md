@@ -141,4 +141,4 @@ mvn -pl site.ycsb:memcached-binding -am clean package
 > I am yet to look at how open-source Licensing really works. For now, do whatever you want with my code, while respecting the license of any third-party code I have used. 
 
 ## Author
-- [Peterson Yuhala]
+- [Peterson Yuhala](https://yuhala.github.io/)
