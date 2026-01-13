@@ -151,23 +151,27 @@ void *ocall_fstat64(int fd, int *fstat_ret)
 int ocall_fxstat64(int ver, int fildes, struct stat *stat_buf)
 {
     log_ocall(__func__);
-    return __fxstat64(ver, fildes, (struct stat64 *)stat_buf);
+    //return __fxstat64(ver, fildes, (struct stat64 *)stat_buf);
+    return fxstat64(ver, fildes, (struct stat64 *)stat_buf);
 }
 
 int ocall_fxstat(int ver, int fd, struct stat *stat_buf)
 {
     log_ocall(__func__);
-    return __fxstat(ver, fd, stat_buf);
+    //return __fxstat(ver, fd, stat_buf);
+     return fxstat(ver, fd, stat_buf);
 }
 int ocall_lxstat(int ver, const char *path, struct stat *stat_buf)
 {
     log_ocall(__func__);
-    return __lxstat(ver, path, stat_buf);
+    //return __lxstat(ver, path, stat_buf);
+    return lxstat(ver, path, stat_buf);
 }
 int ocall_xstat(int ver, const char *path, struct stat *stat_buf)
 {
     log_ocall(__func__);
-    return __xstat(ver, path, stat_buf);
+    //return __xstat(ver, path, stat_buf);
+    return xstat(ver, path, stat_buf);
 }
 long ocall_pathconf(char *path, int name)
 {
