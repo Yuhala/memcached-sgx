@@ -18,7 +18,7 @@ A port of memcached into Intel SGX. This port was initially created for benchmar
 sudo apt-get install libseccomp-dev
 sudo apt-get install libsasl2-dev
 
-```bash
+```
 - Download libevent [here](https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz)
 - If in cmd-line mode: 
 
@@ -43,11 +43,11 @@ sudo make install
 sudo ln -s /usr/local/lib/libevent-2.1.so.7 /usr/lib/libevent-2.1.so.7
 
 ```
-- Clone this repo and move to branch `kyoto`
+- Clone this repo and move to branch `memcached-sgx`
 
 ```bash
 git clone https://gitlab.com/Yuhala/memcached-sgx.git
-git checkout kyoto
+git checkout memcached-sgx
 cd sgx
 
 ```
