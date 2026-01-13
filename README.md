@@ -41,11 +41,11 @@ sudo make install
 sudo ln -s /usr/local/lib/libevent-2.1.so.7 /usr/lib/libevent-2.1.so.7
 
 ```
-- Clone this repo and move to branch `kyoto`
+- Clone this repo and move to branch `memcached-sgx`
 
 ```
 git clone https://gitlab.com/Yuhala/memcached-sgx.git
-git checkout kyoto
+git checkout --track origin/memcached-sgx
 cd sgx
 
 ```
